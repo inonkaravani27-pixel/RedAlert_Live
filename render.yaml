@@ -14,3 +14,13 @@ services:
         value: "10000"
       - key: STALE_MS
         value: "45000"
+      - key: MAX_AGE_MS
+        value: "1800000"
+      - key: PRELIM_RSS_URLS
+        value: "https://www.ynet.co.il/Integration/StoryRss3082.xml,https://www.walla.co.il/rss"
+      - key: PRELIM_KEYWORDS
+        value: "מבזק,התרעה,אזעקה,פיקוד העורף,ירי,טיל,רקטה,חדירה"
+      - key: MILITARY_RSS_URLS
+        value: "https://www.jpost.com/rss/rssfeedsheadlines.aspx,https://www.jpost.com/rss/israel-hamas-war"
+      - key: MILITARY_KEYWORDS
+        value: "military,security,defense,defence,iran,missile,attack,war,idf,army,צה״ל,צבא,ביטחון,איראן,טיל,תקיפה"
