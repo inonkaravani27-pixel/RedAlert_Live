@@ -2,7 +2,7 @@ services:
   - type: web
     name: redalert-live
     runtime: node
-    plan: starter        # תוכנית חינמית (free) נרדמת — לא מתאימה להתרעות
+    plan: free           # לניסוי בלבד; השירות החינמי עשוי להירדם
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /healthz
