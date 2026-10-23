@@ -25,7 +25,7 @@ async function pollOref() {
   let lastError = "no source configured";
   for (const url of OREF_URLS) {
     try {
-      const raw = (await get(url)).replace(/^\\uFEFF/, "").trim();
+      const raw = (await get(url)).replace(/^\uFEFF/, "").trim();
       // Oref returns an empty/BOM-only body when no alert is active.
       if (!raw) {
         Object.assign(oref, { state: "ok", last: Date.now(), error: null, active: {}, title: null, category: null, rawCount: 0 });
