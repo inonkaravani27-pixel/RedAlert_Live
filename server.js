@@ -34,7 +34,7 @@ const dec = s => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>
 const tag = (b, n) => { const m = b.match(new RegExp("<" + n + "[^>]*>([\\s\\S]*?)</" + n + ">", "i")); return m ? dec(m[1]) : ""; };
 function parseFeed(x) {
   const out = [];
-  for (const m of x.matchAll(/<(item|entry)[\\s>][\\s\\S]*?<\\/\\1>/gi)) {
+  for (const m of x.matchAll(/<(item|entry)[\s>][\s\S]*?<\/\1>/gi)) {
     const b = m[0]; let link = tag(b, "link");
     if (!link) { const h = b.match(/<link[^>]*href="([^"]+)"/i); link = h ? h[1] : ""; }
     out.push({ title: tag(b, "title"), desc: tag(b, "description") || tag(b, "summary"), link, pub: Date.parse(tag(b, "pubDate") || tag(b, "published") || tag(b, "updated")) });
@@ -49,7 +49,7 @@ async function pollGroup(g) {
       const now = Date.now(), host = new URL(f.url).hostname;
       for (const it of parseFeed(await get(f.url))) {
         if (!it.title || !Number.isFinite(it.pub) || now - it.pub > MAXAGE || it.pub - now > 600000) continue;
-        if (!/^https?:\\/\\//.test(it.link)) continue;
+        if (!/^https?:\/\//.test(it.link)) continue;
         const txt = (it.title + " " + it.desc).toLowerCase();
         if (!g.kw.some(k => txt.includes(k))) continue;
         const key = norm(it.title), dup = [...g.items.values()].find(x => x.key === key);
