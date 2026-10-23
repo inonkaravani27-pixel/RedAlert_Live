@@ -4,60 +4,99 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RedAlert Live</title><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0e1013">
 <style>
-:root{color-scheme:dark;--bg:#0e1013;--card:#171a20;--line:#303641;--tx:#eef0f4;--mut:#a0a8b5;--red:#ef4444;--green:#22c55e;--amber:#f59e0b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,Arial,sans-serif}.wrap{max-width:850px;margin:auto;padding:16px}header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}h1{font-size:22px;margin:0}h1 span{color:var(--red)}.pill,.card{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:12px}.banner{margin:14px 0;border:1px dashed var(--amber);color:var(--amber);border-radius:10px;padding:10px;text-align:center}.card{margin:12px 0}.hero{text-align:center;padding:24px 12px}.big{font-size:24px;font-weight:700}.muted,small{color:var(--mut)}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}button{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit}button:focus-visible{outline:2px solid var(--amber)}.item{padding:10px 0;border-top:1px solid var(--line)}.item:first-child{border-top:0}.ok{color:var(--green)}.err{color:var(--amber)}.foot{text-align:center;font-size:13px;color:var(--mut);margin:20px 0}
-</style></head><body><main class="wrap">
-<header><h1>RedAlert <span>Live</span></h1><span class="pill" id="status">מתחבר למקור...</span></header>
-<div class="banner" id="banner">מערכת מידע משלימה בלבד — אין להסתמך עליה במקום פיקוד העורף.</div>
-<section class="card hero"><div class="big" id="headline">בודק מצב...</div><div class="muted" id="sub">הנתונים עדיין לא התקבלו מהשרת.</div></section>
-<section class="card"><h2>תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת...</div><div id="updated" class="muted"></div><div class="row" style="margin-top:12px"><button id="refresh">רענון עכשיו</button><button id="sound">בדיקת צליל</button></div><div class="muted" id="soundmsg"></div></section>
-<section class="card"><h2>דיווחים ראשוניים</h2><p class="muted">דיווחים חדשותיים אינם התרעות רשמיות ואינם מעידים ששיגור קרוב.</p><div id="pre" class="muted">לא הוגדר מקור RSS.</div></section>
-<section class="card"><h2>פעילות צבאית</h2><p class="muted">מידע חדשותי כללי בלבד; לא מעקב בזמן אמת ולא אזהרה.</p><div id="mil" class="muted">לא הוגדר מקור RSS.</div></section>
-<p class="foot">RedAlert Live הוא כלי משלים בלבד. פעלו תמיד לפי הנחיות פיקוד העורף והיישומון הרשמי. מידע זה אינו שירות התרעה מאושר.</p>
-</main><script>
-const $=id=>document.getElementById(id);let timer=null;
+:root{color-scheme:dark;--bg:#0c0e12;--card:#161a21;--line:#2b313c;--tx:#f2f4f8;--mut:#9ca7b7;--red:#f04444;--green:#35d07f;--amber:#f6b73c;--blue:#72a7ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.55 system-ui,Arial,sans-serif}.wrap{max-width:1000px;margin:auto;padding:16px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}h1{font-size:24px;margin:0}h1 span{color:var(--red)}.muted,small{color:var(--mut)}.status{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:5px 10px}.banner{margin:14px 0;border:1px solid #6c4f1a;background:#211b10;color:#ffd477;border-radius:12px;padding:10px;text-align:center;font-size:13px}.hero,.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0}.hero{text-align:center;padding:24px 14px}.hero .big{font-size:23px;font-weight:750}.hero.alert{border-color:var(--red);background:#2a1418}.hero .sub{color:var(--mut);margin-top:5px}.nav{display:flex;gap:7px;overflow:auto;padding:4px 0 9px}.nav button{white-space:nowrap}.nav button.active{background:#382026;border-color:#81343d;color:#fff}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid .card{margin:0}.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}button,input,select{font:inherit;color:var(--tx);background:#1c222b;border:1px solid var(--line);border-radius:10px;padding:10px}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid var(--amber)}button.primary{background:#762b35;border-color:#a94350}button:disabled{opacity:.5}.item{padding:12px 0;border-top:1px solid var(--line)}.item:first-child{border-top:0}.itemhead{display:flex;justify-content:space-between;gap:8px;align-items:start}.tag{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:2px 6px;color:var(--mut)}.tag.demo{color:#ffd477;border-color:#72551d}.tag.live{color:#82e7ad;border-color:#286443}.star{font-size:20px;padding:3px 8px}.empty{padding:18px 4px;color:var(--mut);text-align:center}.field{width:100%;margin:8px 0}.section-title{font-size:18px;margin:0 0 8px}.foot{text-align:center;color:var(--mut);font-size:12px;margin:22px 0}.hidden{display:none!important}.ok{color:var(--green)}.err{color:var(--amber)}a{color:var(--blue)}label{display:block;margin:8px 0}
+@media(max-width:600px){.wrap{padding:12px}.grid{grid-template-columns:1fr}.hero .big{font-size:20px}h1{font-size:22px}.nav button{padding:8px 10px}}
+</style></head>
+<body><main class="wrap">
+<header class="top"><h1>RedAlert <span>Live</span></h1><div class="row"><span id="mode" class="status">הדגמה</span><span id="connection" class="status">בודק חיבור…</span></div></header>
+<div class="banner">כלי משלים בלבד — אינו שירות רשמי ואינו תחליף ליישומון פיקוד העורף. אין להסתמך עליו להצלת חיים.</div>
+<nav class="nav" id="nav">
+<button class="active" data-page="home">ראשי</button><button data-page="history">היסטוריה</button><button data-page="prelim">דיווחים ראשוניים</button><button data-page="military">פעילות צבאית</button><button data-page="favorites">מועדפים</button><button data-page="settings">הגדרות</button>
+</nav>
+<section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
+<section id="page-home">
+<div class="card"><div class="row"><input id="search" placeholder="חיפוש יישוב…" aria-label="חיפוש יישוב" style="flex:1;min-width:170px"><label style="margin:0"><input type="checkbox" id="favOnly"> מועדפים בלבד</label></div><div id="alertList"></div></div>
+<div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="sound">בדיקת צליל</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
+</section>
+<section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
+<section id="page-prelim" class="card hidden"><h2 class="section-title">דיווחים ראשוניים</h2><p class="muted">דיווחים חדשותיים אינם התרעות רשמיות ואינם מעידים ששיגור קרוב.</p><div id="pre"></div></section>
+<section id="page-military" class="card hidden"><h2 class="section-title">פעילות צבאית</h2><p class="muted">מידע חדשותי כללי בלבד; לא מעקב בזמן אמת ולא אזהרה.</p><div id="mil"></div></section>
+<section id="page-favorites" class="card hidden"><h2 class="section-title">יישובים מועדפים</h2><p class="muted">סמנו כוכב ליד יישוב במסך הראשי כדי להוסיף אותו למועדפים.</p><div id="favoritesList"></div></section>
+<section id="page-settings" class="card hidden"><h2 class="section-title">הגדרות</h2><label><input type="checkbox" id="demoToggle"> הצג נתוני הדגמה (לא התרעות אמיתיות)</label><label><input type="checkbox" id="autoSound"> אפשר צליל אוטומטי כאשר מזוהה שינוי חדש במקור (רק כשהדף פתוח)</label><p class="muted">צליל אוטומטי בדפדפן עשוי לדרוש אינטראקציה ראשונית. אין התראות Push ברקע בגרסה הזו. אין בכך תחליף ליישומון הרשמי.</p><button id="clearHistory">נקה היסטוריה מקומית</button><div id="settingsMsg" class="muted"></div></section>
+<footer class="foot">RedAlert Live — כלי משלים בלבד. הנתונים החיים תלויים בזמינות מקור חיצוני ואינם שירות התרעה מאושר.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const cities=["תל אביב־יפו","אשקלון","ראשון לציון","קריית שמונה","חיפה","הרצליה","מודיעין","נהריה","אשדוד","באר שבע","נתניה","פתח תקווה","אילת","ירושלים","רמת גן","גבעתיים","גבעת שמואל","רחובות","חולון","בת ים","עכו","טבריה"];
+const demoEvents=[
+{city:"תל אביב־יפו",type:"כלי טיס עוין",time:"23.10.2026, 15:54"},
+{city:"אשקלון",type:"טילים",time:"23.10.2026, 8:53"},
+{city:"ראשון לציון",type:"טילים",time:"23.10.2026, 0:49"},
+{city:"קריית שמונה",type:"טילים",time:"22.10.2026, 19:52"},
+{city:"חיפה",type:"טילים",time:"22.10.2026, 9:44"},
+{city:"הרצליה",type:"טילים",time:"22.10.2026, 2:48"},
+{city:"מודיעין",type:"טילים",time:"22.10.2026, 0:51"},
+{city:"נהריה",type:"טילים",time:"21.10.2026, 18:39"},
+{city:"אשדוד",type:"טילים",time:"21.10.2026, 3:34"},
+{city:"אשדוד",type:"טילים",time:"20.10.2026, 23:50"},
+{city:"באר שבע",type:"כלי טיס עוין",time:"20.10.2026, 22:47"},
+{city:"נתניה",type:"טילים",time:"20.10.2026, 20:43"},
+{city:"תל אביב־יפו",type:"טילים",time:"19.10.2026, 14:38"},
+{city:"פתח תקווה",type:"טילים",time:"19.10.2026, 12:46"},
+{city:"אילת",type:"טילים",time:"19.10.2026, 1:42"}].map((x,i)=>({...x,id:"demo-"+i,demo:true}));
+let liveState=null, realEvents=[], previousAlertKey="", audioUnlocked=false;
+let favorites=new Set(JSON.parse(localStorage.getItem("ral-favorites")||"[]"));
+let history=JSON.parse(localStorage.getItem("ral-history")||"[]");
+let demo=localStorage.getItem("ral-demo")!=="false";
+let autoSound=localStorage.getItem("ral-autosound")==="true";
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function renderGroup(el,g){if(!g){el.textContent="אין מקור מחובר.";return}const a=g.items||[];el.innerHTML=a.length?a.slice(0,10).map(x=>'<div class="item"><b>'+esc(x.title)+'</b><br><small>מקורות: '+esc((x.sources||[]).join(", "))+' · דיווח לא מאומת · '+(x.link?'<a rel="noopener noreferrer" target="_blank" href="'+esc(x.link)+'">מקור</a>':'')+'</small></div>').join(""):'אין דיווחים חדשים ממקור מחובר.'}
-async function poll(){try{const r=await fetch("/api/state",{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json(),s=d.oref;$("status").textContent="השרת מגיב";$("source").innerHTML='פיקוד העורף (דרך ממסר קהילתי): <b class="'+(s.state==="ok"?"ok":"err")+'">'+esc(s.state)+'</b>'+(s.error?' — '+esc(s.error):"");$("updated").textContent=s.last?"עדכון מקור אחרון: "+new Date(s.last).toLocaleString("he-IL"):"לא התקבלה עדיין תשובה תקינה מהמקור";const active=s.state==="ok"?Object.entries(s.active||{}).flatMap(([type,cities])=>(Array.isArray(cities)?cities:[]).map(city=>({type,city}))):[];$("headline").textContent=s.state!=="ok"?"אין אימות עדכני מהמקור":active.length?"התקבלה התרעה פעילה מהמקור (בדקו גם את הרשמי)":"לא התקבלו התרעות פעילות כרגע מהמקור";$("sub").textContent=s.state==="ok"?(active.length?active.slice(0,5).map(x=>x.city).join(", "):"אין בכך אישור שאין סכנה. בדקו את היישומון הרשמי."):"אין להסתמך על היעדר התרעות כשהמקור אינו זמין."; $("banner").textContent="כלי משלים בלבד. החיבור עובר דרך ממסר קהילתי ואינו שירות רשמי; פעלו לפי הנחיות פיקוד העורף.";renderGroup($("pre"),d.prelim);renderGroup($("mil"),d.military)}catch(e){$("status").textContent="תקלה בחיבור";$("source").textContent=String(e.message||e);$("headline").textContent="לא ניתן לאמת מצב התרעות";$("sub").textContent="בדקו את היישומון הרשמי של פיקוד העורף."}}
+function allEvents(){return demo?demoEvents:realEvents}
+function store(){localStorage.setItem("ral-favorites",JSON.stringify([...favorites]));localStorage.setItem("ral-history",JSON.stringify(history.slice(0,300)));localStorage.setItem("ral-demo",String(demo));localStorage.setItem("ral-autosound",String(autoSound))}
+function setPage(page){document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","military","favorites","settings"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page))}
+$("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)});
+function renderEvents(){
+ const q=$("search").value.trim().toLocaleLowerCase("he");
+ const only=$("favOnly").checked;
+ let ev=allEvents().filter(x=>(!q||x.city.toLocaleLowerCase("he").includes(q))&&(!only||favorites.has(x.city)));
+ $("alertList").innerHTML=ev.length?ev.map(x=>'<div class="item"><div class="itemhead"><div><b>'+esc(x.city)+'</b><div>'+esc(x.type)+' · '+esc(x.time||"זמן לא זמין")+'</div><span class="tag '+(x.demo?"demo":"live")+'">'+(x.demo?"הדגמה":"מקור חי")+'</span></div><button class="star" data-star="'+esc(x.city)+'" aria-label="הוסף למועדפים">'+(favorites.has(x.city)?"★":"☆")+'</button></div></div>').join(""):'<div class="empty">'+(demo?"אין אירועים התואמים לחיפוש. נתוני ההדגמה אינם התרעות אמיתיות.":"אין התרעות פעילות מאומתות להצגה. בדקו את היישומון הרשמי.")+'</div>';
+}
+function renderHistory(){const q=$("historySearch").value.trim().toLocaleLowerCase("he");const arr=history.filter(x=>!q||x.city.toLocaleLowerCase("he").includes(q));$("historyList").innerHTML=arr.length?arr.map(x=>'<div class="item"><b>'+esc(x.city)+'</b> · '+esc(x.type)+'<br><small>'+esc(x.time||"זמן לא זמין")+' · '+(x.demo?'נתון הדגמה':'נתון שהתקבל מהמקור')+'</small></div>').join(""):'<div class="empty">אין אירועים בהיסטוריה המקומית.</div>'}
+function renderFavorites(){const arr=[...favorites];$("favoritesList").innerHTML=arr.length?arr.map(c=>'<div class="item row"><b style="flex:1">'+esc(c)+'</b><button data-unstar="'+esc(c)+'">הסר</button></div>').join(""):'<div class="empty">עדיין לא סימנת יישובים מועדפים.</div>'}
+function renderGroup(el,g){if(!g){el.innerHTML='<div class="empty">אין מקור מחובר.</div>';return}const a=g.items||[];el.innerHTML=a.length?a.slice(0,12).map(x=>'<div class="item"><b>'+esc(x.title)+'</b><br><small>מקורות: '+esc((x.sources||[]).join(", "))+' · דיווח לא מאומת · '+(x.link?'<a rel="noopener noreferrer" target="_blank" href="'+esc(x.link)+'">מקור</a>':'')+'</small></div>').join(""):'<div class="empty">אין דיווחים חדשים ממקור מחובר.</div>'}
+function renderAll(){renderEvents();renderHistory();renderFavorites();$("mode").textContent=demo?"הדגמה":"נתונים חיים";$("demoToggle").checked=demo;$("autoSound").checked=autoSound}
+document.addEventListener("click",e=>{const s=e.target.closest("[data-star]");if(s){const c=s.dataset.star;favorites.has(c)?favorites.delete(c):favorites.add(c);store();renderAll()}const u=e.target.closest("[data-unstar]");if(u){favorites.delete(u.dataset.unstar);store();renderAll()}});
+$("search").addEventListener("input",renderEvents);$("favOnly").addEventListener("change",renderEvents);$("historySearch").addEventListener("input",renderHistory);
+function playAlertSound(){
+ const A=window.AudioContext||window.webkitAudioContext;if(!A)return;
+ const ctx=new A();ctx.resume().then(()=>{
+ const start=ctx.currentTime;
+ const tone=(t,d,f0,f1,v=.2,type="sawtooth")=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+d*.8);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.02);g.gain.setValueAtTime(v,t+d*.65);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+d+.01)};
+ for(let i=0;i<3;i++){tone(start+i*.72,.42,500,1050,.18);tone(start+i*.72+.05,.35,780,400,.11,"triangle")}
+ for(let i=0;i<5;i++)tone(start+2.35+i*.15,.11,950,700,.16,"square");
+ setTimeout(()=>ctx.close().catch(()=>{}),3400);
+ }).catch(()=>ctx.close().catch(()=>{}));
+}
+$("sound").onclick=()=>{playAlertSound();$("soundmsg").textContent="צליל בדיקה אלקטרוני הופעל. אם לא שומעים, בדקו את עוצמת המדיה. צליל הבדיקה אינו צליל רשמי.";audioUnlocked=true};
+async function poll(){try{
+ const r=await fetch("/api/state",{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json();liveState=d;const s=d.oref||{};$("connection").textContent=s.state==="ok"?"מקור מגיב":"מקור לא מאומת";$("connection").className="status "+(s.state==="ok"?"ok":"err");$("source").innerHTML='פיקוד העורף (דרך ממסר קהילתי): <b class="'+(s.state==="ok"?"ok":"err")+'">'+esc(s.state||"לא ידוע")+'</b>'+(s.error?' — '+esc(s.error):"");$("updated").textContent=s.last?"עדכון אחרון מהמקור: "+new Date(s.last).toLocaleString("he-IL"):"אין מידע אמין על זמן העדכון";$("freshness").textContent=s.last?"עדכון מקור אחרון: "+new Date(s.last).toLocaleString("he-IL"):"עדכון אחרון: אין מידע אמיתי";
+ const active=s.state==="ok"?Object.entries(s.active||{}).flatMap(([type,arr])=>(Array.isArray(arr)?arr:[]).map(city=>({city,type,id:type+"-"+city,demo:false,time:new Date(s.last||Date.now()).toLocaleString("he-IL")}))):[];
+ realEvents=active;
+ const key=active.map(x=>x.id).sort().join("|");
+ $("hero").classList.toggle("alert",active.length>0);
+ if(s.state!=="ok"){$("headline").textContent="אין אימות עדכני מהמקור";$("sub").textContent="בדקו את היישומון הרשמי של פיקוד העורף."}
+ else if(active.length){$("headline").textContent="התקבלה התרעה פעילה במקור";$("sub").textContent=active.map(x=>x.city).slice(0,8).join(", ")+" · בדקו מיד את היישומון הרשמי"}
+ else{$("headline").textContent="אין התרעות פעילות בדיווח המקור";$("sub").textContent="אין בכך אישור שאין סכנה. פעלו לפי הנחיות פיקוד העורף."}
+ if(active.length&&key&&key!==previousAlertKey&&previousAlertKey&&autoSound&&audioUnlocked){playAlertSound()}
+ if(key)previousAlertKey=key;
+ if(active.length){for(const x of active){if(!history.some(h=>h.id===x.id&&!h.demo))history.unshift(x)}history=history.slice(0,300);store()}
+ renderGroup($("pre"),d.prelim);renderGroup($("mil"),d.military);renderAll();
+ }catch(e){$("connection").textContent="תקלה בחיבור";$("connection").className="status err";$("source").textContent="לא ניתן לאמת מקור: "+String(e.message||e);$("headline").textContent="אין אימות עדכני להתרעות";$("sub").textContent="בדקו את היישומון הרשמי. היעדר מידע אינו אומר שאין סכנה.";if(!demo){realEvents=[];renderEvents()}}
+}
 $("refresh").onclick=poll;
-$("sound").onclick=async()=>{
-  const btn=$("sound"); btn.disabled=true; $("soundmsg").textContent="מפעיל צליל בדיקה...";
-  let ctx;
-  try {
-    const AudioCtx=window.AudioContext||window.webkitAudioContext;
-    if(!AudioCtx) throw new Error("הדפדפן אינו תומך בהשמעת צליל");
-    ctx=new AudioCtx();
-    await ctx.resume();
-    if(ctx.state!=="running") throw new Error("השמע חסום בדפדפן (AudioContext לא פעיל)");
-    // Distinct, dramatic electronic test tone (not the official Home Front Command alert).
-    // Three rising two-tone sweeps followed by a short rapid pulse sequence.
-    const now=ctx.currentTime;
-    const playTone=(start,duration,f0,f1,volume=0.22,type="sawtooth")=>{
-      const osc=ctx.createOscillator(), gain=ctx.createGain();
-      osc.type=type;
-      osc.frequency.setValueAtTime(f0,start);
-      osc.frequency.exponentialRampToValueAtTime(f1,start+duration*0.82);
-      gain.gain.setValueAtTime(0.0001,start);
-      gain.gain.exponentialRampToValueAtTime(volume,start+0.025);
-      gain.gain.setValueAtTime(volume,start+duration*0.68);
-      gain.gain.exponentialRampToValueAtTime(0.0001,start+duration);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(start); osc.stop(start+duration+0.01);
-    };
-    for(let i=0;i<3;i++){
-      const t=now+i*0.78;
-      playTone(t,0.48,520,1040,0.20,"sawtooth");
-      playTone(t+0.06,0.40,780,390,0.12,"triangle");
-    }
-    for(let i=0;i<5;i++){
-      const t=now+2.55+i*0.16;
-      playTone(t,0.12,980,720,0.18,"square");
-    }
-    $("soundmsg").textContent="הושמע צליל בדיקה אלקטרוני דרמטי. זהו צליל בדיקה בלבד, לא צליל רשמי ולא התרעה אוטומטית.";
-    setTimeout(()=>{if(ctx&&ctx.state!=="closed")ctx.close().catch(()=>{});},3800);
-  } catch(e) {
-    if(ctx&&ctx.state!=="closed")ctx.close().catch(()=>{});
-    $("soundmsg").textContent="צליל הבדיקה נכשל: "+String(e.message||e);
-  } finally { btn.disabled=false; }
-};
-if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});poll();timer=setInterval(poll,10000);
+$("demoToggle").onchange=()=>{demo=$("demoToggle").checked;store();renderAll();$("settingsMsg").textContent=demo?"נתוני הדגמה מוצגים ומסומנים.":"מצב נתונים חיים נבחר; אם המקור לא זמין, לא יוצגו נתוני הדגמה."};
+$("autoSound").onchange=()=>{autoSound=$("autoSound").checked;store();$("settingsMsg").textContent=autoSound?"צליל אוטומטי הופעל לשינויים חדשים בזמן שהדף פתוח ולאחר לחיצה שמאפשרת שמע.":"צליל אוטומטי כבוי."};
+$("clearHistory").onclick=()=>{history=[];store();renderHistory();$("settingsMsg").textContent="ההיסטוריה המקומית נוקתה."};
+renderAll();poll();setInterval(poll,10000);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 </script></body></html>
