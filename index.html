@@ -20,26 +20,33 @@ function renderGroup(el,g){if(!g){el.textContent="אין מקור מחובר.";r
 async function poll(){try{const r=await fetch("/api/state",{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json(),s=d.oref;$("status").textContent="השרת מגיב";$("source").innerHTML='פיקוד העורף (דרך ממסר קהילתי): <b class="'+(s.state==="ok"?"ok":"err")+'">'+esc(s.state)+'</b>'+(s.error?' — '+esc(s.error):"");$("updated").textContent=s.last?"עדכון מקור אחרון: "+new Date(s.last).toLocaleString("he-IL"):"לא התקבלה עדיין תשובה תקינה מהמקור";const active=s.state==="ok"?Object.entries(s.active||{}).flatMap(([type,cities])=>(Array.isArray(cities)?cities:[]).map(city=>({type,city}))):[];$("headline").textContent=s.state!=="ok"?"אין אימות עדכני מהמקור":active.length?"התקבלה התרעה פעילה מהמקור (בדקו גם את הרשמי)":"לא התקבלו התרעות פעילות כרגע מהמקור";$("sub").textContent=s.state==="ok"?(active.length?active.slice(0,5).map(x=>x.city).join(", "):"אין בכך אישור שאין סכנה. בדקו את היישומון הרשמי."):"אין להסתמך על היעדר התרעות כשהמקור אינו זמין."; $("banner").textContent="כלי משלים בלבד. החיבור עובר דרך ממסר קהילתי ואינו שירות רשמי; פעלו לפי הנחיות פיקוד העורף.";renderGroup($("pre"),d.prelim);renderGroup($("mil"),d.military)}catch(e){$("status").textContent="תקלה בחיבור";$("source").textContent=String(e.message||e);$("headline").textContent="לא ניתן לאמת מצב התרעות";$("sub").textContent="בדקו את היישומון הרשמי של פיקוד העורף."}}
 $("refresh").onclick=poll;
 $("sound").onclick=async()=>{
-  const btn=$("sound"); btn.disabled=true; $("soundmsg").textContent="מנסה להשמיע צליל...";
-  let a;
+  const btn=$("sound"); btn.disabled=true; $("soundmsg").textContent="מפעיל צליל בדיקה...";
+  let ctx;
   try {
     const AudioCtx=window.AudioContext||window.webkitAudioContext;
     if(!AudioCtx) throw new Error("הדפדפן אינו תומך בהשמעת צליל");
-    a=new AudioCtx();
-    if(a.state!=="running") await a.resume();
-    if(a.state!=="running") throw new Error("הדפדפן או המכשיר חסמו את השמע");
-    const o=a.createOscillator(), g=a.createGain();
-    o.type="sine"; o.frequency.setValueAtTime(880,a.currentTime);
-    g.gain.setValueAtTime(0.0001,a.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.18,a.currentTime+0.025);
-    g.gain.setValueAtTime(0.18,a.currentTime+0.18);
-    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+0.28);
-    o.connect(g); g.connect(a.destination); o.start(a.currentTime); o.stop(a.currentTime+0.3);
-    $("soundmsg").textContent="נשלח צליל בדיקה. אם לא שמעתם, בדקו את עוצמת המדיה, מצב שקט והתקן שמע.";
-    o.onended=()=>a.close().catch(()=>{});
+    ctx=new AudioCtx();
+    await ctx.resume();
+    if(ctx.state!=="running") throw new Error("השמע חסום בדפדפן (AudioContext לא פעיל)");
+    // Play three clear beeps, with a stronger gain than the previous test tone.
+    const now=ctx.currentTime;
+    for(let i=0;i<3;i++){
+      const osc=ctx.createOscillator(), gain=ctx.createGain();
+      const t=now+i*0.42;
+      osc.type="sine";
+      osc.frequency.setValueAtTime(880,t);
+      gain.gain.setValueAtTime(0.0001,t);
+      gain.gain.exponentialRampToValueAtTime(0.65,t+0.025);
+      gain.gain.setValueAtTime(0.65,t+0.18);
+      gain.gain.exponentialRampToValueAtTime(0.0001,t+0.27);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t+0.29);
+    }
+    $("soundmsg").textContent="הדפדפן הפעיל את צליל הבדיקה. אם לא שמעתם, בדקו עוצמת מדיה/פלט שמע. זה עדיין לא מפעיל התרעות אוטומטיות.";
+    setTimeout(()=>{if(ctx&&ctx.state!=="closed")ctx.close().catch(()=>{});},1800);
   } catch(e) {
-    if(a && a.state!=="closed") a.close().catch(()=>{});
-    $("soundmsg").textContent="לא ניתן להשמיע צליל: "+String(e.message||e);
+    if(ctx&&ctx.state!=="closed")ctx.close().catch(()=>{});
+    $("soundmsg").textContent="צליל הבדיקה נכשל: "+String(e.message||e);
   } finally { btn.disabled=false; }
 };
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});poll();timer=setInterval(poll,10000);
