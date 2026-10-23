@@ -28,22 +28,32 @@ $("sound").onclick=async()=>{
     ctx=new AudioCtx();
     await ctx.resume();
     if(ctx.state!=="running") throw new Error("השמע חסום בדפדפן (AudioContext לא פעיל)");
-    // Play three clear beeps, with a stronger gain than the previous test tone.
+    // Distinct, dramatic electronic test tone (not the official Home Front Command alert).
+    // Three rising two-tone sweeps followed by a short rapid pulse sequence.
     const now=ctx.currentTime;
-    for(let i=0;i<3;i++){
+    const playTone=(start,duration,f0,f1,volume=0.22,type="sawtooth")=>{
       const osc=ctx.createOscillator(), gain=ctx.createGain();
-      const t=now+i*0.42;
-      osc.type="sine";
-      osc.frequency.setValueAtTime(880,t);
-      gain.gain.setValueAtTime(0.0001,t);
-      gain.gain.exponentialRampToValueAtTime(0.65,t+0.025);
-      gain.gain.setValueAtTime(0.65,t+0.18);
-      gain.gain.exponentialRampToValueAtTime(0.0001,t+0.27);
+      osc.type=type;
+      osc.frequency.setValueAtTime(f0,start);
+      osc.frequency.exponentialRampToValueAtTime(f1,start+duration*0.82);
+      gain.gain.setValueAtTime(0.0001,start);
+      gain.gain.exponentialRampToValueAtTime(volume,start+0.025);
+      gain.gain.setValueAtTime(volume,start+duration*0.68);
+      gain.gain.exponentialRampToValueAtTime(0.0001,start+duration);
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(t); osc.stop(t+0.29);
+      osc.start(start); osc.stop(start+duration+0.01);
+    };
+    for(let i=0;i<3;i++){
+      const t=now+i*0.78;
+      playTone(t,0.48,520,1040,0.20,"sawtooth");
+      playTone(t+0.06,0.40,780,390,0.12,"triangle");
     }
-    $("soundmsg").textContent="הדפדפן הפעיל את צליל הבדיקה. אם לא שמעתם, בדקו עוצמת מדיה/פלט שמע. זה עדיין לא מפעיל התרעות אוטומטיות.";
-    setTimeout(()=>{if(ctx&&ctx.state!=="closed")ctx.close().catch(()=>{});},1800);
+    for(let i=0;i<5;i++){
+      const t=now+2.55+i*0.16;
+      playTone(t,0.12,980,720,0.18,"square");
+    }
+    $("soundmsg").textContent="הושמע צליל בדיקה אלקטרוני דרמטי. זהו צליל בדיקה בלבד, לא צליל רשמי ולא התרעה אוטומטית.";
+    setTimeout(()=>{if(ctx&&ctx.state!=="closed")ctx.close().catch(()=>{});},3800);
   } catch(e) {
     if(ctx&&ctx.state!=="closed")ctx.close().catch(()=>{});
     $("soundmsg").textContent="צליל הבדיקה נכשל: "+String(e.message||e);
