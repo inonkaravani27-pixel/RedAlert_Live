@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: redalert-live
+    runtime: node
+    plan: starter        # תוכנית חינמית (free) נרדמת — לא מתאימה להתרעות
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: POLL_MS
+        value: "10000"
+      - key: STALE_MS
+        value: "45000"
