@@ -17,7 +17,7 @@ services:
       - key: MAX_AGE_MS
         value: "1800000"
       - key: PRELIM_RSS_URLS
-        value: "https://www.ynet.co.il/Integration/StoryRss3082.xml,https://www.walla.co.il/rss"
+        value: "https://www.ynet.co.il/Integration/StoryRss3082.xml"
       - key: PRELIM_KEYWORDS
         value: "מבזק,התרעה,אזעקה,פיקוד העורף,ירי,טיל,רקטה,חדירה"
       - key: MILITARY_RSS_URLS
