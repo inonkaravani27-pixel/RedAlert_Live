@@ -2,10 +2,10 @@
 const http = require("http"), crypto = require("crypto"), fs = require("fs"), path = require("path");
 const E = process.env, PORT = +E.PORT || 8787, ORIGIN = E.ALLOWED_ORIGIN || "";
 const POLL = +E.POLL_MS || 10000, STALE = +E.STALE_MS || 45000, MAXAGE = +E.MAX_AGE_MS || 1800000;
-const SIREN_URL = E.SIREN_URL || "https://api.siren.co.il/active";
+const OREF_URLS = (E.OREF_URLS || "https://orefproxy5.oref-map.org/api2/alerts,https://oref-map.org/api/alerts").split(",").map(s => s.trim()).filter(Boolean);
 const list = v => (v || "").split(",").map(s => s.trim()).filter(Boolean);
 const msg = e => String((e && e.message) || e).replace(/https?:\/\/\S+/g, "[url]").slice(0, 120);
-const siren = { state: "unchecked", last: null, error: null, active: {} };
+const oref = { state: "unchecked", last: null, error: null, active: {}, title: null, category: null, rawCount: 0 };
 const mk = p => ({
   kw: list(E[p + "_KEYWORDS"]).map(s => s.toLowerCase()),
   feeds: new Map(list(E[p + "_RSS_URLS"]).map(u => [u, { url: u, state: "unchecked", last: null, error: null }])),
@@ -21,13 +21,30 @@ const get = async url => {
     return await r.text();
   } finally { clearTimeout(t); }
 };
-async function pollSiren() {
-  try {
-    const d = JSON.parse(await get(SIREN_URL));
-    if (!d || typeof d !== "object" || Array.isArray(d)) throw new Error("unexpected shape");
-    for (const [k, v] of Object.entries(d)) if (!Array.isArray(v) || v.some(x => typeof x !== "string")) throw new Error("unexpected shape at " + k);
-    Object.assign(siren, { state: "ok", last: Date.now(), error: null, active: d });
-  } catch (e) { siren.state = "error"; siren.error = msg(e); }
+async function pollOref() {
+  let lastError = "no source configured";
+  for (const url of OREF_URLS) {
+    try {
+      const raw = (await get(url)).replace(/^\\uFEFF/, "").trim();
+      // Oref returns an empty/BOM-only body when no alert is active.
+      if (!raw) {
+        Object.assign(oref, { state: "ok", last: Date.now(), error: null, active: {}, title: null, category: null, rawCount: 0 });
+        return;
+      }
+      let parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) parsed = parsed[0] || null;
+      if (parsed === null) {
+        Object.assign(oref, { state: "ok", last: Date.now(), error: null, active: {}, title: null, category: null, rawCount: 0 });
+        return;
+      }
+      if (typeof parsed !== "object" || !parsed || !parsed.title || !Array.isArray(parsed.data)) throw new Error("unexpected alert response");
+      const cities = parsed.data.filter(x => typeof x === "string");
+      const active = cities.length ? { [String(parsed.title)]: cities } : {};
+      Object.assign(oref, { state: "ok", last: Date.now(), error: null, active, title: String(parsed.title), category: parsed.cat ?? null, rawCount: cities.length });
+      return;
+    } catch (e) { lastError = msg(e); }
+  }
+  oref.state = "error"; oref.error = lastError;
 }
 const dec = s => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "")
   .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, "&").trim();
@@ -73,13 +90,12 @@ const pickAreas = (active, areas) => {
   for (const [k, v] of Object.entries(active)) { const m = v.filter(c => areas.includes(c)); if (m.length) out[k] = m; }
   return out;
 };
-const sirenOut = areas => {
-  const v = stale(siren, STALE);
+const orefOut = areas => {\n  const v = stale(oref, STALE);
   if (v.state !== "ok") return { ...v, active: {} };
   return areas && areas.length ? { ...v, active: pickAreas(v.active, areas), areaFiltered: true } : v;
 };
 const parseAreas = q => (q || "").split("|").map(s => s.trim()).filter(Boolean).slice(0, 200);
-const state = areas => ({ now: Date.now(), siren: sirenOut(areas), prelim: grp(G.prelim), military: grp(G.military) });
+const state = areas => ({ now: Date.now(), oref: orefOut(areas), prelim: grp(G.prelim), military: grp(G.military) });
 const FILES = { "/manifest.webmanifest": ["manifest.webmanifest", "application/manifest+json"], "/sw.js": ["sw.js", "text/javascript"], "/icon.svg": ["icon.svg", "image/svg+xml"] };
 
 const PUB = fs.existsSync(path.join(__dirname, "public", "index.html")) ? path.join(__dirname, "public") : __dirname;
@@ -101,4 +117,4 @@ const server = http.createServer((req, res) => {
 });
 server.listen(PORT, "0.0.0.0", () => console.log("RedAlert proxy on :" + PORT));
 process.on("SIGTERM", () => server.close(() => process.exit(0)));
-(async function loop() { await Promise.all([pollSiren(), pollGroup(G.prelim), pollGroup(G.military)]); setTimeout(loop, POLL); })();
+(async function loop() { await Promise.all([pollOref(), pollGroup(G.prelim), pollGroup(G.military)]); setTimeout(loop, POLL); })();
