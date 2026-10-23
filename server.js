@@ -2,7 +2,7 @@
 const http = require("http"), crypto = require("crypto"), fs = require("fs"), path = require("path");
 const E = process.env, PORT = +E.PORT || 8787, ORIGIN = E.ALLOWED_ORIGIN || "";
 const POLL = +E.POLL_MS || 10000, STALE = +E.STALE_MS || 45000, MAXAGE = +E.MAX_AGE_MS || 1800000;
-const OREF_URLS = (E.OREF_URLS || "https://orefproxy5.oref-map.org/api2/alerts,https://oref-map.org/api/alerts").split(",").map(s => s.trim()).filter(Boolean);
+const OREF_URLS = (E.OREF_URLS || "https://api.tzevaadom.co.il/notifications,https://orefproxy5.oref-map.org/api2/alerts,https://oref-map.org/api/alerts").split(",").map(s => s.trim()).filter(Boolean);
 const list = v => (v || "").split(",").map(s => s.trim()).filter(Boolean);
 const msg = e => String((e && e.message) || e).replace(/https?:\/\/\S+/g, "[url]").slice(0, 120);
 const oref = { state: "unchecked", last: null, error: null, active: {}, title: null, category: null, rawCount: 0 };
@@ -16,7 +16,7 @@ const G = { prelim: mk("PRELIM"), military: mk("MILITARY") };
 const get = async url => {
   const c = new AbortController(), t = setTimeout(() => c.abort(), 8000);
   try {
-    const r = await fetch(url, { signal: c.signal, headers: { "User-Agent": "RedAlertLive/1.0", Accept: "*/*" } });
+    const r = await fetch(url, { signal: c.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; RedAlertLive/1.0)", Accept: "application/json, text/plain, */*", "Referer": "https://www.oref.org.il/", "X-Requested-With": "XMLHttpRequest" } });
     if (!r.ok) throw new Error("HTTP " + r.status);
     return await r.text();
   } finally { clearTimeout(t); }
@@ -37,7 +37,22 @@ async function pollOref() {
         Object.assign(oref, { state: "ok", last: Date.now(), error: null, active: {}, title: null, category: null, rawCount: 0 });
         return;
       }
-      if (typeof parsed !== "object" || !parsed || !parsed.title || !Array.isArray(parsed.data)) throw new Error("unexpected alert response");
+      // Tzeva Adom community API may return { alerts: [...] }; Oref relays return { title, data: [...] }.
+      if (typeof parsed !== "object" || !parsed) throw new Error("unexpected alert response");
+      if (Array.isArray(parsed.alerts)) {
+        const rows = parsed.alerts;
+        const cities = [...new Set(rows.flatMap(x => {
+          if (Array.isArray(x.cities)) return x.cities.filter(v => typeof v === "string");
+          if (Array.isArray(x.data)) return x.data.filter(v => typeof v === "string");
+          const area = x.RegionDesc || x.region || x.area || x.data;
+          return typeof area === "string" && area ? [area] : [];
+        }))];
+        const title = rows.map(x => x.Message || x.title || x.description).find(x => typeof x === "string" && x.trim()) || "התרעה";
+        const active = cities.length ? { [String(title)]: cities } : {};
+        Object.assign(oref, { state: "ok", last: Date.now(), error: null, active, title: cities.length ? String(title) : null, category: rows[0]?.cat ?? rows[0]?.threat ?? null, rawCount: cities.length });
+        return;
+      }
+      if (!parsed.title || !Array.isArray(parsed.data)) throw new Error("unexpected alert response");
       const cities = parsed.data.filter(x => typeof x === "string");
       const active = cities.length ? { [String(parsed.title)]: cities } : {};
       Object.assign(oref, { state: "ok", last: Date.now(), error: null, active, title: String(parsed.title), category: parsed.cat ?? null, rawCount: cities.length });
