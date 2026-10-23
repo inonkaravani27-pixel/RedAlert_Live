@@ -39,6 +39,19 @@ async function pollOref() {
       }
       // Tzeva Adom community API may return { alerts: [...] }; Oref relays return { title, data: [...] }.
       if (typeof parsed !== "object" || !parsed) throw new Error("unexpected alert response");
+      if (parsed.status === "success" && parsed.alerts_active === false) {
+        Object.assign(oref, { state: "ok", last: Date.now(), error: null, active: {}, title: null, category: null, rawCount: 0 });
+        return;
+      }
+      if (parsed.status === "success" && parsed.alerts_active === true && parsed.data) {
+        const data = parsed.data;
+        const cities = Array.isArray(data.locations) ? data.locations.filter(x => typeof x === "string") :
+          Array.isArray(data.data) ? data.data.filter(x => typeof x === "string") : [];
+        if (!cities.length) throw new Error("alert response has no locations");
+        const title = String(data.title || "התרעה");
+        Object.assign(oref, { state: "ok", last: Date.now(), error: null, active: { [title]: cities }, title, category: data.cat ?? null, rawCount: cities.length });
+        return;
+      }
       if (Array.isArray(parsed.alerts)) {
         const rows = parsed.alerts;
         const cities = [...new Set(rows.flatMap(x => {
