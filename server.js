@@ -90,7 +90,8 @@ const pickAreas = (active, areas) => {
   for (const [k, v] of Object.entries(active)) { const m = v.filter(c => areas.includes(c)); if (m.length) out[k] = m; }
   return out;
 };
-const orefOut = areas => {\n  const v = stale(oref, STALE);
+const orefOut = areas => {
+  const v = stale(oref, STALE);
   if (v.state !== "ok") return { ...v, active: {} };
   return areas && areas.length ? { ...v, active: pickAreas(v.active, areas), areaFiltered: true } : v;
 };
