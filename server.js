@@ -158,7 +158,7 @@ const server = http.createServer((req, res) => {
       .then(data => {
         const seen = new Set();
         const items = (data.articles || []).map(a => ({ id:a.url || a.title, title:a.title || "", link:a.url || "", sources:[a.domain || "מקור לא ידוע"], published:Date.parse(a.seendate || "") || Date.now(), description:"" }))
-          .filter(a => a.title && /^https?:\\/\\//.test(a.link) && !seen.has(a.link) && seen.add(a.link));
+          .filter(a => a.title && (a.link.startsWith("https://") || a.link.startsWith("http://")) && !seen.has(a.link) && seen.add(a.link));
         if (!res.headersSent) { res.writeHead(200, h); res.end(JSON.stringify({items, fetchedAt:new Date().toISOString(), source:"GDELT"})); }
       }).catch(() => { if (!res.headersSent) { res.writeHead(502, h); res.end(JSON.stringify({error:"news source unavailable"})); } });
     return;
