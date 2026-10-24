@@ -39,7 +39,7 @@
 #page-hotmap .card{background:#111b23;border-color:#283d48}
 #page-hotmap .section-title{font-size:16px}
 @media(max-width:600px){#page-hotmap .map-topline{align-items:flex-start;flex-direction:column}#hotmapPanel .map-toolbar{padding:14px;align-items:flex-start;flex-direction:column}#radarSvg{min-height:290px}#page-hotmap .map-test-box{grid-template-columns:1fr;padding:13px}#page-hotmap .hotmap-controls{display:grid;grid-template-columns:1fr 1fr}#page-hotmap .hotmap-controls label{grid-column:1/-1}#page-hotmap .hotmap-controls button{min-width:0}#page-hotmap #hotmapTestStatus{grid-column:1/-1}}
-</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 #radarMap{width:100%;height:clamp(360px,62vw,620px);background:#0b141c}
 .leaflet-container{background:#0b141c;font:13px system-ui}
@@ -51,7 +51,7 @@
 .live-city{background:#8ee4b4;border:2px solid #e4fff0;border-radius:50%;box-shadow:0 0 0 5px #8ee4b430}
 @media(max-width:600px){#radarMap{height:380px}}
 </style>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body><main class="wrap">
 <header class="top"><h1>RedAlert <span>Live</span></h1><div class="row"><span id="mode" class="status">הדגמה</span><span id="connection" class="status">בודק חיבור…</span></div></header>
@@ -154,9 +154,10 @@ $("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if
 let hotmapScenario="", radarMap=null, demoLayers=[], liveMapLayers=[], animationFrame=0;
 const mapPlaces={iran:[51.389,35.689],lebanon:[35.862,33.854],gaza:[34.466,31.501],israel:[34.851,31.046]};
 function initRadarMap(){
- if(!window.L||radarMap)return;
+ if(!window.L){const box=$("radarMap");if(box)box.innerHTML="<div style=\"padding:24px;color:#f3b5b5\">ספריית המפה לא נטענה. בדוק חיבור לאינטרנט ורענן את הדף.</div>";return}
+ if(radarMap)return;
  radarMap=L.map("radarMap",{zoomControl:true,scrollWheelZoom:false}).setView([32.2,39.2],5);
- L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:12,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(radarMap);
+ L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{subdomains:"abcd",maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'}).addTo(radarMap);
  radarMap.fitBounds([[27.5,31.5],[38.8,56.5]],{padding:[12,12]});
  setTimeout(()=>radarMap&&radarMap.invalidateSize(),250);
 }
