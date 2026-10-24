@@ -18,7 +18,7 @@
 <section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
 <section id="page-home">
 <div class="card"><div class="row"><input id="search" placeholder="חיפוש יישוב…" aria-label="חיפוש יישוב" style="flex:1;min-width:170px"></div><div id="alertList"></div></div>
-<div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="sound">בדיקת צליל</button><button id="enableNotifications">הפעלת התראות בדפדפן</button><button id="testNotification">בדיקת התראה</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
+<div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="sound">בדיקת צליל</button><button id="testNotification">בדיקת התראה</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
 </section>
 <section id="page-map" class="card hidden"><h2 class="section-title">Maps Live — מפת אירועים</h2><p class="muted">לפתיחת מפת OSINT חיצונית עם שכבות אירועים ודיווחים, לחצו על הכפתור. המפה החיצונית אינה חלק ממערכת ההתרעות הרשמית.</p><a class="map-link" href="https://iwm.diskin.net/" target="_blank" rel="noopener noreferrer">פתיחת Iran War Monitor ↗</a></section>
 <section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
@@ -98,8 +98,26 @@ function renderCityChoices(kind){const p=kind==="primary",set=p?primaryCities:se
 $("search").addEventListener("input",renderEvents);$("historySearch").addEventListener("input",renderHistory);
 function playAlertSound(which="classic"){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ctx=new A();ctx.resume().then(()=>{const s=ctx.currentTime;const siren=(at,duration,base,range,volume=.2)=>{const o=ctx.createOscillator(),g=ctx.createGain(),filter=ctx.createBiquadFilter();o.type="triangle";filter.type="lowpass";filter.frequency.value=1700;const step=.045;for(let t=0;t<=duration;t+=step){const phase=(t%duration);const hz=base+range*(.5-.5*Math.cos(2*Math.PI*phase/1.45));o.frequency.setValueAtTime(hz,at+t)}g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(volume,at+.16);g.gain.setValueAtTime(volume,at+duration-.16);g.gain.linearRampToValueAtTime(.0001,at+duration);o.connect(filter);filter.connect(g);g.connect(ctx.destination);o.start(at);o.stop(at+duration+.03)};const pulse=(at,duration,frequency,volume=.17)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=frequency;g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(volume,at+.025);g.gain.setValueAtTime(volume,at+duration-.04);g.gain.linearRampToValueAtTime(.0001,at+duration);o.connect(g);g.connect(ctx.destination);o.start(at);o.stop(at+duration+.02)};if(which==="classic"){siren(s,4.6,570,520,.2)}else if(which==="pulse"){for(let i=0;i<5;i++)pulse(s+i*.58,.38,880,.18)}else if(which==="double"){for(let i=0;i<3;i++){siren(s+i*1.15,.48,560,380,.17);siren(s+i*1.15+.53,.48,560,380,.17)}}else if(which==="low"){siren(s,4.6,360,300,.22)}else if(which==="triple"){for(let i=0;i<3;i++)siren(s+i*1.05,.78,520,420,.18)}else if(which==="bell"){for(let i=0;i<4;i++)pulse(s+i*.5,.28,740,.15)}setTimeout(()=>ctx.close().catch(()=>{}),5200)}).catch(()=>ctx.close().catch(()=>{}))}
 $("sound").onclick=()=>{audioUnlocked=true;playAlertSound(primarySound);$("soundmsg").textContent="דוגמת הצליל הראשי הופעלה. הצליל האוטומטי זמין כל עוד הדפדפן מאפשר זאת."};
-$("testNotification").onclick=async()=>{audioUnlocked=true;playAlertSound(primarySound);if(!("Notification"in window)){$("soundmsg").textContent="הדפדפן אינו תומך בהתראות מערכת. בדיקת הצליל הופעלה בלבד.";return}try{let p=Notification.permission;if(p==="default")p=await Notification.requestPermission();if(p==="granted"){const n=new Notification("בדיקת RedAlert Live",{body:"זו התראת בדיקה בלבד — אין מדובר בהתרעה אמיתית.",tag:"redalert-live-test-"+Date.now(),icon:"/icon.svg"});n.onclick=()=>{window.focus();n.close()};$("soundmsg").textContent="נשלחה התראת בדיקה. אם לא הופיעה, בדקו הרשאות ההתראות והגדרות המכשיר."}else{$("soundmsg").textContent=p==="denied"?"ההתראות חסומות. יש לאפשר אותן בהגדרות האתר/הדפדפן.":"לא ניתנה הרשאה; הצליל הופעל, אך לא נשלחה התראת מערכת."}}catch(e){$("soundmsg").textContent="לא ניתן להציג התראה: "+String(e.message||e)}};
-$("enableNotifications").onclick=async()=>{if(!("Notification"in window)){$("soundmsg").textContent="הדפדפן הזה אינו תומך בהתראות.";return}try{const p=await Notification.requestPermission();$("soundmsg").textContent=p==="granted"?"התראות הדפדפן אושרו. הן אינן Push אמיתי כשהאתר סגור.":p==="denied"?"ההתראות נחסמו בהגדרות הדפדפן.":"לא ניתנה הרשאה להתראות."}catch{$("soundmsg").textContent="לא ניתן להפעיל התראות בדפדפן הזה."}};
+$("testNotification").onclick=async()=>{
+ audioUnlocked=true;playAlertSound(primarySound);
+ const title="בדיקת RedAlert Live";
+ const options={body:"זו התראת בדיקה בלבד — אין מדובר בהתרעה אמיתית.",tag:"redalert-live-test-"+Date.now(),icon:"/icon.svg",data:{url:"/"}};
+ if(!("serviceWorker" in navigator) || !("Notification" in window)){
+   $("soundmsg").textContent="הדפדפן אינו תומך בהתראות מערכת דרך Service Worker. הצליל הופעל בלבד.";return;
+ }
+ try{
+   let permission=Notification.permission;
+   if(permission==="default") permission=await Notification.requestPermission();
+   if(permission!=="granted"){
+     $("soundmsg").textContent=permission==="denied"?"ההתראות חסומות. יש לאפשר אותן בהגדרות האתר/הדפדפן.":"לא ניתנה הרשאה להתראות; הצליל הופעל בלבד.";return;
+   }
+   const registration=await navigator.serviceWorker.ready;
+   await registration.showNotification(title,options);
+   $("soundmsg").textContent="התראת בדיקה נשלחה למערכת. זו בדיקה בלבד, לא התרעה אמיתית.";
+ }catch(e){
+   $("soundmsg").textContent="לא ניתן להציג התראת בדיקה: "+String(e.message||e);
+ }
+};
 $("testPrimarySound").onclick=()=>{playAlertSound(primarySound);audioUnlocked=true;$("settingsMsg").textContent="מושמעת דוגמה לצליל הראשי."};$("testSecondarySound").onclick=()=>{playAlertSound(secondarySound);audioUnlocked=true;$("settingsMsg").textContent="מושמעת דוגמה לצליל המשני."};
 $("primaryScope").onchange=()=>{primaryScope=$("primaryScope").value;store();renderEvents()};$("primarySound").onchange=()=>{primarySound=$("primarySound").value;store()};$("secondarySound").onchange=()=>{secondarySound=$("secondarySound").value;store()};
 $("primarySearch").addEventListener("input",()=>renderCityChoices("primary"));$("secondarySearch").addEventListener("input",()=>renderCityChoices("secondary"));
