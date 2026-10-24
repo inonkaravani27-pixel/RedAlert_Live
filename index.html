@@ -179,12 +179,30 @@ function initRadarMap(){
  radarMap.fitBounds([[27.5,31.5],[38.8,56.5]],{padding:[12,12]});
  setTimeout(()=>radarMap&&radarMap.invalidateSize(),250);
 }
-function clearDemoLayers(){if(animationFrame)cancelAnimationFrame(animationFrame);animationFrame=0;demoLayers.forEach(x=>{try{radarMap&&radarMap.removeLayer(x)}catch(e){}});demoLayers=[]}
+function clearDemoLayers(){if(animationFrame)cancelAnimationFrame(animationFrame);animationFrame=0;demoLayers.forEach(x=>{try{radarMap&&radarMap.removeLayer(x)}catch(e){}});demoLayers=[];document.querySelectorAll("#fallbackGeoMap .demo-overlay").forEach(x=>x.remove())}
 function renderHotmapScenario(scenario){hotmapScenario=scenario;clearDemoLayers();if($("hotmapScenarioName"))$("hotmapScenarioName").textContent="ממתין לבדיקה"}
 function runHotmapTest(){
- initRadarMap();if(!radarMap){$("hotmapTestStatus").textContent="לא ניתן לטעון את ספריית המפה. בדוק חיבור לאינטרנט.";return}
+ initRadarMap();
  clearDemoLayers();
  const choice=$("hotmapTestType").value;
+ if(!radarMap){
+  const svg=$("fallbackGeoMap");
+  if(!svg){$("hotmapTestStatus").textContent="המפה עדיין נטענת. נסה שוב בעוד רגע.";return}
+  const coords=choice.startsWith("iran")?{from:[675,135],to:[408,322],name:"מאיראן"}:choice.startsWith("lebanon")?{from:[405,245],to:[408,322],name:"מלבנון"}:{from:[365,375],to:[408,322],name:"מעזה"};
+  const ns="http://www.w3.org/2000/svg";
+  const make=(tag,attrs)=>{const el=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));el.classList.add("demo-overlay");svg.appendChild(el);return el};
+  make("path",{d:`M ${coords.from[0]} ${coords.from[1]} Q ${(coords.from[0]+coords.to[0])/2-15} ${(coords.from[1]+coords.to[1])/2-35} ${coords.to[0]} ${coords.to[1]}`,fill:"none",stroke:"#ff514e","stroke-width":"3","stroke-dasharray":"8 8"});
+  make("circle",{cx:coords.from[0],cy:coords.from[1],r:8,fill:"none",stroke:"#ff625c","stroke-width":"2"});
+  make("circle",{cx:coords.to[0],cy:coords.to[1],r:10,fill:"none",stroke:"#ff625c","stroke-width":"2"});
+  const rocket=make("circle",{cx:coords.from[0],cy:coords.from[1],r:6,fill:"#fff1f0",stroke:"#ff514e","stroke-width":"4"});
+  const start=performance.now(),duration=7000;
+  function animateFallback(now){const t=Math.min(1,(now-start)/duration);rocket.setAttribute("cx",coords.from[0]+(coords.to[0]-coords.from[0])*t);rocket.setAttribute("cy",coords.from[1]+(coords.to[1]-coords.from[1])*t-30*Math.sin(Math.PI*t));if(t<1)animationFrame=requestAnimationFrame(animateFallback);else $("hotmapTestStatus").textContent="הסימולציה הסתיימה. זהו מסלול המחשה מומצא בלבד."}
+  animationFrame=requestAnimationFrame(animateFallback);
+  $("hotmapScenarioName").textContent="סימולציה: "+coords.name;
+  $("hotmapTestStatus").textContent="סימולציה פועלת על מפת המכ״ם המקומית — המחשה בלבד, לא נתון חי.";
+  $("hotmapTestStatus").className="hotmap-note";
+  return;
+ }
  let origin="iran",label="טיל מתפצל";
  if(choice==="iran-normal"){origin="iran";label="טיל רגיל"}
  if(choice==="lebanon-missile"){origin="lebanon";label="טיל"}
