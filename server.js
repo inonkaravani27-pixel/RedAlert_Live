@@ -166,7 +166,7 @@ const server = http.createServer((req, res) => {
       .then(data => {
         const seen = new Set();
         const items = (data.articles || []).map(a => ({id:a.url || a.title, title:a.title || "", link:a.url || "", sources:[a.domain || "מקור לא ידוע"], published:Date.parse(a.seendate || "") || null, description:""}))
-          .filter(a => a.title && a.link && /^https?:\\/\\//i.test(a.link) && !seen.has(a.link) && seen.add(a.link)).slice(0,20);
+          .filter(a => a.title && a.link && a.link.startsWith("https://") || a.link.startsWith("http://") && !seen.has(a.link) && seen.add(a.link)).slice(0,20);
         clearTimeout(timer);
         if (!res.headersSent) { res.writeHead(200, h); res.end(JSON.stringify({items, fetchedAt:new Date().toISOString(), source:"GDELT"})); }
       }).catch(() => {
