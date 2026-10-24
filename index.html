@@ -135,6 +135,17 @@ $("systemTest").onclick=async()=>{
   box.textContent="בדיקת מקור נכשלה: "+String(e.message||e)+". לא ניתן לאמת את המקור; בדקו את יישומון פיקוד העורף.";
  }
 };
+function processNewAlertEvent({key,cities=[],test=false}={}){
+ if(!key)return false;
+ const storageKey="ral-seen-alert-events";
+ let seen=[];
+ try{seen=JSON.parse(localStorage.getItem(storageKey)||"[]");if(!Array.isArray(seen))seen=[]}catch{seen=[]}
+ if(seen.includes(key))return false;
+ seen.push(key);seen=seen.slice(-200);
+ try{localStorage.setItem(storageKey,JSON.stringify(seen))}catch{}
+ triggerAlertUI({test,cities});
+ return true;
+}
 function triggerAlertUI({test=false,cities=[]}={}){
  if(audioUnlocked)playAlertSound(primarySound);
  showInAppAlert({test,cities});
