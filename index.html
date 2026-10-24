@@ -7,57 +7,12 @@
 :root{color-scheme:dark;--bg:#0c0e12;--card:#161a21;--line:#2b313c;--tx:#f2f4f8;--mut:#9ca7b7;--red:#f04444;--green:#35d07f;--amber:#f6b73c;--blue:#72a7ff}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.55 system-ui,Arial,sans-serif}.wrap{max-width:1000px;margin:auto;padding:16px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}h1{font-size:24px;margin:0}h1 span{color:var(--red)}.muted,small{color:var(--mut)}.status{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:5px 10px}.banner{margin:14px 0;border:1px solid #6c4f1a;background:#211b10;color:#ffd477;border-radius:12px;padding:10px;text-align:center;font-size:13px}.hero,.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0}.hero{text-align:center;padding:24px 14px}.hero .big{font-size:23px;font-weight:750}.hero.alert{border-color:var(--red);background:#2a1418}.hero .sub{color:var(--mut);margin-top:5px}.nav{display:flex;gap:7px;overflow:auto;padding:4px 0 9px}.nav button{white-space:nowrap}.nav button.active{background:#382026;border-color:#81343d;color:#fff}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid .card{margin:0}.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}button,input,select{font:inherit;color:var(--tx);background:#1c222b;border:1px solid var(--line);border-radius:10px;padding:10px}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid var(--amber)}button.primary{background:#762b35;border-color:#a94350}button:disabled{opacity:.5}.item{padding:12px 0;border-top:1px solid var(--line)}.item:first-child{border-top:0}.itemhead{display:flex;justify-content:space-between;gap:8px;align-items:start}.tag{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:2px 6px;color:var(--mut)}.tag.demo{color:#ffd477;border-color:#72551d}.tag.live{color:#82e7ad;border-color:#286443}.star{font-size:20px;padding:3px 8px}.empty{padding:18px 4px;color:var(--mut);text-align:center}.field{width:100%;margin:8px 0}.section-title{font-size:18px;margin:0 0 8px}.foot{text-align:center;color:var(--mut);font-size:12px;margin:22px 0}.hidden{display:none!important}.ok{color:var(--green)}.err{color:var(--amber)}a{color:var(--blue)}label{display:block;margin:8px 0}
 @media(max-width:600px){.wrap{padding:12px}.grid{grid-template-columns:1fr}.hero .big{font-size:20px}h1{font-size:22px}.nav button{padding:8px 10px}}
-</style><style>
-#page-hotmap{--map-border:#253641}
-#page-hotmap .map-topline{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0 14px;padding:4px 2px}
-#page-hotmap .map-topline strong{font-size:20px;letter-spacing:-.3px}
-#page-hotmap .map-topline p,#page-hotmap .map-toolbar p,#page-hotmap .map-test-box p{margin:3px 0 0;color:#8fa4b2;font-size:12px}
-#page-hotmap .map-live-pill{display:flex;align-items:center;gap:8px;border:1px solid #26483e;background:#10251f;color:#9ce6c0;padding:7px 11px;border-radius:999px;font-size:12px;white-space:nowrap}
-#page-hotmap .map-live-pill i,.map-state-dot{width:7px;height:7px;border-radius:50%;background:#43d98a;box-shadow:0 0 12px #43d98a;display:inline-block}
-#hotmapPanel{border:1px solid #253641;border-radius:18px;overflow:hidden;background:#0b141c;box-shadow:0 16px 40px #0004}
-#hotmapPanel .map-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 20px;background:linear-gradient(115deg,#14232d,#0c151d);border-bottom:1px solid #253641}
-#hotmapPanel .map-toolbar h2{margin:3px 0 0;font-size:21px;letter-spacing:-.4px}
-#hotmapPanel .map-kicker{font-size:10px;letter-spacing:1.7px;color:#77a7b9;font-weight:700}
-#hotmapPanel .map-toolbar-state{display:flex;align-items:center;gap:8px}
-#hotmapHead{padding:10px 18px;background:#101c25;border-bottom:1px solid #243742;color:#c8d8df;font-size:12px}
-#radarSvg{min-height:360px;max-height:620px;background:radial-gradient(ellipse at 48% 50%,#173a46 0,#0c1b25 55%,#081018 100%)}
-#page-hotmap .radar-land{fill:#1a3039;stroke:#4b6874;stroke-width:1.2}
-#page-hotmap .radar-country{font:600 13px system-ui;fill:#c0d3dc;paint-order:stroke;stroke:#0a1721;stroke-width:3px;stroke-linejoin:round}
-#page-hotmap .radar-grid{stroke:#2c4c59;opacity:.4}
-#page-hotmap .radar-route,#page-hotmap .radar-intercept{display:none}
-#page-hotmap .radar-legend{background:#0d1820;padding:13px 18px;border-top:1px solid #243742;color:#aabdc7}
-#page-hotmap .map-test-box{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,2fr);gap:16px;align-items:start;margin:12px 0;padding:17px;border:1px solid #273c48;border-radius:16px;background:linear-gradient(135deg,#121e27,#0e171f)}
-#page-hotmap .map-test-box h3{font-size:16px;margin:0}
-#page-hotmap .hotmap-controls{margin:0;display:flex;align-items:end;gap:8px;flex-wrap:wrap}
-#page-hotmap .hotmap-controls label{flex:1;min-width:190px}
-#page-hotmap .hotmap-controls .field{margin:6px 0 0}
-#page-hotmap .hotmap-controls button{min-height:42px;border-radius:11px;background:#192832;border-color:#344a56}
-#page-hotmap .hotmap-controls button.primary{background:#8b303a;border-color:#bd4a55}
-#page-hotmap #hotmapTestStatus{grid-column:1/-1;font-size:12px}
-#page-hotmap .hotmap-stat{background:#101c24;border-color:#293e49;padding:14px}
-#page-hotmap .hotmap-stat b{font-size:20px;margin:4px 0}
-#page-hotmap .card{background:#111b23;border-color:#283d48}
-#page-hotmap .section-title{font-size:16px}
-@media(max-width:600px){#page-hotmap .map-topline{align-items:flex-start;flex-direction:column}#hotmapPanel .map-toolbar{padding:14px;align-items:flex-start;flex-direction:column}#radarSvg{min-height:290px}#page-hotmap .map-test-box{grid-template-columns:1fr;padding:13px}#page-hotmap .hotmap-controls{display:grid;grid-template-columns:1fr 1fr}#page-hotmap .hotmap-controls label{grid-column:1/-1}#page-hotmap .hotmap-controls button{min-width:0}#page-hotmap #hotmapTestStatus{grid-column:1/-1}}
-</style><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
-<style>
-#radarMap{width:100%;height:clamp(360px,62vw,620px);background:#0b141c}
-.leaflet-container{background:#0b141c;font:13px system-ui}
-.leaflet-control-attribution{font-size:9px!important}
-.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#101c25;color:#e9f2f7}
-.leaflet-control-zoom a{background:#101c25!important;color:#e9f2f7!important;border-color:#344a56!important}
-.sim-rocket{font-size:24px;line-height:28px;text-shadow:0 0 10px #ff4545,0 0 18px #ff454588;filter:drop-shadow(0 0 3px #ff4545)}
-.sim-origin{background:#ff514e;border:2px solid #ffe2e2;border-radius:50%;box-shadow:0 0 0 7px #ff514e30,0 0 18px #ff514e}
-.live-city{background:#8ee4b4;border:2px solid #e4fff0;border-radius:50%;box-shadow:0 0 0 5px #8ee4b430}
-@media(max-width:600px){#radarMap{height:380px}}
-</style>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-</head>
+</style></head>
 <body><main class="wrap">
 <header class="top"><h1>RedAlert <span>Live</span></h1><div class="row"><span id="mode" class="status">הדגמה</span><span id="connection" class="status">בודק חיבור…</span></div></header>
-
+<div class="banner">כלי משלים בלבד — אינו שירות רשמי ואינו תחליף ליישומון פיקוד העורף. אין להסתמך עליו להצלת חיים.</div>
 <nav class="nav" id="nav">
-<button class="active" data-page="home">ראשי</button><button data-page="history">היסטוריה</button><button data-page="prelim">דיווחים ראשוניים</button><button data-page="hotmap"><span class="live-dot" aria-hidden="true"></span>Maps Live</button><button data-page="settings">הגדרות</button>
+<button class="active" data-page="home">ראשי</button><button data-page="history">היסטוריה</button><button data-page="prelim">דיווחים ראשוניים</button><button data-page="settings">הגדרות</button>
 </nav>
 <section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
 <section id="page-home">
@@ -66,45 +21,6 @@
 </section>
 <section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
 <section id="page-prelim" class="card hidden"><h2 class="section-title">דיווחים ראשוניים</h2><p class="muted">דיווחים חדשותיים אינם התרעות רשמיות ואינם מעידים ששיגור קרוב.</p><div id="pre"></div></section>
-<section id="page-hotmap" class="hidden">
-<style>
-/* Hot map visual refresh */
-.live-dot{display:inline-block;width:9px;height:9px;background:#ff303b;border-radius:50%;margin-left:7px;box-shadow:0 0 0 0 #ff303b99;animation:liveBlink 1.15s ease-out infinite;vertical-align:middle}@keyframes liveBlink{0%{opacity:1;box-shadow:0 0 0 0 #ff303b99}65%{opacity:.45;box-shadow:0 0 0 7px #ff303b00}100%{opacity:1;box-shadow:0 0 0 0 #ff303b00}}
-#page-hotmap{color:#e9f2f7}
-#hotmapPanel{background:linear-gradient(145deg,#071018,#0b1a24 55%,#081019);border:1px solid #243d4c;box-shadow:0 18px 45px #0006}
-#hotmapHead{background:linear-gradient(90deg,#101f2b,#0b151e);padding:18px 20px}
-#hotmapHead b{font-size:18px;letter-spacing:.2px}
-#radarSvg{min-height:360px;max-height:680px;background:radial-gradient(ellipse at 48% 50%,#143440 0,#0a1721 52%,#081018 100%)}
-.radar-land{fill:#19323d;stroke:#426574;stroke-width:1.4}
-.radar-country{font:600 13px system-ui;fill:#a9c5d0;paint-order:stroke;stroke:#0a1721;stroke-width:3px;stroke-linejoin:round}
-.radar-grid{stroke:#315261;opacity:.48}
-.radar-route{stroke:#ff625c;stroke-width:3;filter:drop-shadow(0 0 5px #ff625c88)}
-.radar-intercept{stroke:#72d4ff;stroke-width:3;filter:drop-shadow(0 0 5px #72d4ff88)}
-.radar-legend{background:#0c1821;padding:13px 16px}
-.hotmap-controls button{flex:1;min-width:145px;background:#111f2a;border-color:#2a4655;transition:background .15s,border-color .15s}
-.hotmap-controls button.active{background:#183b4a;border-color:#4fabc5;box-shadow:inset 0 0 0 1px #4fabc544}
-.hotmap-stat{background:linear-gradient(145deg,#14232d,#0e1821);border-color:#294552}
-.hotmap-note{background:#201c12;border-color:#6b5524;color:#f6d58b}
-#page-hotmap>.card{background:#111a22;border-color:#283d49}
-#page-hotmap .section-title{font-size:17px}
-@media(max-width:600px){#radarSvg{min-height:300px}.radar-country{font-size:14px}.hotmap-controls button{min-width:120px}}
-</style>
-<style>
-#hotmapPanel{background:radial-gradient(ellipse at 50% 45%,#10232b 0,#0b141c 52%,#090d13 100%);border:1px solid #263e4b;border-radius:16px;overflow:hidden}
-#hotmapHead{padding:14px;border-bottom:1px solid #263e4b;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-#radarSvg{display:block;width:100%;height:auto;min-height:300px;max-height:620px}
-.radar-grid{stroke:#294451;stroke-width:1;fill:none;opacity:.55}.radar-land{fill:#1c3038;stroke:#58717b;stroke-width:1.4}.radar-country{font:12px system-ui;fill:#9fb7c1}.radar-city{font:10px system-ui;fill:#d5e3e8}.radar-route{fill:none;stroke:#ff625c;stroke-width:2.5;stroke-dasharray:7 8;animation:routeFlow 1.4s linear infinite;display:none}.radar-intercept{fill:none;stroke:#63c9ff;stroke-width:2.5;stroke-dasharray:5 7;animation:routeFlow .9s linear infinite;display:none}.radar-dot{filter:drop-shadow(0 0 5px currentColor)}.radar-scan{transform-origin:50% 50%;animation:scan 6s linear infinite}.radar-pulse{animation:pulse 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}.radar-fragment{animation:fragment 2.2s ease-out infinite alternate}.radar-legend{display:flex;gap:12px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid #263e4b;color:#b8c9d0;font-size:12px}.radar-legend span{display:inline-flex;align-items:center;gap:6px}.radar-key{width:9px;height:9px;border-radius:50%;display:inline-block}.hotmap-controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.hotmap-controls button.active{border-color:#5e9fba;background:#183541}.hotmap-note{border:1px solid #72551d;background:#211b10;color:#ffd477;padding:10px 12px;border-radius:10px;font-size:13px;margin:12px 0}.hotmap-stat{background:#111a21;border:1px solid #263e4b;border-radius:10px;padding:10px;min-width:110px;flex:1}.hotmap-stat b{display:block;font-size:18px}@keyframes routeFlow{to{stroke-dashoffset:-30}}@keyframes scan{to{transform:rotate(360deg)}}@keyframes pulse{0%{opacity:.85;r:3}100%{opacity:0;r:14}}@keyframes fragment{to{transform:translate(10px,-12px);opacity:.3}}@media(prefers-reduced-motion:reduce){.radar-route,.radar-intercept,.radar-scan,.radar-pulse,.radar-fragment{animation:none}}
-</style>
-<div class="map-topline"><div><strong>תמונת מצב אזורית</strong><p>מפת מעקב · התרעות פעילות לפי יישוב</p></div><span class="map-live-pill"><i></i> מקור התרעות נבדק כל 10 שניות</span></div>
-<div id="hotmapPanel"><div class="map-toolbar"><div><span class="map-kicker">REDALERT / LIVE MONITOR</span><h2>מפת התרעות</h2><p>מיקום התרעות לפי יישוב · אין נתוני מסלול טיל חי</p></div><div class="map-toolbar-state"><span class="map-state-dot"></span><span id="hotmapLiveBadge" class="status">בודק מקור…</span></div></div>
-<div id="hotmapHead"><b>מזרח הים התיכון</b><span class="muted">מפה גאוגרפית · מסלולים מדומים מסומנים</span></div>
-<div id="radarMap" role="img" aria-label="מפה גאוגרפית של המזרח התיכון. מסלולים מופיעים רק בהפעלת הדגמה."></div>
-<div class="radar-legend"><span><i class="radar-key" style="background:#8ee4b4"></i>יישוב עם התרעה פעילה לפי המקור</span><span><i class="radar-key" style="background:#ff625c"></i>מסלול סימולציה — רק בלחיצה</span></div>
-</div>
-<div class="map-test-box"><div><h3>בדיקת אנימציה</h3><p>המחשה בלבד — לא נתון מבצעי ולא התרעה אמיתית.</p></div><div class="hotmap-controls"><label style="flex:1;min-width:220px;margin:0">סוג בדיקה<select id="hotmapTestType" class="field"><option value="iran-cluster">מאיראן — טיל מתפצל</option><option value="iran-normal">מאיראן — טיל רגיל</option><option value="lebanon-missile">מלבנון — טיל</option><option value="lebanon-uav">מלבנון — כטב״ם</option><option value="gaza-missile">מעזה — טיל רגיל</option></select></label><button id="hotmapTest" class="primary">▶ בדיקה</button><button id="hotmapReset">איפוס</button></div><div id="hotmapTestStatus" class="muted" aria-live="polite">המפה ממתינה לבדיקה.</div></div>
-<div class="grid"><div class="hotmap-stat"><span class="muted">מצב הדגמה</span><b id="hotmapScenarioName">מסלול מאיראן</b><small>אנימציה מדומה בלבד</small></div><div class="hotmap-stat"><span class="muted">נתונים חיים</span><b id="hotmapLiveCount">אין אימות</b><small>מופיעים בנפרד מהסימולציה</small></div></div>
-<div class="card"><h3 class="section-title">אירועים חיים — תצוגת יישובים בלבד</h3><p class="muted">כאשר המקור החיצוני מדווח התרעה, נציג סמן ביישוב המתאים. אין כאן נתוני מסלול טיל, שיגור או יירוט בזמן אמת, והסמנים סכמטיים.</p><div id="hotmapLiveList" class="empty">ממתין לאימות מהמקור.</div></div>
-</section>
 <section id="page-settings" class="card hidden">
 <h2 class="section-title">הגדרות התרעות</h2>
 <div class="card"><h3 class="section-title">התרעות ראשיות</h3>
@@ -113,11 +29,11 @@
 <label>יישובים לאזור הראשי</label><input id="primarySearch" class="field" placeholder="חיפוש יישוב"><div id="primaryChoices"></div></div>
 <div class="card"><h3 class="section-title">אזורים משניים — יישובים שאני נמצא בהם</h3><p class="muted">סמן יישובים כמו הבית והעבודה. אפשר להגדיר להם צליל נפרד.</p>
 <input id="secondarySearch" class="field" placeholder="חיפוש יישוב משני"><div id="secondaryChoices"></div>
-<label>צליל לאזור משני<select id="secondarySound" class="field"><option value="classic">סירנה רציפה עולה ויורדת</option><option value="pulse">סירנה קצרה ורכה</option><option value="double">שתי סריקות מתחלפות</option><option value="low">סירנה עמוקה</option><option value="triple">שלושה גלים רציפים</option><option value="bell">טון גבוה מתמשך</option></select></label><button id="testSecondarySound">▶ השמע דוגמה</button></div>
+<label>צליל לאזור משני<select id="secondarySound" class="field"><option value="classic">סירנה עולה ויורדת</option><option value="pulse">פולסים מהירים</option><option value="double">שני צלילים מתחלפים</option><option value="low">צליל נמוך</option><option value="triple">שלושה רצפים</option><option value="bell">צליל אלקטרוני חד</option></select></label><button id="testSecondarySound">▶ השמע דוגמה</button></div>
 <div class="card"><h3 class="section-title">צליל להתרעות ראשיות</h3><label>בחר צליל<select id="primarySound" class="field"><option value="classic">סירנה עולה ויורדת</option><option value="pulse">פולסים מהירים</option><option value="double">שני צלילים מתחלפים</option><option value="low">צליל נמוך</option><option value="triple">שלושה רצפים</option><option value="bell">צליל אלקטרוני חד</option></select></label><button id="testPrimarySound">▶ השמע דוגמה</button>
 <label><input type="checkbox" id="autoSound"> אפשר צליל אוטומטי כאשר מזוהה שינוי חדש במקור (רק כשהדף פתוח)</label><label><input type="checkbox" id="demoToggle"> הצג נתוני הדגמה (לא התרעות אמיתיות)</label>
 <p class="muted">אלה צלילים אלקטרוניים שנוצרים במכשיר, לא הקלטות רשמיות. אין Push ברקע. האפליקציה אינה תחליף ליישומון פיקוד העורף.</p><button id="clearHistory">נקה היסטוריה מקומית</button><div id="settingsMsg" class="muted"></div></div></section>
-<footer class="foot"><details><summary style="cursor:pointer">מידע חשוב על אמינות הנתונים</summary><p>RedAlert Live הוא כלי משלים ולא שירות רשמי. התרעות יישובים עשויות להתעכב או להיות חלקיות; מסלולי טילים חיים אינם זמינים במקור המחובר כרגע. אין להסתמך על האתר במקום יישומון פיקוד העורף.</p></details></footer>
+<footer class="foot">RedAlert Live — כלי משלים בלבד. הנתונים החיים תלויים בזמינות מקור חיצוני ואינם שירות התרעה מאושר.</footer>
 </main>
 <script>
 const $=id=>document.getElementById(id);
@@ -148,92 +64,8 @@ let autoSound=localStorage.getItem("ral-autosound")==="true";
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function allEvents(){return (demo?demoEvents:realEvents).filter(x=>primaryScope==="all"||primaryCities.has(x.city)||secondaryCities.has(x.city))}
 function store(){localStorage.setItem("ral-history",JSON.stringify(history.slice(0,300)));localStorage.setItem("ral-demo",String(demo));localStorage.setItem("ral-autosound",String(autoSound));localStorage.setItem("ral-primary-cities",JSON.stringify([...primaryCities]));localStorage.setItem("ral-secondary-cities",JSON.stringify([...secondaryCities]));localStorage.setItem("ral-primary-scope",primaryScope);localStorage.setItem("ral-primary-sound",primarySound);localStorage.setItem("ral-secondary-sound",secondarySound)}
-function setPage(page){document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","hotmap","settings"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page));if(page==="hotmap"){initRadarMap();setTimeout(()=>{if(radarMap)radarMap.invalidateSize()},120)}}
+function setPage(page){document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","settings"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page))}
 $("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)});
-
-let hotmapScenario="", radarMap=null, demoLayers=[], liveMapLayers=[], animationFrame=0;
-const mapPlaces={iran:[51.389,35.689],lebanon:[35.862,33.854],gaza:[34.466,31.501],israel:[34.851,31.046]};
-function initRadarMap(){
- if(!window.L){
-   const box=$("radarMap");
-   if(box){box.innerHTML=`<svg id="fallbackGeoMap" viewBox="0 0 900 560" role="img" aria-label="תצוגת מכ"ם סכמטית של ישראל והאזורים" style="display:block;width:100%;height:100%;min-height:360px;background:#06131a">
-<defs><radialGradient id="radarBg"><stop stop-color="#123a3c"/><stop offset="1" stop-color="#06131a"/></radialGradient><pattern id="radarGrid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" fill="none" stroke="#1d5550" stroke-width=".7"/></pattern><clipPath id="scopeClip"><circle cx="450" cy="280" r="235"/></clipPath></defs>
-<rect width="900" height="560" fill="#06131a"/><rect width="900" height="560" fill="url(#radarGrid)"/>
-<g clip-path="url(#scopeClip)"><circle cx="450" cy="280" r="235" fill="url(#radarBg)" stroke="#2c776b" stroke-width="1.5"/><g fill="none" stroke="#276b60" stroke-width="1"><circle cx="450" cy="280" r="185"/><circle cx="450" cy="280" r="135"/><circle cx="450" cy="280" r="85"/><path d="M215 280H685M450 45V515M284 114L616 446M284 446L616 114"/></g><path class="radar-sweep-local" d="M450 280L450 45A235 235 0 0 1 616 114Z" fill="#39c89a" opacity=".14"/><path d="M420 95L430 132 425 165 442 192 436 221 451 248 445 274 459 297 452 326 463 351 454 379 471 410 466 444 486 465 488 495 520 515 547 560H338L348 528 340 499 359 471 365 443 378 416 383 386 398 357 397 328 410 301 405 273 418 248 411 220 425 193 419 165 432 135Z" fill="#23463f" stroke="#63b6a0" stroke-width="2"/>
-<path d="M420 95L430 132 425 165 442 192 436 221 451 248 445 274 459 297 452 326 463 351 454 379 471 410 466 444 486 465 488 495 520 515" fill="none" stroke="#6ee7b7" stroke-width="1.5" stroke-dasharray="3 5"/>
-<g font-family="system-ui,Arial" fill="#b7dcd2" font-size="13"><text x="450" y="72" text-anchor="middle">לבנון</text><text x="510" y="105">סוריה</text><text x="520" y="210">ירדן</text><text x="380" y="455">מצרים</text><text x="275" y="255" fill="#6eaaa9">הים התיכון</text></g>
-<g font-family="system-ui,Arial" font-size="12" fill="#effff8" text-anchor="start"><circle cx="432" cy="204" r="4" fill="#71e7b2"/><text x="442" y="208">חיפה</text><circle cx="428" cy="250" r="4" fill="#71e7b2"/><text x="438" y="254">תל אביב</text><circle cx="448" cy="293" r="4" fill="#71e7b2"/><text x="458" y="297">ירושלים</text><circle cx="442" cy="359" r="4" fill="#71e7b2"/><text x="452" y="363">באר שבע</text><circle cx="421" cy="405" r="4" fill="#71e7b2"/><text x="431" y="409">אילת</text><circle cx="424" cy="175" r="4" fill="#71e7b2"/><text x="434" y="179">קריית שמונה</text><circle cx="420" cy="279" r="4" fill="#71e7b2"/><text x="390" y="276" text-anchor="end">אשקלון</text><circle cx="427" cy="265" r="4" fill="#71e7b2"/><text x="417" y="262" text-anchor="end">אשדוד</text></g></g>
-<g transform="translate(22 20)"><rect width="250" height="48" rx="10" fill="#0d2428" stroke="#28675d"/><circle cx="17" cy="17" r="4" fill="#56e0a2"/><text x="31" y="21" fill="#d7fff0" font-family="system-ui,Arial" font-size="13">REDALERT · מכ"ם אזורי</text><text x="14" y="38" fill="#8bbdb0" font-family="system-ui,Arial" font-size="10">מפה סכמטית · ללא מסלולים מבצעיים</text></g>
-<text x="878" y="540" text-anchor="end" fill="#6c9e94" font-family="system-ui,Arial" font-size="11">המחשה בלבד · לא תחליף לפיקוד העורף</text></svg>`;}}
-   return;
-  }
- if(radarMap)return;
- radarMap=L.map("radarMap",{zoomControl:true,scrollWheelZoom:false}).setView([32.2,39.2],5);
- L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{subdomains:"abcd",maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'}).addTo(radarMap);
- radarMap.fitBounds([[27.5,31.5],[38.8,56.5]],{padding:[12,12]});
- setTimeout(()=>radarMap&&radarMap.invalidateSize(),250);
-}
-function clearDemoLayers(){if(animationFrame)cancelAnimationFrame(animationFrame);animationFrame=0;demoLayers.forEach(x=>{try{radarMap&&radarMap.removeLayer(x)}catch(e){}});demoLayers=[];document.querySelectorAll("#fallbackGeoMap .demo-overlay").forEach(x=>x.remove())}
-function renderHotmapScenario(scenario){hotmapScenario=scenario;clearDemoLayers();if($("hotmapScenarioName"))$("hotmapScenarioName").textContent="ממתין לבדיקה"}
-function runHotmapTest(){
- initRadarMap();
- clearDemoLayers();
- const choice=$("hotmapTestType").value;
- if(!radarMap){
-  const svg=$("fallbackGeoMap");
-  if(!svg){$("hotmapTestStatus").textContent="המפה עדיין נטענת. נסה שוב בעוד רגע.";return}
-  const coords=choice.startsWith("iran")?{from:[675,135],to:[408,322],name:"מאיראן"}:choice.startsWith("lebanon")?{from:[405,245],to:[408,322],name:"מלבנון"}:{from:[365,375],to:[408,322],name:"מעזה"};
-  const ns="http://www.w3.org/2000/svg";
-  const make=(tag,attrs)=>{const el=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));el.classList.add("demo-overlay");svg.appendChild(el);return el};
-  make("path",{d:`M ${coords.from[0]} ${coords.from[1]} Q ${(coords.from[0]+coords.to[0])/2-15} ${(coords.from[1]+coords.to[1])/2-35} ${coords.to[0]} ${coords.to[1]}`,fill:"none",stroke:"#ff514e","stroke-width":"3","stroke-dasharray":"8 8"});
-  make("circle",{cx:coords.from[0],cy:coords.from[1],r:8,fill:"none",stroke:"#ff625c","stroke-width":"2"});
-  make("circle",{cx:coords.to[0],cy:coords.to[1],r:10,fill:"none",stroke:"#ff625c","stroke-width":"2"});
-  const rocket=make("text",{x:coords.from[0],y:coords.from[1],fill:"#ff655e","font-size":choice==="lebanon-uav"?"25":"28","text-anchor":"middle","dominant-baseline":"middle"});rocket.textContent=choice==="lebanon-uav"?"✈":"🚀";
-  const start=performance.now(),duration=7000;
-  function animateFallback(now){const t=Math.min(1,(now-start)/duration);rocket.setAttribute("x",coords.from[0]+(coords.to[0]-coords.from[0])*t);rocket.setAttribute("y",coords.from[1]+(coords.to[1]-coords.from[1])*t-30*Math.sin(Math.PI*t));if(choice==="iran-cluster"&&t>.38&&!svg.querySelector(".demo-fragment")){[0,1,2].forEach((n)=>{const f=make("text",{x:coords.from[0]+(coords.to[0]-coords.from[0])*.38,y:coords.from[1]+(coords.to[1]-coords.from[1])*.38,"font-size":"23",fill:"#ff9b62","text-anchor":"middle","class":"demo-fragment"});f.textContent="🚀";f.setAttribute("data-branch",n);f.setAttribute("transform",`translate(${(n-1)*18} ${n*12})`)})}if(t<1)animationFrame=requestAnimationFrame(animateFallback);else $("hotmapTestStatus").textContent="הסימולציה הסתיימה. זהו מסלול המחשה מומצא בלבד."}
-  animationFrame=requestAnimationFrame(animateFallback);
-  $("hotmapScenarioName").textContent="סימולציה: "+coords.name;
-  $("hotmapTestStatus").textContent="סימולציה פועלת על מפת המכ״ם המקומית — המחשה בלבד, לא נתון חי.";
-  $("hotmapTestStatus").className="hotmap-note";
-  return;
- }
- let origin="iran",label="טיל מתפצל";
- if(choice==="iran-normal"){origin="iran";label="טיל רגיל"}
- if(choice==="lebanon-missile"){origin="lebanon";label="טיל"}
- if(choice==="lebanon-uav"){origin="lebanon";label="כטב״ם"}
- if(choice==="gaza-missile"){origin="gaza";label="טיל"}
- const from=mapPlaces[origin],to=origin==="iran"?[35.0,32.0]:origin==="lebanon"?[34.9,32.8]:[34.6,31.9];
- const route=L.polyline([from,to],{color:"#ff514e",weight:3,opacity:.95,dashArray:"8 8"}).addTo(radarMap);
- const source=L.marker(from,{icon:L.divIcon({className:"",html:'<div class="sim-origin"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).bindPopup("נקודת מוצא מדומה · "+({iran:"איראן",lebanon:"לבנון",gaza:"עזה"}[origin])).addTo(radarMap);
- const target=L.circleMarker(to,{radius:7,color:"#ffe6e6",weight:2,fillColor:"#ff514e",fillOpacity:.95}).bindPopup("יעד המחשה בלבד — אין כאן התרעה אמיתית").addTo(radarMap);
- const rocket=L.marker(from,{icon:L.divIcon({className:"",html:'<div class="sim-rocket">'+(choice==="lebanon-uav"?"✈":"🚀")+'</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(radarMap);
- demoLayers.push(route,source,target,rocket);
- if(choice==="iran-cluster"){
-  [[34.7,32.8],[35.1,33.2],[34.4,33.4]].forEach((p)=>{const branch=L.polyline([from,p],{color:"#ff9b62",weight:2,opacity:.9,dashArray:"4 7"}).addTo(radarMap);demoLayers.push(branch)});
- }
- const start=performance.now(),duration=9000;
- function animate(now){if(!radarMap)return;const t=Math.min(1,(now-start)/duration);const lat=from[0]+(to[0]-from[0])*t,lon=from[1]+(to[1]-from[1])*t+Math.sin(t*Math.PI)*.55;rocket.setLatLng([lat,lon]);if(t<1)animationFrame=requestAnimationFrame(animate);else $("hotmapTestStatus").textContent="הסימולציה הסתיימה. המסלול והנקודות מומצאים ואינם נתונים חיים."}
- animationFrame=requestAnimationFrame(animate);
- $("hotmapScenarioName").textContent="סימולציה: "+({iran:"מאיראן",lebanon:"מלבנון",gaza:"מעזה"}[origin])+" · "+label;
- $("hotmapTestStatus").textContent="מצב סימולציה — "+label+" "+({iran:"מאיראן",lebanon:"מלבנון",gaza:"מעזה"}[origin])+". סמל נע לאורך מסלול מומצא לצורך בדיקת הממשק בלבד.";
- $("hotmapTestStatus").className="hotmap-note";
- radarMap.fitBounds(route.getBounds(),{padding:[55,55],maxZoom:6});
-}
-$("hotmapTest").addEventListener("click",runHotmapTest);
-$("hotmapReset").addEventListener("click",()=>{clearDemoLayers();$("hotmapScenarioName").textContent="ממתין לבדיקה";$("hotmapTestStatus").textContent="המפה ממתינה. לחיצה על „בדיקה” תפעיל סימולציה בלבד."; $("hotmapTestStatus").className="muted";if(radarMap)radarMap.fitBounds([[27.5,31.5],[38.8,56.5]],{padding:[12,12]})});
-
-function renderHotmapLive(){
- const el=$("hotmapLiveList");if(!el)return;
- const valid=!!(liveState&&liveState.oref&&liveState.oref.state==="ok");
- const active=valid?realEvents:[];
- $("hotmapLiveBadge").textContent=valid?"מקור מגיב — ללא נתוני מסלול":"מקור חי: לא מאומת";
- $("hotmapLiveBadge").className="status "+(valid?"ok":"err");
- $("hotmapLiveCount").textContent=valid?String(active.length):"אין אימות";
- if(radarMap){liveMapLayers.forEach(x=>radarMap.removeLayer(x));liveMapLayers=[];const locs={"תל אביב־יפו":[32.0853,34.7818],"תל אביב-יפו":[32.0853,34.7818],"אשקלון":[31.6688,34.5743],"ראשון לציון":[31.973,34.792],"קריית שמונה":[33.207,35.569],"חיפה":[32.794,34.989],"הרצליה":[32.166,34.843],"מודיעין":[31.899,35.010],"נהריה":[33.005,35.094],"אשדוד":[31.804,34.655],"באר שבע":[31.252,34.791],"נתניה":[32.3215,34.8532],"פתח תקווה":[32.084,34.887],"ירושלים":[31.768,35.214],"גבעת שמואל":[32.078,34.849],"אור יהודה":[32.029,34.857]};active.forEach(x=>{const p=locs[x.city];if(!p)return;liveMapLayers.push(L.circleMarker(p,{radius:6,color:"#e4fff0",weight:2,fillColor:"#8ee4b4",fillOpacity:.95}).bindPopup(esc(x.city)+" · התרעה מדווחת, לא מסלול טיל").addTo(radarMap))})}
- if(!valid){el.className="empty";el.textContent="אין אימות עדכני ממקור הנתונים. אין להציג מסלולים חיים."}
- else if(!active.length){el.className="empty";el.textContent="המקור מגיב ולא מדווח כרגע על התרעות פעילות. זה אינו אישור שאין סכנה."}
- else{el.className="";el.innerHTML=active.map(x=>'<div class="item"><b>'+esc(x.city)+'</b> · '+esc(x.type)+' <span class="tag live">דיווח מקור חי</span><div class="muted">מיקום יישוב בלבד — לא מסלול או מיקום איום</div></div>').join("")}
-}
 function renderEvents(){
  const q=$("search").value.trim().toLocaleLowerCase("he");
  let ev=allEvents().filter(x=>!q||x.city.toLocaleLowerCase("he").includes(q));
@@ -241,18 +73,18 @@ function renderEvents(){
 }
 function renderHistory(){const q=$("historySearch").value.trim().toLocaleLowerCase("he");const arr=history.filter(x=>!q||x.city.toLocaleLowerCase("he").includes(q));$("historyList").innerHTML=arr.length?arr.map(x=>'<div class="item"><b>'+esc(x.city)+'</b> · '+esc(x.type)+'<br><small>'+esc(x.time||"זמן לא זמין")+' · '+(x.demo?'נתון הדגמה':'נתון שהתקבל מהמקור')+'</small></div>').join(""):'<div class="empty">אין אירועים בהיסטוריה המקומית.</div>'}
 function renderGroup(el,g){if(!g){el.innerHTML='<div class="empty">אין מקור מחובר.</div>';return}const a=g.items||[];el.innerHTML=a.length?a.slice(0,12).map(x=>'<div class="item"><b>'+esc(x.title)+'</b><br><small>מקורות: '+esc((x.sources||[]).join(", "))+' · דיווח לא מאומת · '+(x.link?'<a rel="noopener noreferrer" target="_blank" href="'+esc(x.link)+'">מקור</a>':'')+'</small></div>').join(""):'<div class="empty">אין דיווחים חדשים ממקור מחובר.</div>'}
-function renderAll(){renderEvents();renderHistory();renderHotmapLive();$("mode").textContent=demo?"הדגמה":"נתונים חיים";$("demoToggle").checked=demo;$("autoSound").checked=autoSound;$("primaryScope").value=primaryScope;$("primarySound").value=primarySound;$("secondarySound").value=secondarySound;renderCityChoices("primary");renderCityChoices("secondary")}
+function renderAll(){renderEvents();renderHistory();$("mode").textContent=demo?"הדגמה":"נתונים חיים";$("demoToggle").checked=demo;$("autoSound").checked=autoSound;$("primaryScope").value=primaryScope;$("primarySound").value=primarySound;$("secondarySound").value=secondarySound;renderCityChoices("primary");renderCityChoices("secondary")}
 function renderCityChoices(kind){const p=kind==="primary",set=p?primaryCities:secondaryCities,q=$(p?"primarySearch":"secondarySearch").value.trim().toLocaleLowerCase("he"),el=$(p?"primaryChoices":"secondaryChoices"),arr=allCities.filter(x=>!q||x.toLocaleLowerCase("he").includes(q)).slice(0,180);el.innerHTML=arr.map(x=>'<label><input type="checkbox" data-city-kind="'+kind+'" value="'+esc(x)+'" '+(set.has(x)?"checked":"")+'> '+esc(x)+'</label>').join("")}
 
 $("search").addEventListener("input",renderEvents);$("historySearch").addEventListener("input",renderHistory);
-function playAlertSound(which="classic"){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ctx=new A();ctx.resume().then(()=>{const s=ctx.currentTime;const sweep=(t,d,a,b,v=.18,type="triangle",cycles=1)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(a,t);o.frequency.linearRampToValueAtTime(b,t+d*.48);o.frequency.linearRampToValueAtTime(a,t+d);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+.12);g.gain.setValueAtTime(v,t+d-.12);g.gain.linearRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+d+.02)};if(which==="classic"){for(let i=0;i<3;i++)sweep(s+i*1.12,1.02,390,920,.19,"sawtooth")}else if(which==="pulse"){for(let i=0;i<4;i++)sweep(s+i*.72,.56,420,760,.17,"triangle")}else if(which==="double"){for(let i=0;i<3;i++){sweep(s+i*1.35,.58,360,760,.18,"sawtooth");sweep(s+i*1.35+.66,.58,760,360,.18,"sawtooth")}}else if(which==="low"){for(let i=0;i<3;i++)sweep(s+i*1.18,1.02,220,420,.23,"triangle")}else if(which==="triple"){for(let i=0;i<3;i++)sweep(s+i*.78,.58,480,860,.18,"sawtooth")}else if(which==="bell"){for(let i=0;i<3;i++)sweep(s+i*1.05,.82,620,1040,.15,"sine")}setTimeout(()=>ctx.close().catch(()=>{}),4500)}).catch(()=>ctx.close().catch(()=>{}))}
+function playAlertSound(which="classic"){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ctx=new A();ctx.resume().then(()=>{const s=ctx.currentTime,tone=(t,d,a,b,v=.2,type="sawtooth")=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(a,t);o.frequency.exponentialRampToValueAtTime(Math.max(1,b),t+d*.8);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.02);g.gain.setValueAtTime(v,t+d*.65);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+d+.01)};if(which==="classic"){for(let i=0;i<4;i++)tone(s+i*.62,.52,i%2?1050:480,i%2?430:1150,.18)}else if(which==="pulse"){for(let i=0;i<9;i++)tone(s+i*.19,.12,950,700,.16,"square")}else if(which==="double"){for(let i=0;i<4;i++){tone(s+i*.65,.25,700,900,.18,"triangle");tone(s+i*.65+.28,.25,500,350,.18,"sine")}}else if(which==="low"){for(let i=0;i<4;i++)tone(s+i*.72,.58,260,430,.25)}else if(which==="triple"){for(let i=0;i<3;i++){tone(s+i*.9,.34,500,1100,.2);tone(s+i*.9+.36,.34,1100,400,.16,"triangle")}}else if(which==="bell"){for(let i=0;i<5;i++)tone(s+i*.3,.22,1250,800,.18,"sine")}setTimeout(()=>ctx.close().catch(()=>{}),4200)}).catch(()=>ctx.close().catch(()=>{}))}
 $("sound").onclick=()=>{playAlertSound(primarySound);$("soundmsg").textContent="דוגמת הצליל הראשי הופעלה.";audioUnlocked=true};
 $("testPrimarySound").onclick=()=>{playAlertSound(primarySound);audioUnlocked=true;$("settingsMsg").textContent="מושמעת דוגמה לצליל הראשי."};$("testSecondarySound").onclick=()=>{playAlertSound(secondarySound);audioUnlocked=true;$("settingsMsg").textContent="מושמעת דוגמה לצליל המשני."};
 $("primaryScope").onchange=()=>{primaryScope=$("primaryScope").value;store();renderEvents()};$("primarySound").onchange=()=>{primarySound=$("primarySound").value;store()};$("secondarySound").onchange=()=>{secondarySound=$("secondarySound").value;store()};
 $("primarySearch").addEventListener("input",()=>renderCityChoices("primary"));$("secondarySearch").addEventListener("input",()=>renderCityChoices("secondary"));
 document.addEventListener("change",e=>{const x=e.target.closest("[data-city-kind]");if(!x)return;const set=x.dataset.cityKind==="primary"?primaryCities:secondaryCities;x.checked?set.add(x.value):set.delete(x.value);store();renderCityChoices(x.dataset.cityKind);renderEvents()});
 async function poll(){try{
- const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),8000);let r;try{r=await fetch("/api/state",{cache:"no-store",signal:controller.signal});}finally{clearTimeout(timeout)}if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json();liveState=d;const s=d.oref||{};$("connection").textContent=s.state==="ok"?"מקור מגיב":"מקור לא מאומת";$("connection").className="status "+(s.state==="ok"?"ok":"err");$("source").innerHTML='פיקוד העורף (דרך ממסר קהילתי): <b class="'+(s.state==="ok"?"ok":"err")+'">'+esc(s.state||"לא ידוע")+'</b>'+(s.error?' — '+esc(s.error):"");$("updated").textContent=s.last?"עדכון אחרון מהמקור: "+new Date(s.last).toLocaleString("he-IL"):"אין מידע אמין על זמן העדכון";$("freshness").textContent=s.last?"עדכון מקור אחרון: "+new Date(s.last).toLocaleString("he-IL"):"עדכון אחרון: אין מידע אמיתי";
+ const r=await fetch("/api/state",{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json();liveState=d;const s=d.oref||{};$("connection").textContent=s.state==="ok"?"מקור מגיב":"מקור לא מאומת";$("connection").className="status "+(s.state==="ok"?"ok":"err");$("source").innerHTML='פיקוד העורף (דרך ממסר קהילתי): <b class="'+(s.state==="ok"?"ok":"err")+'">'+esc(s.state||"לא ידוע")+'</b>'+(s.error?' — '+esc(s.error):"");$("updated").textContent=s.last?"עדכון אחרון מהמקור: "+new Date(s.last).toLocaleString("he-IL"):"אין מידע אמין על זמן העדכון";$("freshness").textContent=s.last?"עדכון מקור אחרון: "+new Date(s.last).toLocaleString("he-IL"):"עדכון אחרון: אין מידע אמיתי";
  const active=s.state==="ok"?Object.entries(s.active||{}).flatMap(([type,arr])=>(Array.isArray(arr)?arr:[]).map(city=>({city,type,id:type+"-"+city,demo:false,time:new Date(s.last||Date.now()).toLocaleString("he-IL")}))):[];
  realEvents=active;
  const key=active.map(x=>x.id).sort().join("|");
@@ -270,6 +102,6 @@ $("refresh").onclick=poll;
 $("demoToggle").onchange=()=>{demo=$("demoToggle").checked;store();renderAll();$("settingsMsg").textContent=demo?"נתוני הדגמה מוצגים ומסומנים.":"מצב נתונים חיים נבחר; אם המקור לא זמין, לא יוצגו נתוני הדגמה."};
 $("autoSound").onchange=()=>{autoSound=$("autoSound").checked;store();$("settingsMsg").textContent=autoSound?"צליל אוטומטי הופעל לשינויים חדשים בזמן שהדף פתוח ולאחר לחיצה שמאפשרת שמע.":"צליל אוטומטי כבוי."};
 $("clearHistory").onclick=()=>{history=[];store();renderHistory();$("settingsMsg").textContent="ההיסטוריה המקומית נוקתה."};
-renderAll();initRadarMap();renderHotmapScenario("");$("hotmapScenarioName").textContent="ממתין לבדיקה";poll();setInterval(poll,10000);
+renderAll();poll();setInterval(poll,10000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 </script></body></html>
