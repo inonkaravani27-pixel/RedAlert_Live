@@ -17,10 +17,10 @@ services:
       - key: MAX_AGE_MS
         value: "1800000"
       - key: PRELIM_RSS_URLS
-        value: "https://www.ynet.co.il/Integration/StoryRss3082.xml"
+        value: "https://www.ynet.co.il/Integration/StoryRss3082.xml,https://www.aljazeera.net/aljazeerarss/a7c186be-1baa-4bd4-9d80-a84db769f779/73d0e1b4-532f-45ef-b135-bfdff8b8cab9"
       - key: PRELIM_KEYWORDS
-        value: "מבזק,התרעה,אזעקה,פיקוד העורף,ירי,טיל,רקטה,חדירה"
+        value: "מבזק,התרעה,אזעקה,פיקוד העורף,ירי,טיל,רקטה,חדירה,عاجل,إسرائيل,إيران,لبنان,صاروخ,قصف,هجوم,غارة,حرب,انفجار,پهپاد,موشک,حمله,اسرائیل,لبنان,ایران"
       - key: MILITARY_RSS_URLS
-        value: "https://www.jpost.com/rss/rssfeedsheadlines.aspx,https://www.jpost.com/rss/israel-hamas-war"
+        value: "https://www.jpost.com/rss/rssfeedsheadlines.aspx,https://www.jpost.com/rss/israel-hamas-war,https://www.jpost.com/rss/rssfeedsiran,https://www.aljazeera.net/aljazeerarss/a7c186be-1baa-4bd4-9d80-a84db769f779/73d0e1b4-532f-45ef-b135-bfdff8b8cab9"
       - key: MILITARY_KEYWORDS
-        value: "military,security,defense,defence,iran,missile,attack,war,idf,army,צה״ל,צבא,ביטחון,איראן,טיל,תקיפה"
+        value: "military,security,defense,defence,iran,missile,attack,war,idf,army,צה״ל,צבא,ביטחון,איראן,טיל,תקיפה,إيران,لبنان,إسرائيل,صاروخ,قصف,هجوم,غارة,حزب الله,الحرس الثوري,موشک,حمله,اسرائیل,حزب‌الله,سپاه"
