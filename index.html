@@ -98,25 +98,24 @@ function renderCityChoices(kind){const p=kind==="primary",set=p?primaryCities:se
 $("search").addEventListener("input",renderEvents);$("historySearch").addEventListener("input",renderHistory);
 function playAlertSound(which="classic"){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ctx=new A();ctx.resume().then(()=>{const s=ctx.currentTime;const siren=(at,duration,base,range,volume=.2)=>{const o=ctx.createOscillator(),g=ctx.createGain(),filter=ctx.createBiquadFilter();o.type="triangle";filter.type="lowpass";filter.frequency.value=1700;const step=.045;for(let t=0;t<=duration;t+=step){const phase=(t%duration);const hz=base+range*(.5-.5*Math.cos(2*Math.PI*phase/1.45));o.frequency.setValueAtTime(hz,at+t)}g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(volume,at+.16);g.gain.setValueAtTime(volume,at+duration-.16);g.gain.linearRampToValueAtTime(.0001,at+duration);o.connect(filter);filter.connect(g);g.connect(ctx.destination);o.start(at);o.stop(at+duration+.03)};const pulse=(at,duration,frequency,volume=.17)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=frequency;g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(volume,at+.025);g.gain.setValueAtTime(volume,at+duration-.04);g.gain.linearRampToValueAtTime(.0001,at+duration);o.connect(g);g.connect(ctx.destination);o.start(at);o.stop(at+duration+.02)};if(which==="classic"){siren(s,4.6,570,520,.2)}else if(which==="pulse"){for(let i=0;i<5;i++)pulse(s+i*.58,.38,880,.18)}else if(which==="double"){for(let i=0;i<3;i++){siren(s+i*1.15,.48,560,380,.17);siren(s+i*1.15+.53,.48,560,380,.17)}}else if(which==="low"){siren(s,4.6,360,300,.22)}else if(which==="triple"){for(let i=0;i<3;i++)siren(s+i*1.05,.78,520,420,.18)}else if(which==="bell"){for(let i=0;i<4;i++)pulse(s+i*.5,.28,740,.15)}setTimeout(()=>ctx.close().catch(()=>{}),5200)}).catch(()=>ctx.close().catch(()=>{}))}
 $("sound").onclick=()=>{audioUnlocked=true;playAlertSound(primarySound);$("soundmsg").textContent="דוגמת הצליל הראשי הופעלה. הצליל האוטומטי זמין כל עוד הדפדפן מאפשר זאת."};
-$("testNotification").onclick=async()=>{
+function showInAppAlert({test=false,cities=[]}={}){
+ let overlay=$("inAppAlertOverlay");
+ if(!overlay){
+  overlay=document.createElement("div");overlay.id="inAppAlertOverlay";
+  overlay.style.cssText="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.78);";
+  overlay.innerHTML='<section role="alertdialog" aria-modal="true" aria-labelledby="inAppAlertTitle" style="width:min(100%,460px);background:#241317;border:2px solid #f04444;border-radius:18px;padding:22px;color:#fff;box-shadow:0 18px 70px #000b;text-align:right"><div style="color:#ff6868;font-size:13px;font-weight:800;margin-bottom:8px">● '+(test?'בדיקה בלבד':'התרעה')+'</div><h2 id="inAppAlertTitle" style="font-size:25px;margin:0 0 8px">צבע אדום</h2><p id="inAppAlertBody" style="margin:0 0 18px;line-height:1.6"></p><button id="inAppAlertClose" class="primary" style="width:100%;font-weight:700">הבנתי · סגירה</button></section>';
+  document.body.appendChild(overlay);
+  $("inAppAlertClose").addEventListener("click",()=>overlay.remove());
+  overlay.addEventListener("click",e=>{if(e.target===overlay)overlay.remove()});
+ }
+ $("inAppAlertTitle").textContent=test?"בדיקת התראה — צבע אדום":"צבע אדום — התרעה פעילה";
+ $("inAppAlertBody").textContent=test?"זו התראת בדיקה בתוך הממשק בלבד. אין מדובר בהתרעה אמיתית.":(cities.length?"יישובים: "+cities.join(", "):"התקבלה התרעה במקור הנתונים. בדקו את יישומון פיקוד העורף לפרטים.");
+ overlay.style.display="flex";
+}
+$("testNotification").onclick=()=>{
  audioUnlocked=true;playAlertSound(primarySound);
- const title="בדיקת RedAlert Live";
- const options={body:"זו התראת בדיקה בלבד — אין מדובר בהתרעה אמיתית.",tag:"redalert-live-test-"+Date.now(),icon:"/icon.svg",data:{url:"/"}};
- if(!("serviceWorker" in navigator) || !("Notification" in window)){
-   $("soundmsg").textContent="הדפדפן אינו תומך בהתראות מערכת דרך Service Worker. הצליל הופעל בלבד.";return;
- }
- try{
-   let permission=Notification.permission;
-   if(permission==="default") permission=await Notification.requestPermission();
-   if(permission!=="granted"){
-     $("soundmsg").textContent=permission==="denied"?"ההתראות חסומות. יש לאפשר אותן בהגדרות האתר/הדפדפן.":"לא ניתנה הרשאה להתראות; הצליל הופעל בלבד.";return;
-   }
-   const registration=await navigator.serviceWorker.ready;
-   await registration.showNotification(title,options);
-   $("soundmsg").textContent="התראת בדיקה נשלחה למערכת. זו בדיקה בלבד, לא התרעה אמיתית.";
- }catch(e){
-   $("soundmsg").textContent="לא ניתן להציג התראת בדיקה: "+String(e.message||e);
- }
+ showInAppAlert({test:true});
+ $("soundmsg").textContent="הוצגה התראת בדיקה בתוך ממשק RedAlert Live. זו אינה התרעה אמיתית.";
 };
 $("testPrimarySound").onclick=()=>{playAlertSound(primarySound);audioUnlocked=true;$("settingsMsg").textContent="מושמעת דוגמה לצליל הראשי."};$("testSecondarySound").onclick=()=>{playAlertSound(secondarySound);audioUnlocked=true;$("settingsMsg").textContent="מושמעת דוגמה לצליל המשני."};
 $("primaryScope").onchange=()=>{primaryScope=$("primaryScope").value;store();renderEvents()};$("primarySound").onchange=()=>{primarySound=$("primarySound").value;store()};$("secondarySound").onchange=()=>{secondarySound=$("secondarySound").value;store()};
