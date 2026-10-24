@@ -154,7 +154,25 @@ $("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if
 let hotmapScenario="", radarMap=null, demoLayers=[], liveMapLayers=[], animationFrame=0;
 const mapPlaces={iran:[51.389,35.689],lebanon:[35.862,33.854],gaza:[34.466,31.501],israel:[34.851,31.046]};
 function initRadarMap(){
- if(!window.L){const box=$("radarMap");if(box)box.innerHTML="<div style=\"padding:24px;color:#f3b5b5\">ספריית המפה לא נטענה. בדוק חיבור לאינטרנט ורענן את הדף.</div>";return}
+ if(!window.L){
+   const box=$("radarMap");
+   if(box){box.innerHTML=`<svg id="fallbackGeoMap" viewBox="0 0 900 520" role="img" aria-label="מפת המחשה סכמטית של מזרח הים התיכון" style="display:block;width:100%;height:100%;min-height:360px;background:#0b1822">
+   <defs><pattern id="fallbackGrid" width="45" height="45" patternUnits="userSpaceOnUse"><path d="M45 0H0V45" fill="none" stroke="#24404d" stroke-width="1"/></pattern><radialGradient id="fallbackGlow"><stop stop-color="#17404b"/><stop offset="1" stop-color="#0b1822"/></radialGradient></defs>
+   <rect width="900" height="520" fill="url(#fallbackGlow)"/><rect width="900" height="520" fill="url(#fallbackGrid)"/>
+   <g fill="#1a3038" stroke="#45616d" stroke-width="2" stroke-linejoin="round">
+   <path d="M0 0H900V90L850 100 816 126 778 130 754 155 718 165 690 150 665 174 643 188 615 180 594 203 575 210 560 240 535 250 518 282 500 290 482 318 460 326 443 350 420 366 398 389 377 400 357 423 338 438 320 468 295 484 275 520H0Z"/>
+   <path d="M0 0H900V520H900V520H0Z" fill="none" stroke="none"/>
+   <path d="M0 0H900V60L860 65 825 52 795 70 770 58 738 72 700 60 670 78 642 72 615 90 590 86 562 105 535 95 505 115 470 110 440 130 410 125 380 145 350 137 320 155 292 150 270 176 250 188 226 215 210 240 190 260 170 282 145 290 120 275 100 245 75 220 60 180 35 150 0 145Z" opacity=".45"/>
+   <path d="M585 0L615 40 630 82 615 116 628 150 613 183 630 220 616 250 634 278 620 310 640 340 632 380 655 410 650 450 680 480 685 520H900V0Z" opacity=".8"/>
+   </g>
+   <g fill="#a9c1ca" font-family="system-ui,Arial" font-size="17" opacity=".88"><text x="300" y="290">הים התיכון</text><text x="675" y="135">איראן</text><text x="480" y="420">מצרים</text><text x="380" y="205">טורקיה</text></g>
+   <g stroke="#4d7888" stroke-width="1.4" fill="none" opacity=".7"><path d="M90 350Q250 300 400 320T790 280"/><path d="M140 110Q340 170 500 145T820 180"/></g>
+   <g fill="#8ee4b4" stroke="#d7ffea" stroke-width="2"><circle cx="390" cy="300" r="6"/><circle cx="408" cy="322" r="5"/><circle cx="370" cy="340" r="5"/><circle cx="420" cy="350" r="5"/><circle cx="365" cy="375" r="5"/></g>
+   <g fill="#dce8ed" font-family="system-ui,Arial" font-size="13"><text x="405" y="294">חיפה</text><text x="422" y="319">תל אביב</text><text x="385" y="359">ירושלים</text><text x="434" y="365">באר שבע</text><text x="328" y="379">עזה</text></g>
+   <g transform="translate(24 24)"><rect width="210" height="38" rx="9" fill="#101f29" stroke="#35515e"/><circle cx="17" cy="19" r="4" fill="#f6b73c"/><text x="30" y="24" fill="#d9e8ed" font-family="system-ui,Arial" font-size="13">מפת המחשה מקומית</text></g>
+   <text x="876" y="495" text-anchor="end" fill="#7896a4" font-family="system-ui,Arial" font-size="11">תרשים סכמטי · לא לניווט</text></svg>`;}
+   return;
+  }
  if(radarMap)return;
  radarMap=L.map("radarMap",{zoomControl:true,scrollWheelZoom:false}).setView([32.2,39.2],5);
  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{subdomains:"abcd",maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'}).addTo(radarMap);
