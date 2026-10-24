@@ -18,7 +18,7 @@
 <section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
 <section id="page-home">
 <div class="card"><div class="row"><input id="search" placeholder="חיפוש יישוב…" aria-label="חיפוש יישוב" style="flex:1;min-width:170px"></div><div id="alertList"></div></div>
-<div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="sound">בדיקת צליל</button><button id="testNotification">בדיקת התראה</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
+<div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="sound">בדיקת צליל</button><button id="testNotification">בדיקת התראה</button><button id="simulateAlert" class="primary">סימולציית התרעה</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
 </section>
 <section id="page-map" class="card hidden"><h2 class="section-title">Maps Live — מפת אירועים</h2><p class="muted">לפתיחת מפת OSINT חיצונית עם שכבות אירועים ודיווחים, לחצו על הכפתור. המפה החיצונית אינה חלק ממערכת ההתרעות הרשמית.</p><a class="map-link" href="https://iwm.diskin.net/" target="_blank" rel="noopener noreferrer">פתיחת Iran War Monitor ↗</a></section>
 <section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
@@ -117,6 +117,15 @@ $("testNotification").onclick=()=>{
  showInAppAlert({test:true});
  $("soundmsg").textContent="הוצגה התראת בדיקה בתוך ממשק RedAlert Live. זו אינה התרעה אמיתית.";
 };
+$("simulateAlert").onclick=()=>{
+ audioUnlocked=true;
+ triggerAlertUI({test:true,cities:["פתח תקווה","גבעת שמואל"]});
+ $("soundmsg").textContent="סימולציה הופעלה: נבדקו החלונית והצליל. האירוע מלאכותי ואינו התרעה אמיתית.";
+};
+function triggerAlertUI({test=false,cities=[]}={}){
+ if(audioUnlocked)playAlertSound(primarySound);
+ showInAppAlert({test,cities});
+}
 $("testPrimarySound").onclick=()=>{playAlertSound(primarySound);audioUnlocked=true;$("settingsMsg").textContent="מושמעת דוגמה לצליל הראשי."};$("testSecondarySound").onclick=()=>{playAlertSound(secondarySound);audioUnlocked=true;$("settingsMsg").textContent="מושמעת דוגמה לצליל המשני."};
 $("primaryScope").onchange=()=>{primaryScope=$("primaryScope").value;store();renderEvents()};$("primarySound").onchange=()=>{primarySound=$("primarySound").value;store()};$("secondarySound").onchange=()=>{secondarySound=$("secondarySound").value;store()};
 $("primarySearch").addEventListener("input",()=>renderCityChoices("primary"));$("secondarySearch").addEventListener("input",()=>renderCityChoices("secondary"));
@@ -135,7 +144,7 @@ async function poll(){try{
    const hadBaseline=previousAlertKey!=="";
    const newlyActive=hadBaseline && key!==previousAlertKey && active.some(x=>!previousAlertKey.split("|").includes(x.id));
    if(newlyActive){
-     if(audioUnlocked)playAlertSound(primarySound);
+     triggerAlertUI({test:false,cities:active.map(x=>x.city)});
      if("Notification"in window && Notification.permission==="granted"){
        try{new Notification("RedAlert Live — התרעה מדווחת",{body:active.map(x=>x.city).slice(0,8).join(", "),tag:"redalert-live-active",renotify:false})}catch{}
      }
