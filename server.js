@@ -124,6 +124,20 @@ const orefOut = areas => {
   return areas && areas.length ? { ...v, active: pickAreas(v.active, areas), areaFiltered: true } : v;
 };
 const parseAreas = q => (q || "").split("|").map(s => s.trim()).filter(Boolean).slice(0, 200);
+const translationCache = new Map();
+async function translateToHebrew(text) {
+  const input = String(text || "").trim().slice(0, 1200);
+  if (!input) return "";
+  if (translationCache.has(input)) return translationCache.get(input);
+  const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
+  const response = await get(url);
+  const parsed = JSON.parse(response);
+  const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("") : "";
+  if (!translated) throw new Error("translation unavailable");
+  translationCache.set(input, translated);
+  if (translationCache.size > 500) translationCache.delete(translationCache.keys().next().value);
+  return translated;
+}
 const state = areas => ({ now: Date.now(), oref: orefOut(areas), prelim: grp(G.prelim), military: grp(G.military) });
 const FILES = { "/manifest.webmanifest": ["manifest.webmanifest", "application/manifest+json"], "/sw.js": ["sw.js", "text/javascript"], "/icon.svg": ["icon.svg", "image/svg+xml"] };
 
@@ -137,6 +151,16 @@ const server = http.createServer((req, res) => {
   if (req.method !== "GET") { res.writeHead(405, h); return res.end("{}"); }
   if (p === "/healthz") { res.writeHead(200, h); return res.end(JSON.stringify({ ok: true, uptime: Math.round(process.uptime()) })); }
   if (p === "/api/state") { res.writeHead(200, h); return res.end(JSON.stringify(state(parseAreas(u.searchParams.get("areas"))))); }
+  if (p === "/api/translate") {
+    const text = u.searchParams.get("text") || "";
+    if (!text.trim() || text.length > 1200) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "text must be 1-1200 characters" })); }
+    translateToHebrew(text).then(translated => {
+      if (!res.headersSent) { res.writeHead(200, h); res.end(JSON.stringify({ translated, language: "he" })); }
+    }).catch(() => {
+      if (!res.headersSent) { res.writeHead(502, h); res.end(JSON.stringify({ error: "translation unavailable" })); }
+    });
+    return;
+  }
   if (FILES[p]) { const f = path.join(PUB, FILES[p][0]); if (fs.existsSync(f)) { res.writeHead(200, { ...h, "Content-Type": FILES[p][1] }); return res.end(fs.readFileSync(f)); } }
   if ((p === "/" || p === "/index.html") && fs.existsSync(INDEX)) {
     const html = fs.readFileSync(INDEX, "utf8").replace("<head>", "<head><script>window.RAL_SAME_ORIGIN=true;window.RAL_POLL_MS=" + POLL + "</script>");
