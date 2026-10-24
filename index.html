@@ -123,7 +123,6 @@ $("newsFilter").addEventListener("change",loadPrelimFromPublicFeed);
 $("refresh").onclick=poll;
 if($("demoToggle"))$("demoToggle").onchange=()=>{demo=$("demoToggle").checked;store();renderAll();$("settingsMsg").textContent=demo?"נתוני הדגמה מוצגים ומסומנים.":"מצב נתונים חיים נבחר; אם המקור לא זמין, לא יוצגו נתוני הדגמה."};
 
-$("clearHistory").onclick=()=>{history=[];store();renderHistory();$("settingsMsg").textContent="ההיסטוריה המקומית נוקתה."};
 renderAll();poll();setInterval(poll,10000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 
