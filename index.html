@@ -20,7 +20,7 @@
 <div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="sound">בדיקת צליל</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
 </section>
 <section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
-<section id="page-prelim" class="card hidden"><h2 class="section-title">מבזקים ראשונים</h2><p class="muted">דיווחים חדשותיים אינם התרעות רשמיות ואינם מעידים ששיגור קרוב.</p><div id="pre"></div></section>
+<section id="page-prelim" class="card hidden"><h2 class="section-title">מבזקים ראשונים</h2><p class="muted">דיווחים חדשותיים אינם התרעות רשמיות ואינם מעידים ששיגור קרוב.</p><div class="row"><label>מקורות להצגה<select id="newsFilter"><option value="all">כל המקורות</option><option value="arabic">מקורות ערביים בלבד</option></select></label><label><input type="checkbox" id="translateNews" checked> תרגום לעברית</label></div><p id="translationStatus" class="muted">התרגום נעשה דרך שירות חיצוני כשזמין.</p><div id="pre"></div></section>
 <section id="page-settings" class="card hidden">
 <h2 class="section-title">הגדרות התרעות</h2>
 <div class="card"><h3 class="section-title">התרעות ראשיות</h3>
@@ -72,7 +72,25 @@ function renderEvents(){
  $("alertList").innerHTML=ev.length?ev.map(x=>'<div class="item"><div class="itemhead"><div><b>'+esc(x.city)+'</b><div>'+esc(x.type)+' · '+esc(x.time||"זמן לא זמין")+'</div><span class="tag '+(x.demo?"demo":"live")+'">'+(x.demo?"הדגמה":"מקור חי")+'</span></div></div></div>').join(""):'<div class="empty">'+(demo?"אין אירועים התואמים לחיפוש. נתוני ההדגמה אינם התרעות אמיתיות.":"אין התרעות פעילות מאומתות להצגה. בדקו את היישומון הרשמי.")+'</div>';
 }
 function renderHistory(){const q=$("historySearch").value.trim().toLocaleLowerCase("he");const arr=history.filter(x=>!q||x.city.toLocaleLowerCase("he").includes(q));$("historyList").innerHTML=arr.length?arr.map(x=>'<div class="item"><b>'+esc(x.city)+'</b> · '+esc(x.type)+'<br><small>'+esc(x.time||"זמן לא זמין")+' · '+(x.demo?'נתון הדגמה':'נתון שהתקבל מהמקור')+'</small></div>').join(""):'<div class="empty">אין אירועים בהיסטוריה המקומית.</div>'}
-function renderGroup(el,g){if(!g){el.innerHTML='<div class="empty">אין מקור מחובר.</div>';return}const a=g.items||[];el.innerHTML=a.length?a.slice(0,12).map(x=>'<div class="item"><b>'+esc(x.title)+'</b><br><small>מקורות: '+esc((x.sources||[]).join(", "))+' · דיווח לא מאומת · '+(x.link?'<a rel="noopener noreferrer" target="_blank" href="'+esc(x.link)+'">מקור</a>':'')+'</small></div>').join(""):'<div class="empty">אין דיווחים חדשים ממקור מחובר.</div>'}
+const translatedNews = new Map();
+function isArabicSource(x) {
+ const sources=(x.sources||[]).join(" ").toLowerCase();
+ return /aljazeera|alarabiya|skynewsarabia|almanar/.test(sources) || /[\\u0600-\\u06ff]/.test(x.title||"");
+}
+async function translateNewsTitle(title) {
+ if(translatedNews.has(title)) return translatedNews.get(title);
+ try { const r=await fetch("/api/translate?text="+encodeURIComponent(title),{cache:"no-store"}); if(!r.ok)throw Error(); const d=await r.json(); if(!d.translated)throw Error(); translatedNews.set(title,d.translated); return d.translated; } catch { return null; }
+}
+async function renderGroup(el,g){
+ if(!g){el.innerHTML='<div class="empty">אין מקור מחובר.</div>';return}
+ let a=g.items||[];
+ if(($("newsFilter")?.value||"all")==="arabic")a=a.filter(isArabicSource);
+ a=a.slice(0,20);
+ if(!a.length){el.innerHTML='<div class="empty">אין כרגע דיווחים שתואמים לסינון.</div>';return}
+ const translate=$("translateNews")?.checked;
+ el.innerHTML=a.map((x,i)=>'<div class="item"><b id="news-title-'+i+'">'+esc(translatedNews.get(x.title)||x.title)+'</b><br><small>מקורות: '+esc((x.sources||[]).join(", "))+' · דיווח לא מאומת · '+(x.link?'<a rel="noopener noreferrer" target="_blank" href="'+esc(x.link)+'">מקור</a>':'')+'</small></div>').join("");
+ if(translate){$("translationStatus").textContent="מתרגם כותרות לעברית כששירות התרגום זמין…";await Promise.all(a.map(async(x,i)=>{if(translatedNews.has(x.title))return;const t=await translateNewsTitle(x.title);const node=$("news-title-"+i);if(t&&node)node.textContent=t;}));$("translationStatus").textContent="התרגום אוטומטי ועלול להכיל טעויות. בדקו את המקור."}
+}
 function renderAll(){renderEvents();renderHistory();$("mode").textContent=demo?"הדגמה":"נתונים חיים";$("demoToggle").checked=demo;$("autoSound").checked=autoSound;$("primaryScope").value=primaryScope;$("primarySound").value=primarySound;$("secondarySound").value=secondarySound;renderCityChoices("primary");renderCityChoices("secondary")}
 function renderCityChoices(kind){const p=kind==="primary",set=p?primaryCities:secondaryCities,q=$(p?"primarySearch":"secondarySearch").value.trim().toLocaleLowerCase("he"),el=$(p?"primaryChoices":"secondaryChoices"),arr=allCities.filter(x=>!q||x.toLocaleLowerCase("he").includes(q)).slice(0,180);el.innerHTML=arr.map(x=>'<label><input type="checkbox" data-city-kind="'+kind+'" value="'+esc(x)+'" '+(set.has(x)?"checked":"")+'> '+esc(x)+'</label>').join("")}
 
@@ -98,6 +116,7 @@ async function poll(){try{
  renderGroup($("pre"),d.prelim);renderAll();
  }catch(e){$("connection").textContent="תקלה בחיבור";$("connection").className="status err";$("source").textContent="לא ניתן לאמת מקור: "+String(e.message||e);$("headline").textContent="אין אימות עדכני להתרעות";$("sub").textContent="בדקו את היישומון הרשמי. היעדר מידע אינו אומר שאין סכנה.";if(!demo){realEvents=[];renderEvents()}}
 }
+$("newsFilter").addEventListener("change",()=>{if(liveState)renderGroup($("pre"),liveState.prelim)});$("translateNews").addEventListener("change",()=>{if(liveState)renderGroup($("pre"),liveState.prelim)});
 $("refresh").onclick=poll;
 $("demoToggle").onchange=()=>{demo=$("demoToggle").checked;store();renderAll();$("settingsMsg").textContent=demo?"נתוני הדגמה מוצגים ומסומנים.":"מצב נתונים חיים נבחר; אם המקור לא זמין, לא יוצגו נתוני הדגמה."};
 $("autoSound").onchange=()=>{autoSound=$("autoSound").checked;store();$("settingsMsg").textContent=autoSound?"צליל אוטומטי הופעל לשינויים חדשים בזמן שהדף פתוח ולאחר לחיצה שמאפשרת שמע.":"צליל אוטומטי כבוי."};
