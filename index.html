@@ -121,6 +121,8 @@
 </main>
 <script>
 const $=id=>document.getElementById(id);
+function safeStoredJSON(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:JSON.parse(v)}catch(e){console.warn("Invalid saved setting:",key,e);return fallback}}
+window.addEventListener("error",e=>{const c=$("connection"),h=$("headline"),s=$("sub");if(c){c.textContent="תקלה בממשק";c.className="status err"}if(h)h.textContent="לא ניתן לאמת כרגע את מצב ההתרעות";if(s)s.textContent="רעננו את הדף ובדקו במקביל את יישומון פיקוד העורף הרשמי."});
 const cities=["תל אביב־יפו","אשקלון","ראשון לציון","קריית שמונה","חיפה","הרצליה","מודיעין","נהריה","אשדוד","באר שבע","נתניה","פתח תקווה","אילת","ירושלים","רמת גן","גבעתיים","גבעת שמואל","רחובות","חולון","בת ים","עכו","טבריה"];
 const demoEvents=[
 {city:"תל אביב־יפו",type:"כלי טיס עוין",time:"23.10.2026, 15:54"},
@@ -140,9 +142,9 @@ const demoEvents=[
 {city:"אילת",type:"טילים",time:"19.10.2026, 1:42"}].map((x,i)=>({...x,id:"demo-"+i,demo:true}));
 let liveState=null, realEvents=[], previousAlertKey="", audioUnlocked=false;
 const allCities=[...new Set(["אבו גוש","אופקים","אור יהודה","אור עקיבא","אילת","אלעד","אריאל","אשדוד","אשקלון","באקה אל-גרבייה","באר יעקב","באר שבע","בית שאן","בית שמש","ביתר עילית","בני ברק","בנימינה-גבעת עדה","בת ים","גבעת שמואל","גבעתיים","דימונה","הוד השרון","הרצליה","זכרון יעקב","חדרה","חולון","חיפה","טבריה","טייבה","טירה","טירת כרמל","יבנה","יהוד-מונוסון","יקנעם עילית","ירוחם","ירושלים","כפר יונה","כפר סבא","כפר קאסם","כרמיאל","לוד","מגדל העמק","מודיעין-מכבים-רעות","מעלה אדומים","נהריה","נס ציונה","נצרת","נשר","נתיבות","נתניה","עכו","עפולה","ערד","פרדס חנה-כרכור","פתח תקווה","צפת","קדימה-צורן","קריית אונו","קריית אתא","קריית ביאליק","קריית גת","קריית ים","קריית מוצקין","קריית מלאכי","קריית שמונה","ראש העין","ראשון לציון","רהט","רחובות","רמלה","רמת גן","רמת השרון","רעננה","שדרות","שוהם","תל אביב־יפו","גני תקווה","מזכרת בתיה","מעלות-תרשיחא","מג'דל שמס","מסעדה","בוקעתא","עין קנייא","דאלית אל-כרמל","עספיא","פוריידיס","ג'סר א-זרקא","שפרעם","סח'נין","עראבה","טמרה","אום אל-פחם","כפר קרע","ערערה","קלנסווה","ג'לג'וליה","אורנית","אלפי מנשה","קרני שומרון","עמנואל","בית אל","אפרת","קריית ארבע","שילה","עלי","תל אביב-יפו",...cities])];
-let primaryCities=new Set(JSON.parse(localStorage.getItem("ral-primary-cities")||"[]")),secondaryCities=new Set(JSON.parse(localStorage.getItem("ral-secondary-cities")||"[]"));
+let primaryCities=new Set(safeStoredJSON("ral-primary-cities",[])),secondaryCities=new Set(safeStoredJSON("ral-secondary-cities",[]));
 let primaryScope=localStorage.getItem("ral-primary-scope")||"all",primarySound=localStorage.getItem("ral-primary-sound")||"classic",secondarySound=localStorage.getItem("ral-secondary-sound")||"pulse";
-let history=JSON.parse(localStorage.getItem("ral-history")||"[]");
+let history=safeStoredJSON("ral-history",[]);if(!Array.isArray(history))history=[];
 let demo=localStorage.getItem("ral-demo")!=="false";
 let autoSound=localStorage.getItem("ral-autosound")==="true";
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -270,6 +272,8 @@ $("refresh").onclick=poll;
 $("demoToggle").onchange=()=>{demo=$("demoToggle").checked;store();renderAll();$("settingsMsg").textContent=demo?"נתוני הדגמה מוצגים ומסומנים.":"מצב נתונים חיים נבחר; אם המקור לא זמין, לא יוצגו נתוני הדגמה."};
 $("autoSound").onchange=()=>{autoSound=$("autoSound").checked;store();$("settingsMsg").textContent=autoSound?"צליל אוטומטי הופעל לשינויים חדשים בזמן שהדף פתוח ולאחר לחיצה שמאפשרת שמע.":"צליל אוטומטי כבוי."};
 $("clearHistory").onclick=()=>{history=[];store();renderHistory();$("settingsMsg").textContent="ההיסטוריה המקומית נוקתה."};
-renderAll();initRadarMap();renderHotmapScenario("");$("hotmapScenarioName").textContent="ממתין לבדיקה";poll();setInterval(poll,10000);
+renderAll();initRadarMap();renderHotmapScenario("");$("hotmapScenarioName").textContent="ממתין לבדיקה";
+const startupWatchdog=setTimeout(()=>{if(!liveState){$("connection").textContent="אין מענה מהשרת";$("connection").className="status err";$("source").textContent="שרת הנתונים לא החזיר תשובה בזמן. נסו רענון או בדקו שוב בעוד רגע.";$("headline").textContent="אין אימות עדכני להתרעות";$("sub").textContent="אין להסיק מהיעדר נתונים שאין סכנה. בדקו את היישומון הרשמי של פיקוד העורף."; }},9000);
+poll().then(()=>clearTimeout(startupWatchdog));setInterval(poll,10000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 </script></body></html>
