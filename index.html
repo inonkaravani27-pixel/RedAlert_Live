@@ -18,7 +18,7 @@
 <section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
 <section id="page-home">
 <div class="card"><div class="row"><input id="search" placeholder="חיפוש יישוב…" aria-label="חיפוש יישוב" style="flex:1;min-width:170px"></div><div id="alertList"></div></div>
-<div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="sound">בדיקת צליל</button><button id="testNotification">בדיקת התראה</button><button id="simulateAlert" class="primary">בדיקת זיהוי אירוע</button><button id="sourceDiagnostics" class="primary">בדיקת מקור אמיתית</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div><div id="sourceDiagnosticsResult" class="muted" style="margin-top:10px;line-height:1.7" aria-live="polite"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
+<div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="systemTest" class="primary">בדיקת מערכת</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div><div id="sourceDiagnosticsResult" class="muted" style="margin-top:10px;line-height:1.7" aria-live="polite"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
 </section>
 <section id="page-map" class="card hidden"><h2 class="section-title">Maps Live — מפת אירועים</h2><p class="muted">לפתיחת מפת OSINT חיצונית עם שכבות אירועים ודיווחים, לחצו על הכפתור. המפה החיצונית אינה חלק ממערכת ההתרעות הרשמית.</p><a class="map-link" href="https://iwm.diskin.net/" target="_blank" rel="noopener noreferrer">פתיחת Iran War Monitor ↗</a></section>
 <section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
@@ -112,44 +112,28 @@ function showInAppAlert({test=false,cities=[]}={}){
  $("inAppAlertBody").textContent=test?"זו התראת בדיקה בתוך הממשק בלבד. אין מדובר בהתרעה אמיתית.":(cities.length?"יישובים: "+cities.join(", "):"התקבלה התרעה במקור הנתונים. בדקו את יישומון פיקוד העורף לפרטים.");
  overlay.style.display="flex";
 }
-$("testNotification").onclick=()=>{
- audioUnlocked=true;playAlertSound(primarySound);
- showInAppAlert({test:true});
- $("soundmsg").textContent="הוצגה התראת בדיקה בתוך ממשק RedAlert Live. זו אינה התרעה אמיתית.";
-};
-$("sourceDiagnostics").onclick=async()=>{
- const box=$("sourceDiagnosticsResult");
- box.textContent="בודק את מצב המקור דרך השרת…";
+$("systemTest").onclick=async()=>{
+ const box=$("soundmsg");
+ const diagnostics=$("sourceDiagnosticsResult");
+ box.textContent="מריץ בדיקת מערכת: מקור נתונים, זיהוי אירוע, צליל וחלונית…";
  try{
   const response=await fetch("/api/state",{cache:"no-store"});
   if(!response.ok)throw new Error("HTTP "+response.status);
   const data=await response.json(), source=data.oref||{};
   const count=Object.values(source.active||{}).reduce((n,items)=>n+(Array.isArray(items)?items.length:0),0);
-  const when=source.last?new Date(source.last).toLocaleString("he-IL"):"לא דווח זמן עדכון";
-  box.textContent="תוצאת בדיקה: "+(source.state==="ok"?"השרת קיבל תשובה מהמקור":"לא ניתן לאמת את המקור")+
-   " · מצב: "+(source.state||"לא ידוע")+" · יישובים בהתרעות פעילות כרגע: "+count+
-   " · זמן בדיקה/תשובת מקור אחרונה: "+when+
-   (source.error?" · שגיאה: "+source.error:"")+
-   " · הבדיקה מאמתת תגובת מקור בלבד; היא אינה מדמה התרעה חדשה ואינה מוכיחה שהקפצה בזמן אמת עבדה.";
- }catch(e){box.textContent="בדיקת המקור נכשלה: "+String(e.message||e)+" · אין להסיק מכך שאין התרעות; בדקו את יישומון פיקוד העורף."}
-};
-const handledAlertKeys=new Set();
-function processNewAlertEvent({key,cities=[],test=false}={}){
- if(!key||handledAlertKeys.has(key))return false;
- handledAlertKeys.add(key);
- if(handledAlertKeys.size>200)handledAlertKeys.delete(handledAlertKeys.values().next().value);
- triggerAlertUI({test,cities});
- return true;
-}
-$("simulateAlert").onclick=()=>{
- audioUnlocked=true;
- const key="test-event-"+Date.now();
- const cities=["פתח תקווה","גבעת שמואל"];
- const first=processNewAlertEvent({key,cities,test:true});
- const duplicate=processNewAlertEvent({key,cities,test:true});
- $("soundmsg").textContent=first&&!duplicate
-  ?"הבדיקה עברה: אירוע חדש זוהה והפעיל חלונית וצליל; אותו מזהה נדחה בפעם השנייה. זהו אירוע מלאכותי, לא התרעה אמיתית."
-  :"הבדיקה נכשלה: מנגנון זיהוי האירוע לא התנהג כמצופה.";
+  const when=source.last?new Date(source.last).toLocaleString("he-IL"):"לא דווח";
+  audioUnlocked=true;
+  const key="system-test-"+Date.now();
+  const first=processNewAlertEvent({key,cities:["אירוע בדיקה"],test:true});
+  const duplicate=processNewAlertEvent({key,cities:["אירוע בדיקה"],test:true});
+  const sourceResult=source.state==="ok"?"השרת קיבל תשובה מהמקור":"המקור לא אומת";
+  box.textContent="בדיקת מנגנון: "+(first&&!duplicate?"עבר — חלונית הופעלה ומזהה כפול נדחה":"נכשלה")+
+   ". בדיקת מקור: "+sourceResult+" (מצב "+(source.state||"לא ידוע")+", "+count+" יישובים פעילים, עדכון אחרון: "+when+"). "+
+   "האירוע שהופעל מלאכותי בלבד; הבדיקה אינה מוכיחה שהמקור יעביר התרעה אמיתית בזמן.";
+  if(diagnostics)diagnostics.textContent="";
+ }catch(e){
+  box.textContent="בדיקת מקור נכשלה: "+String(e.message||e)+". לא ניתן לאמת את המקור; בדקו את יישומון פיקוד העורף.";
+ }
 };
 function triggerAlertUI({test=false,cities=[]}={}){
  if(audioUnlocked)playAlertSound(primarySound);
