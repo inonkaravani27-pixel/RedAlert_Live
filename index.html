@@ -12,7 +12,7 @@
 <header class="top"><h1>RedAlert <span>Live</span></h1><button id="settingsButton" class="settings-icon" aria-label="פתיחת הגדרות" title="הגדרות">⚙</button></header>
 <div class="banner">כלי משלים בלבד — אינו שירות רשמי ואינו תחליף ליישומון פיקוד העורף. אין להסתמך עליו להצלת חיים.</div>
 <nav class="nav" id="nav">
-<button class="active" data-page="home">ראשי</button><button data-page="prelim">מבזקים ראשונים</button><button class="map-link" data-page="map" type="button"><span class="map-dot" aria-hidden="true">●</span> Maps Live</button>
+<button class="active" data-page="home">ראשי</button><button data-page="history">היסטוריה</button><button data-page="prelim">מבזקים ראשונים</button><button class="map-link" data-page="map" type="button"><span class="map-dot" aria-hidden="true">●</span> Maps Live</button>
 </nav>
 <div class="row" style="justify-content:flex-start;direction:ltr;gap:8px"><span id="mode" class="status">נתונים חיים</span><span id="connection" class="status">בודק חיבור…</span></div>
 <section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
@@ -21,7 +21,7 @@
 <div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="sound">בדיקת צליל</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
 </section>
 <section id="page-map" class="card hidden"><h2 class="section-title">Maps Live — מפת אירועים</h2><p class="muted">לפתיחת מפת OSINT חיצונית עם שכבות אירועים ודיווחים, לחצו על הכפתור. המפה החיצונית אינה חלק ממערכת ההתרעות הרשמית.</p><a class="map-link" href="https://iwm.diskin.net/" target="_blank" rel="noopener noreferrer">פתיחת Iran War Monitor ↗</a></section>
-
+<section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
 <section id="page-prelim" class="card hidden"><h2 class="section-title">מבזקים ראשונים</h2><p class="muted">דיווחים חדשותיים אינם התרעות רשמיות ואינם מעידים ששיגור קרוב.</p><div class="row"><label>מקורות להצגה<select id="newsFilter"><option value="all">כל המקורות</option><option value="arabic">מקורות ערביים בלבד</option></select></label><label><input type="checkbox" id="translateNews" checked> תרגום לעברית</label></div><p id="translationStatus" class="muted">התרגום נעשה דרך שירות חיצוני כשזמין.</p><div id="pre"></div></section>
 <section id="page-settings" class="card hidden">
 <h2 class="section-title">הגדרות התרעות</h2>
@@ -69,7 +69,7 @@ function setPage(page){$("hero").classList.toggle("hidden",page==="map");documen
 $("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)});if($("osintRefresh"))$("osintRefresh").addEventListener("click",loadOsintFeed);$("settingsButton").addEventListener("click",()=>setPage($("page-settings").classList.contains("hidden")?"settings":"home"));
 function renderEvents(){
  const q=$("search").value.trim().toLocaleLowerCase("he");
- let ev=[...allEvents(),...history.filter(x=>!x.demo)].filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).sort((a,b)=>(Date.parse(b.isoTime||b.time||"")||0)-(Date.parse(a.isoTime||a.time||"")||0)).filter(x=>!q||x.city.toLocaleLowerCase("he").includes(q));
+ let ev=allEvents().filter(x=>!q||x.city.toLocaleLowerCase("he").includes(q));
  $("alertList").innerHTML=ev.length?ev.map(x=>'<div class="item"><div class="itemhead"><div><b>'+esc(x.city)+'</b><div>'+esc(x.type)+' · '+esc(x.time||"זמן לא זמין")+'</div><span class="tag '+(x.demo?"demo":"live")+'">'+(x.demo?"הדגמה":"מקור חי")+'</span></div></div></div>').join(""):'<div class="empty">'+(demo?"אין אירועים התואמים לחיפוש. נתוני ההדגמה אינם התרעות אמיתיות.":"אין התרעות פעילות מאומתות להצגה. בדקו את היישומון הרשמי.")+'</div>';
 }
 function renderHistory(){const q=$("historySearch").value.trim().toLocaleLowerCase("he");const arr=history.filter(x=>!q||x.city.toLocaleLowerCase("he").includes(q));$("historyList").innerHTML=arr.length?arr.map(x=>'<div class="item"><b>'+esc(x.city)+'</b> · '+esc(x.type)+'<br><small>'+esc(x.time||"זמן לא זמין")+' · '+(x.demo?'נתון הדגמה':'נתון שהתקבל מהמקור')+'</small></div>').join(""):'<div class="empty">אין אירועים בהיסטוריה המקומית.</div>'}
@@ -123,6 +123,7 @@ $("newsFilter").addEventListener("change",loadPrelimFromPublicFeed);
 $("refresh").onclick=poll;
 if($("demoToggle"))$("demoToggle").onchange=()=>{demo=$("demoToggle").checked;store();renderAll();$("settingsMsg").textContent=demo?"נתוני הדגמה מוצגים ומסומנים.":"מצב נתונים חיים נבחר; אם המקור לא זמין, לא יוצגו נתוני הדגמה."};
 
+$("clearHistory").onclick=()=>{history=[];store();renderHistory();$("settingsMsg").textContent="ההיסטוריה המקומית נוקתה."};
 renderAll();poll();setInterval(poll,10000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 
