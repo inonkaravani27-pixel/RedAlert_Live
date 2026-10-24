@@ -10,7 +10,7 @@
 </style></head>
 <body><main class="wrap">
 <header class="top"><h1>RedAlert <span>Live</span></h1><div class="row"><span id="mode" class="status">הדגמה</span><span id="connection" class="status">בודק חיבור…</span></div></header>
-<div class="banner">כלי משלים בלבד — אינו שירות רשמי ואינו תחליף ליישומון פיקוד העורף. אין להסתמך עליו להצלת חיים.</div>
+
 <nav class="nav" id="nav">
 <button class="active" data-page="home">ראשי</button><button data-page="history">היסטוריה</button><button data-page="prelim">דיווחים ראשוניים</button><button data-page="hotmap">מפה חמה</button><button data-page="settings">הגדרות</button>
 </nav>
@@ -22,6 +22,27 @@
 <section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
 <section id="page-prelim" class="card hidden"><h2 class="section-title">דיווחים ראשוניים</h2><p class="muted">דיווחים חדשותיים אינם התרעות רשמיות ואינם מעידים ששיגור קרוב.</p><div id="pre"></div></section>
 <section id="page-hotmap" class="hidden">
+<style>
+/* Hot map visual refresh */
+#page-hotmap{color:#e9f2f7}
+#hotmapPanel{background:linear-gradient(145deg,#071018,#0b1a24 55%,#081019);border:1px solid #243d4c;box-shadow:0 18px 45px #0006}
+#hotmapHead{background:linear-gradient(90deg,#101f2b,#0b151e);padding:18px 20px}
+#hotmapHead b{font-size:18px;letter-spacing:.2px}
+#radarSvg{min-height:360px;max-height:680px;background:radial-gradient(ellipse at 48% 50%,#143440 0,#0a1721 52%,#081018 100%)}
+.radar-land{fill:#19323d;stroke:#426574;stroke-width:1.4}
+.radar-country{font:600 13px system-ui;fill:#a9c5d0;paint-order:stroke;stroke:#0a1721;stroke-width:3px;stroke-linejoin:round}
+.radar-grid{stroke:#315261;opacity:.48}
+.radar-route{stroke:#ff625c;stroke-width:3;filter:drop-shadow(0 0 5px #ff625c88)}
+.radar-intercept{stroke:#72d4ff;stroke-width:3;filter:drop-shadow(0 0 5px #72d4ff88)}
+.radar-legend{background:#0c1821;padding:13px 16px}
+.hotmap-controls button{flex:1;min-width:145px;background:#111f2a;border-color:#2a4655;transition:background .15s,border-color .15s}
+.hotmap-controls button.active{background:#183b4a;border-color:#4fabc5;box-shadow:inset 0 0 0 1px #4fabc544}
+.hotmap-stat{background:linear-gradient(145deg,#14232d,#0e1821);border-color:#294552}
+.hotmap-note{background:#201c12;border-color:#6b5524;color:#f6d58b}
+#page-hotmap>.card{background:#111a22;border-color:#283d49}
+#page-hotmap .section-title{font-size:17px}
+@media(max-width:600px){#radarSvg{min-height:300px}.radar-country{font-size:14px}.hotmap-controls button{min-width:120px}}
+</style>
 <style>
 #hotmapPanel{background:radial-gradient(ellipse at 50% 45%,#10232b 0,#0b141c 52%,#090d13 100%);border:1px solid #263e4b;border-radius:16px;overflow:hidden}
 #hotmapHead{padding:14px;border-bottom:1px solid #263e4b;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
@@ -68,7 +89,7 @@
 <div class="card"><h3 class="section-title">צליל להתרעות ראשיות</h3><label>בחר צליל<select id="primarySound" class="field"><option value="classic">סירנה עולה ויורדת</option><option value="pulse">פולסים מהירים</option><option value="double">שני צלילים מתחלפים</option><option value="low">צליל נמוך</option><option value="triple">שלושה רצפים</option><option value="bell">צליל אלקטרוני חד</option></select></label><button id="testPrimarySound">▶ השמע דוגמה</button>
 <label><input type="checkbox" id="autoSound"> אפשר צליל אוטומטי כאשר מזוהה שינוי חדש במקור (רק כשהדף פתוח)</label><label><input type="checkbox" id="demoToggle"> הצג נתוני הדגמה (לא התרעות אמיתיות)</label>
 <p class="muted">אלה צלילים אלקטרוניים שנוצרים במכשיר, לא הקלטות רשמיות. אין Push ברקע. האפליקציה אינה תחליף ליישומון פיקוד העורף.</p><button id="clearHistory">נקה היסטוריה מקומית</button><div id="settingsMsg" class="muted"></div></div></section>
-<footer class="foot">RedAlert Live — כלי משלים בלבד. הנתונים החיים תלויים בזמינות מקור חיצוני ואינם שירות התרעה מאושר.</footer>
+<footer class="foot"><details><summary style="cursor:pointer">מידע חשוב על אמינות הנתונים</summary><p>RedAlert Live הוא כלי משלים ולא שירות רשמי. התרעות יישובים עשויות להתעכב או להיות חלקיות; מסלולי טילים חיים אינם זמינים במקור המחובר כרגע. אין להסתמך על האתר במקום יישומון פיקוד העורף.</p></details></footer>
 </main>
 <script>
 const $=id=>document.getElementById(id);
