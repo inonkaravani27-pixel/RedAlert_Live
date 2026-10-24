@@ -152,15 +152,27 @@ const server = http.createServer((req, res) => {
   if (p === "/healthz") { res.writeHead(200, h); return res.end(JSON.stringify({ ok: true, uptime: Math.round(process.uptime()) })); }
   if (p === "/api/state") { res.writeHead(200, h); return res.end(JSON.stringify(state(parseAreas(u.searchParams.get("areas"))))); }
   if (p === "/api/prelim") {
-    const query = encodeURIComponent('(Israel OR Iran) (missile OR rocket OR launch OR launches OR interception OR "Home Front Command" OR "Israeli military" OR "Iranian attack" OR שיגור OR טיל OR יירוט OR איראן OR ישראל)');
-    fetch("https://api.gdeltproject.org/api/v2/doc/doc?query="+query+"&mode=ArtList&format=json&sort=DateDesc&maxrecords=30&timespan=24h")
-      .then(r => { if (!r.ok) throw new Error("news source unavailable"); return r.json(); })
+    const query = encodeURIComponent('(Iran OR Israel OR missile OR rocket OR launch OR interception OR "Home Front Command" OR IDF)');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    fetch("https://api.gdeltproject.org/api/v2/doc/doc?query="+query+"&mode=ArtList&format=json&sort=datedesc&maxrecords=40&timespan=24h", {signal:controller.signal})
+      .then(async r => {
+        const body = await r.text();
+        if (!r.ok) throw new Error("GDELT HTTP "+r.status);
+        let data;
+        try { data = JSON.parse(body); } catch { throw new Error("GDELT returned non-JSON response"); }
+        return data;
+      })
       .then(data => {
         const seen = new Set();
-        const items = (data.articles || []).map(a => ({ id:a.url || a.title, title:a.title || "", link:a.url || "", sources:[a.domain || "מקור לא ידוע"], published:Date.parse(a.seendate || "") || null, description:"" }))
-          .filter(a => a.title && /iran|israel|missile|rocket|launch|intercept|home front|idf|military|attack|strike|שיגור|טיל|יירוט|פיקוד העורף|איראן|ישראל/i.test(a.title) && (a.link.startsWith("https://") || a.link.startsWith("http://")) && !seen.has(a.link) && seen.add(a.link)).slice(0, 15);
+        const items = (data.articles || []).map(a => ({id:a.url || a.title, title:a.title || "", link:a.url || "", sources:[a.domain || "מקור לא ידוע"], published:Date.parse(a.seendate || "") || null, description:""}))
+          .filter(a => a.title && a.link && /^https?:\\/\\//i.test(a.link) && !seen.has(a.link) && seen.add(a.link)).slice(0,20);
+        clearTimeout(timer);
         if (!res.headersSent) { res.writeHead(200, h); res.end(JSON.stringify({items, fetchedAt:new Date().toISOString(), source:"GDELT"})); }
-      }).catch(() => { if (!res.headersSent) { res.writeHead(502, h); res.end(JSON.stringify({error:"news source unavailable"})); } });
+      }).catch(() => {
+        clearTimeout(timer);
+        if (!res.headersSent) { res.writeHead(502, h); res.end(JSON.stringify({error:"news source unavailable"})); }
+      });
     return;
   }
   if (p === "/api/osint") {
