@@ -156,21 +156,15 @@ const mapPlaces={iran:[51.389,35.689],lebanon:[35.862,33.854],gaza:[34.466,31.50
 function initRadarMap(){
  if(!window.L){
    const box=$("radarMap");
-   if(box){box.innerHTML=`<svg id="fallbackGeoMap" viewBox="0 0 900 520" role="img" aria-label="מפת המחשה סכמטית של מזרח הים התיכון" style="display:block;width:100%;height:100%;min-height:360px;background:#0b1822">
-   <defs><pattern id="fallbackGrid" width="45" height="45" patternUnits="userSpaceOnUse"><path d="M45 0H0V45" fill="none" stroke="#24404d" stroke-width="1"/></pattern><radialGradient id="fallbackGlow"><stop stop-color="#17404b"/><stop offset="1" stop-color="#0b1822"/></radialGradient></defs>
-   <rect width="900" height="520" fill="url(#fallbackGlow)"/><rect width="900" height="520" fill="url(#fallbackGrid)"/>
-   <g fill="#1a3038" stroke="#45616d" stroke-width="2" stroke-linejoin="round">
-   <path d="M0 0H900V90L850 100 816 126 778 130 754 155 718 165 690 150 665 174 643 188 615 180 594 203 575 210 560 240 535 250 518 282 500 290 482 318 460 326 443 350 420 366 398 389 377 400 357 423 338 438 320 468 295 484 275 520H0Z"/>
-   <path d="M0 0H900V520H900V520H0Z" fill="none" stroke="none"/>
-   <path d="M0 0H900V60L860 65 825 52 795 70 770 58 738 72 700 60 670 78 642 72 615 90 590 86 562 105 535 95 505 115 470 110 440 130 410 125 380 145 350 137 320 155 292 150 270 176 250 188 226 215 210 240 190 260 170 282 145 290 120 275 100 245 75 220 60 180 35 150 0 145Z" opacity=".45"/>
-   <path d="M585 0L615 40 630 82 615 116 628 150 613 183 630 220 616 250 634 278 620 310 640 340 632 380 655 410 650 450 680 480 685 520H900V0Z" opacity=".8"/>
-   </g>
-   <g fill="#a9c1ca" font-family="system-ui,Arial" font-size="17" opacity=".88"><text x="300" y="290">הים התיכון</text><text x="675" y="135">איראן</text><text x="480" y="420">מצרים</text><text x="380" y="205">טורקיה</text></g>
-   <g stroke="#4d7888" stroke-width="1.4" fill="none" opacity=".7"><path d="M90 350Q250 300 400 320T790 280"/><path d="M140 110Q340 170 500 145T820 180"/></g>
-   <g fill="#8ee4b4" stroke="#d7ffea" stroke-width="2"><circle cx="390" cy="300" r="6"/><circle cx="408" cy="322" r="5"/><circle cx="370" cy="340" r="5"/><circle cx="420" cy="350" r="5"/><circle cx="365" cy="375" r="5"/></g>
-   <g fill="#dce8ed" font-family="system-ui,Arial" font-size="13"><text x="405" y="294">חיפה</text><text x="422" y="319">תל אביב</text><text x="385" y="359">ירושלים</text><text x="434" y="365">באר שבע</text><text x="328" y="379">עזה</text></g>
-   <g transform="translate(24 24)"><rect width="210" height="38" rx="9" fill="#101f29" stroke="#35515e"/><circle cx="17" cy="19" r="4" fill="#f6b73c"/><text x="30" y="24" fill="#d9e8ed" font-family="system-ui,Arial" font-size="13">מפת המחשה מקומית</text></g>
-   <text x="876" y="495" text-anchor="end" fill="#7896a4" font-family="system-ui,Arial" font-size="11">תרשים סכמטי · לא לניווט</text></svg>`;}
+   if(box){box.innerHTML=`<svg id="fallbackGeoMap" viewBox="0 0 900 560" role="img" aria-label="תצוגת מכ"ם סכמטית של ישראל והאזורים" style="display:block;width:100%;height:100%;min-height:360px;background:#06131a">
+<defs><radialGradient id="radarBg"><stop stop-color="#123a3c"/><stop offset="1" stop-color="#06131a"/></radialGradient><pattern id="radarGrid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" fill="none" stroke="#1d5550" stroke-width=".7"/></pattern><clipPath id="scopeClip"><circle cx="450" cy="280" r="235"/></clipPath></defs>
+<rect width="900" height="560" fill="#06131a"/><rect width="900" height="560" fill="url(#radarGrid)"/>
+<g clip-path="url(#scopeClip)"><circle cx="450" cy="280" r="235" fill="url(#radarBg)" stroke="#2c776b" stroke-width="1.5"/><g fill="none" stroke="#276b60" stroke-width="1"><circle cx="450" cy="280" r="185"/><circle cx="450" cy="280" r="135"/><circle cx="450" cy="280" r="85"/><path d="M215 280H685M450 45V515M284 114L616 446M284 446L616 114"/></g><path class="radar-sweep-local" d="M450 280L450 45A235 235 0 0 1 616 114Z" fill="#39c89a" opacity=".14"/><path d="M420 95L430 132 425 165 442 192 436 221 451 248 445 274 459 297 452 326 463 351 454 379 471 410 466 444 486 465 488 495 520 515 547 560H338L348 528 340 499 359 471 365 443 378 416 383 386 398 357 397 328 410 301 405 273 418 248 411 220 425 193 419 165 432 135Z" fill="#23463f" stroke="#63b6a0" stroke-width="2"/>
+<path d="M420 95L430 132 425 165 442 192 436 221 451 248 445 274 459 297 452 326 463 351 454 379 471 410 466 444 486 465 488 495 520 515" fill="none" stroke="#6ee7b7" stroke-width="1.5" stroke-dasharray="3 5"/>
+<g font-family="system-ui,Arial" fill="#b7dcd2" font-size="13"><text x="450" y="72" text-anchor="middle">לבנון</text><text x="510" y="105">סוריה</text><text x="520" y="210">ירדן</text><text x="380" y="455">מצרים</text><text x="275" y="255" fill="#6eaaa9">הים התיכון</text></g>
+<g font-family="system-ui,Arial" font-size="12" fill="#effff8" text-anchor="start"><circle cx="432" cy="204" r="4" fill="#71e7b2"/><text x="442" y="208">חיפה</text><circle cx="428" cy="250" r="4" fill="#71e7b2"/><text x="438" y="254">תל אביב</text><circle cx="448" cy="293" r="4" fill="#71e7b2"/><text x="458" y="297">ירושלים</text><circle cx="442" cy="359" r="4" fill="#71e7b2"/><text x="452" y="363">באר שבע</text><circle cx="421" cy="405" r="4" fill="#71e7b2"/><text x="431" y="409">אילת</text><circle cx="424" cy="175" r="4" fill="#71e7b2"/><text x="434" y="179">קריית שמונה</text><circle cx="420" cy="279" r="4" fill="#71e7b2"/><text x="390" y="276" text-anchor="end">אשקלון</text><circle cx="427" cy="265" r="4" fill="#71e7b2"/><text x="417" y="262" text-anchor="end">אשדוד</text></g></g>
+<g transform="translate(22 20)"><rect width="250" height="48" rx="10" fill="#0d2428" stroke="#28675d"/><circle cx="17" cy="17" r="4" fill="#56e0a2"/><text x="31" y="21" fill="#d7fff0" font-family="system-ui,Arial" font-size="13">REDALERT · מכ"ם אזורי</text><text x="14" y="38" fill="#8bbdb0" font-family="system-ui,Arial" font-size="10">מפה סכמטית · ללא מסלולים מבצעיים</text></g>
+<text x="878" y="540" text-anchor="end" fill="#6c9e94" font-family="system-ui,Arial" font-size="11">המחשה בלבד · לא תחליף לפיקוד העורף</text></svg>`;}}
    return;
   }
  if(radarMap)return;
@@ -194,9 +188,9 @@ function runHotmapTest(){
   make("path",{d:`M ${coords.from[0]} ${coords.from[1]} Q ${(coords.from[0]+coords.to[0])/2-15} ${(coords.from[1]+coords.to[1])/2-35} ${coords.to[0]} ${coords.to[1]}`,fill:"none",stroke:"#ff514e","stroke-width":"3","stroke-dasharray":"8 8"});
   make("circle",{cx:coords.from[0],cy:coords.from[1],r:8,fill:"none",stroke:"#ff625c","stroke-width":"2"});
   make("circle",{cx:coords.to[0],cy:coords.to[1],r:10,fill:"none",stroke:"#ff625c","stroke-width":"2"});
-  const rocket=make("circle",{cx:coords.from[0],cy:coords.from[1],r:6,fill:"#fff1f0",stroke:"#ff514e","stroke-width":"4"});
+  const rocket=make("text",{x:coords.from[0],y:coords.from[1],fill:"#ff655e","font-size":choice==="lebanon-uav"?"25":"28","text-anchor":"middle","dominant-baseline":"middle"});rocket.textContent=choice==="lebanon-uav"?"✈":"🚀";
   const start=performance.now(),duration=7000;
-  function animateFallback(now){const t=Math.min(1,(now-start)/duration);rocket.setAttribute("cx",coords.from[0]+(coords.to[0]-coords.from[0])*t);rocket.setAttribute("cy",coords.from[1]+(coords.to[1]-coords.from[1])*t-30*Math.sin(Math.PI*t));if(t<1)animationFrame=requestAnimationFrame(animateFallback);else $("hotmapTestStatus").textContent="הסימולציה הסתיימה. זהו מסלול המחשה מומצא בלבד."}
+  function animateFallback(now){const t=Math.min(1,(now-start)/duration);rocket.setAttribute("x",coords.from[0]+(coords.to[0]-coords.from[0])*t);rocket.setAttribute("y",coords.from[1]+(coords.to[1]-coords.from[1])*t-30*Math.sin(Math.PI*t));if(choice==="iran-cluster"&&t>.38&&!svg.querySelector(".demo-fragment")){[0,1,2].forEach((n)=>{const f=make("text",{x:coords.from[0]+(coords.to[0]-coords.from[0])*.38,y:coords.from[1]+(coords.to[1]-coords.from[1])*.38,"font-size":"23",fill:"#ff9b62","text-anchor":"middle","class":"demo-fragment"});f.textContent="🚀";f.setAttribute("data-branch",n);f.setAttribute("transform",`translate(${(n-1)*18} ${n*12})`)})}if(t<1)animationFrame=requestAnimationFrame(animateFallback);else $("hotmapTestStatus").textContent="הסימולציה הסתיימה. זהו מסלול המחשה מומצא בלבד."}
   animationFrame=requestAnimationFrame(animateFallback);
   $("hotmapScenarioName").textContent="סימולציה: "+coords.name;
   $("hotmapTestStatus").textContent="סימולציה פועלת על מפת המכ״ם המקומית — המחשה בלבד, לא נתון חי.";
@@ -212,10 +206,10 @@ function runHotmapTest(){
  const route=L.polyline([from,to],{color:"#ff514e",weight:3,opacity:.95,dashArray:"8 8"}).addTo(radarMap);
  const source=L.marker(from,{icon:L.divIcon({className:"",html:'<div class="sim-origin"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).bindPopup("נקודת מוצא מדומה · "+({iran:"איראן",lebanon:"לבנון",gaza:"עזה"}[origin])).addTo(radarMap);
  const target=L.circleMarker(to,{radius:7,color:"#ffe6e6",weight:2,fillColor:"#ff514e",fillOpacity:.95}).bindPopup("יעד המחשה בלבד — אין כאן התרעה אמיתית").addTo(radarMap);
- const rocket=L.marker(from,{icon:L.divIcon({className:"",html:'<div class="sim-rocket">➤</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(radarMap);
+ const rocket=L.marker(from,{icon:L.divIcon({className:"",html:'<div class="sim-rocket">'+(choice==="lebanon-uav"?"✈":"🚀")+'</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(radarMap);
  demoLayers.push(route,source,target,rocket);
  if(choice==="iran-cluster"){
-  const branch=L.polyline([from,[34.9,33.0]],{color:"#ff9b62",weight:2,opacity:.8,dashArray:"4 7"}).addTo(radarMap);demoLayers.push(branch);
+  [[34.7,32.8],[35.1,33.2],[34.4,33.4]].forEach((p)=>{const branch=L.polyline([from,p],{color:"#ff9b62",weight:2,opacity:.9,dashArray:"4 7"}).addTo(radarMap);demoLayers.push(branch)});
  }
  const start=performance.now(),duration=9000;
  function animate(now){if(!radarMap)return;const t=Math.min(1,(now-start)/duration);const lat=from[0]+(to[0]-from[0])*t,lon=from[1]+(to[1]-from[1])*t+Math.sin(t*Math.PI)*.55;rocket.setLatLng([lat,lon]);if(t<1)animationFrame=requestAnimationFrame(animate);else $("hotmapTestStatus").textContent="הסימולציה הסתיימה. המסלול והנקודות מומצאים ואינם נתונים חיים."}
