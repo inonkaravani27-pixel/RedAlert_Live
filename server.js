@@ -152,29 +152,15 @@ const server = http.createServer((req, res) => {
   if (p === "/healthz") { res.writeHead(200, h); return res.end(JSON.stringify({ ok: true, uptime: Math.round(process.uptime()) })); }
   if (p === "/api/state") { res.writeHead(200, h); return res.end(JSON.stringify(state(parseAreas(u.searchParams.get("areas"))))); }
   if (p === "/api/prelim") {
-    const terms = '(Israel OR Iran) (missile OR rocket OR launch OR launches OR interception OR "Home Front Command" OR "Israeli military" OR "Iranian attack" OR שיגור OR טיל OR יירוט OR איראן OR ישראל)';
-    const mkUrl = q => "https://api.gdeltproject.org/api/v2/doc/doc?query="+encodeURIComponent(q)+"&mode=ArtList&format=json&sort=DateDesc&maxrecords=25&timespan=24h";
-    Promise.allSettled([
-      fetch(mkUrl('domainis:mako.co.il '+terms)).then(r => { if (!r.ok) throw new Error("N12 unavailable"); return r.json(); }),
-      fetch(mkUrl(terms)).then(r => { if (!r.ok) throw new Error("news source unavailable"); return r.json(); })
-    ]).then(results => {
-      const seen = new Set(), items = [];
-      for (let i=0;i<results.length;i++) {
-        const result=results[i];
-        if(result.status!=="fulfilled") continue;
-        for(const a of (result.value.articles||[])) {
-          const link=a.url||"", title=a.title||"";
-          if(!title || !/^https?:\\/\\//i.test(link) || seen.has(link)) continue;
-          if(!/iran|israel|missile|rocket|launch|intercept|home front|idf|military|attack|strike|שיגור|טיל|יירוט|פיקוד העורף|איראן|ישראל/i.test(title)) continue;
-          seen.add(link);
-          const n12=/^https?:\\/\\/(?:[^/]+\\.)?mako\\.co\\.il\\//i.test(link);
-          items.push({id:link,title,link,sources:[n12?"N12 / חדשות 12":(a.domain||"מקור חדשות")],published:Date.parse(a.seendate||"")||null,description:"",kind:n12?"n12":"news"});
-        }
-      }
-      items.sort((a,b)=>(a.kind==="n12"?0:1)-(b.kind==="n12"?0:1) || ((b.published||0)-(a.published||0)));
-      const ok=results.some(x=>x.status==="fulfilled");
-      if(!res.headersSent){res.writeHead(ok?200:502,h);res.end(JSON.stringify({items:items.slice(0,20),fetchedAt:new Date().toISOString(),source:"N12 + GDELT",n12Available:results[0].status==="fulfilled",error:ok?null:"news sources unavailable"}));}
-    }).catch(()=>{if(!res.headersSent){res.writeHead(502,h);res.end(JSON.stringify({error:"news source unavailable"}));}});
+    const query = encodeURIComponent('(Israel OR Iran) (missile OR rocket OR launch OR launches OR interception OR "Home Front Command" OR "Israeli military" OR "Iranian attack" OR שיגור OR טיל OR יירוט OR איראן OR ישראל)');
+    fetch("https://api.gdeltproject.org/api/v2/doc/doc?query="+query+"&mode=ArtList&format=json&sort=DateDesc&maxrecords=30&timespan=24h")
+      .then(r => { if (!r.ok) throw new Error("news source unavailable"); return r.json(); })
+      .then(data => {
+        const seen = new Set();
+        const items = (data.articles || []).map(a => ({ id:a.url || a.title, title:a.title || "", link:a.url || "", sources:[a.domain || "מקור לא ידוע"], published:Date.parse(a.seendate || "") || null, description:"" }))
+          .filter(a => a.title && /iran|israel|missile|rocket|launch|intercept|home front|idf|military|attack|strike|שיגור|טיל|יירוט|פיקוד העורף|איראן|ישראל/i.test(a.title) && (a.link.startsWith("https://") || a.link.startsWith("http://")) && !seen.has(a.link) && seen.add(a.link)).slice(0, 15);
+        if (!res.headersSent) { res.writeHead(200, h); res.end(JSON.stringify({items, fetchedAt:new Date().toISOString(), source:"GDELT"})); }
+      }).catch(() => { if (!res.headersSent) { res.writeHead(502, h); res.end(JSON.stringify({error:"news source unavailable"})); } });
     return;
   }
   if (p === "/api/osint") {
