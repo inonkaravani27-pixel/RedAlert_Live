@@ -96,7 +96,7 @@ async function pollGroup(g) {
         if (!it.title || !Number.isFinite(it.pub) || now - it.pub > MAXAGE || it.pub - now > 600000) continue;
         if (!/^https?:\/\//.test(it.link)) continue;
         const txt = (it.title + " " + it.desc).toLowerCase();
-        if (!g.kw.some(k => txt.includes(k))) continue;
+        // Keep recent entries from the configured newsroom feeds. Many video/live-blog headlines do not contain the configured keywords, so strict keyword matching hid valid updates.
         const key = norm(it.title), dup = [...g.items.values()].find(x => x.key === key);
         if (dup) { if (!dup.sources.includes(host)) dup.sources.push(host); continue; }
         const id = crypto.createHash("sha1").update(it.link).digest("hex").slice(0, 16);
