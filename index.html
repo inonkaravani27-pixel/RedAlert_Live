@@ -12,7 +12,7 @@
 <header class="top"><h1>RedAlert <span>Live</span></h1><div class="row"><span id="mode" class="status">הדגמה</span><span id="connection" class="status">בודק חיבור…</span></div></header>
 
 <nav class="nav" id="nav">
-<button class="active" data-page="home">ראשי</button><button data-page="history">היסטוריה</button><button data-page="prelim">דיווחים ראשוניים</button><button data-page="hotmap">מפה חמה</button><button data-page="settings">הגדרות</button>
+<button class="active" data-page="home">ראשי</button><button data-page="history">היסטוריה</button><button data-page="prelim">דיווחים ראשוניים</button><button data-page="hotmap"><span class="live-dot" aria-hidden="true"></span>Maps Live</button><button data-page="settings">הגדרות</button>
 </nav>
 <section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
 <section id="page-home">
@@ -24,6 +24,7 @@
 <section id="page-hotmap" class="hidden">
 <style>
 /* Hot map visual refresh */
+.live-dot{display:inline-block;width:9px;height:9px;background:#ff303b;border-radius:50%;margin-left:7px;box-shadow:0 0 0 0 #ff303b99;animation:liveBlink 1.15s ease-out infinite;vertical-align:middle}@keyframes liveBlink{0%{opacity:1;box-shadow:0 0 0 0 #ff303b99}65%{opacity:.45;box-shadow:0 0 0 7px #ff303b00}100%{opacity:1;box-shadow:0 0 0 0 #ff303b00}}
 #page-hotmap{color:#e9f2f7}
 #hotmapPanel{background:linear-gradient(145deg,#071018,#0b1a24 55%,#081019);border:1px solid #243d4c;box-shadow:0 18px 45px #0006}
 #hotmapHead{background:linear-gradient(90deg,#101f2b,#0b151e);padding:18px 20px}
@@ -47,9 +48,9 @@
 #hotmapPanel{background:radial-gradient(ellipse at 50% 45%,#10232b 0,#0b141c 52%,#090d13 100%);border:1px solid #263e4b;border-radius:16px;overflow:hidden}
 #hotmapHead{padding:14px;border-bottom:1px solid #263e4b;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 #radarSvg{display:block;width:100%;height:auto;min-height:300px;max-height:620px}
-.radar-grid{stroke:#294451;stroke-width:1;fill:none;opacity:.55}.radar-land{fill:#1c3038;stroke:#58717b;stroke-width:1.4}.radar-country{font:12px system-ui;fill:#9fb7c1}.radar-city{font:10px system-ui;fill:#d5e3e8}.radar-route{fill:none;stroke:#ff625c;stroke-width:2.5;stroke-dasharray:7 8;animation:routeFlow 1.4s linear infinite}.radar-intercept{fill:none;stroke:#63c9ff;stroke-width:2.5;stroke-dasharray:5 7;animation:routeFlow .9s linear infinite}.radar-dot{filter:drop-shadow(0 0 5px currentColor)}.radar-scan{transform-origin:50% 50%;animation:scan 6s linear infinite}.radar-pulse{animation:pulse 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}.radar-fragment{animation:fragment 2.2s ease-out infinite alternate}.radar-legend{display:flex;gap:12px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid #263e4b;color:#b8c9d0;font-size:12px}.radar-legend span{display:inline-flex;align-items:center;gap:6px}.radar-key{width:9px;height:9px;border-radius:50%;display:inline-block}.hotmap-controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.hotmap-controls button.active{border-color:#5e9fba;background:#183541}.hotmap-note{border:1px solid #72551d;background:#211b10;color:#ffd477;padding:10px 12px;border-radius:10px;font-size:13px;margin:12px 0}.hotmap-stat{background:#111a21;border:1px solid #263e4b;border-radius:10px;padding:10px;min-width:110px;flex:1}.hotmap-stat b{display:block;font-size:18px}@keyframes routeFlow{to{stroke-dashoffset:-30}}@keyframes scan{to{transform:rotate(360deg)}}@keyframes pulse{0%{opacity:.85;r:3}100%{opacity:0;r:14}}@keyframes fragment{to{transform:translate(10px,-12px);opacity:.3}}@media(prefers-reduced-motion:reduce){.radar-route,.radar-intercept,.radar-scan,.radar-pulse,.radar-fragment{animation:none}}
+.radar-grid{stroke:#294451;stroke-width:1;fill:none;opacity:.55}.radar-land{fill:#1c3038;stroke:#58717b;stroke-width:1.4}.radar-country{font:12px system-ui;fill:#9fb7c1}.radar-city{font:10px system-ui;fill:#d5e3e8}.radar-route{fill:none;stroke:#ff625c;stroke-width:2.5;stroke-dasharray:7 8;animation:routeFlow 1.4s linear infinite;display:none}.radar-intercept{fill:none;stroke:#63c9ff;stroke-width:2.5;stroke-dasharray:5 7;animation:routeFlow .9s linear infinite;display:none}.radar-dot{filter:drop-shadow(0 0 5px currentColor)}.radar-scan{transform-origin:50% 50%;animation:scan 6s linear infinite}.radar-pulse{animation:pulse 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}.radar-fragment{animation:fragment 2.2s ease-out infinite alternate}.radar-legend{display:flex;gap:12px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid #263e4b;color:#b8c9d0;font-size:12px}.radar-legend span{display:inline-flex;align-items:center;gap:6px}.radar-key{width:9px;height:9px;border-radius:50%;display:inline-block}.hotmap-controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.hotmap-controls button.active{border-color:#5e9fba;background:#183541}.hotmap-note{border:1px solid #72551d;background:#211b10;color:#ffd477;padding:10px 12px;border-radius:10px;font-size:13px;margin:12px 0}.hotmap-stat{background:#111a21;border:1px solid #263e4b;border-radius:10px;padding:10px;min-width:110px;flex:1}.hotmap-stat b{display:block;font-size:18px}@keyframes routeFlow{to{stroke-dashoffset:-30}}@keyframes scan{to{transform:rotate(360deg)}}@keyframes pulse{0%{opacity:.85;r:3}100%{opacity:0;r:14}}@keyframes fragment{to{transform:translate(10px,-12px);opacity:.3}}@media(prefers-reduced-motion:reduce){.radar-route,.radar-intercept,.radar-scan,.radar-pulse,.radar-fragment{animation:none}}
 </style>
-<div class="hotmap-note"><b>מצב מפה חמה:</b> סימולציה חזותית בלבד. המסלולים והמיירטים המונפשים אינם נתוני שיגור, מיקום או יירוט בזמן אמת.</div>
+<div class="hotmap-note"><b>חשוב:</b> מסלולים אמיתיים יוצגו רק אם מקור הנתונים יספק אותם וניתן יהיה לאמתם. כרגע השרת המחובר מספק התרעות לפי יישוב בלבד.</div>
 <div id="hotmapPanel">
 <div id="hotmapHead"><div><b>מפה חמה · RedAlert Live</b><div class="muted" style="font-size:12px">תצוגה סכמטית של האזור · לא מפה מבצעית</div></div><span id="hotmapLiveBadge" class="status">מקור חי: ממתין לאימות</span></div>
 <svg id="radarSvg" viewBox="0 0 720 540" role="img" aria-label="מפה סכמטית מונפשת של ישראל והאזור, עם מסלולי הדגמה המסומנים בבירור">
@@ -73,7 +74,7 @@
 </svg>
 <div class="radar-legend"><span><i class="radar-key" style="background:#ff625c"></i>מסלול הדגמה</span><span><i class="radar-key" style="background:#63c9ff"></i>מיירט בהדגמה</span><span><i class="radar-key" style="background:#ff9b51"></i>פיצול להמחשה</span><span><i class="radar-key" style="background:#b8e6c9"></i>יישוב עם התרעה ממקור חי</span></div>
 </div>
-<div class="hotmap-controls"><button class="active" data-scenario="iran">תרחיש הדגמה: מאיראן</button><button data-scenario="lebanon">תרחיש הדגמה: מלבנון</button><button data-scenario="cluster">הדגמת טיל מצרר</button><button id="hotmapReset">איפוס תצוגה</button></div>
+<div class="hotmap-controls"><label style="flex:1;min-width:220px;margin:0">סוג בדיקה<select id="hotmapTestType" class="field"><option value="iran-cluster">מאיראן — טיל מתפצל</option><option value="iran-normal">מאיראן — טיל רגיל</option><option value="lebanon-missile">מלבנון — טיל</option><option value="lebanon-uav">מלבנון — כטב״ם</option><option value="gaza-missile">מעזה — טיל רגיל</option></select></label><button id="hotmapTest" class="primary">▶ בדיקה</button><button id="hotmapReset">איפוס</button></div><div id="hotmapTestStatus" class="muted" aria-live="polite">המפה ממתינה. לחיצה על „בדיקה” תפעיל אנימציה מדומה בלבד.</div>
 <div class="grid"><div class="hotmap-stat"><span class="muted">מצב הדגמה</span><b id="hotmapScenarioName">מסלול מאיראן</b><small>אנימציה מומצאת להמחשה</small></div><div class="hotmap-stat"><span class="muted">נתונים חיים</span><b id="hotmapLiveCount">אין אימות</b><small>מופיעים בנפרד מהסימולציה</small></div></div>
 <div class="card"><h3 class="section-title">אירועים חיים — תצוגת יישובים בלבד</h3><p class="muted">כאשר המקור החיצוני מדווח התרעה, נציג סמן ביישוב המתאים. אין כאן נתוני מסלול טיל, שיגור או יירוט בזמן אמת, והסמנים סכמטיים.</p><div id="hotmapLiveList" class="empty">ממתין לאימות מהמקור.</div></div>
 </section>
@@ -123,13 +124,13 @@ function store(){localStorage.setItem("ral-history",JSON.stringify(history.slice
 function setPage(page){document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","hotmap","settings"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page))}
 $("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)});
 
-let hotmapScenario="iran";
+let hotmapScenario="";
 function renderHotmapScenario(scenario){
  hotmapScenario=scenario;
  const routes=$("demoRoutes"), cluster=$("clusterDemo");
  if(!routes||!cluster)return;
- routes.querySelectorAll(".radar-route,.radar-intercept,.radar-dot,.radar-pulse").forEach(n=>n.style.display="");
- cluster.style.display=scenario==="cluster"?"":"none";
+ routes.querySelectorAll(".radar-route,.radar-intercept,.radar-dot,.radar-pulse").forEach(n=>n.style.display="none");
+ cluster.style.display="none";
  const paths=routes.querySelectorAll(".radar-route");
  const dots=routes.querySelectorAll(".radar-dot");
  if(scenario==="iran"){
@@ -159,8 +160,23 @@ function renderHotmapLive(){
  else if(!active.length){el.className="empty";el.textContent="המקור מגיב ולא מדווח כרגע על התרעות פעילות. זה אינו אישור שאין סכנה."}
  else{el.className="";el.innerHTML=active.map(x=>'<div class="item"><b>'+esc(x.city)+'</b> · '+esc(x.type)+' <span class="tag live">דיווח מקור חי</span><div class="muted">מיקום יישוב סכמטי בלבד — לא מסלול או מיקום איום</div></div>').join("")}
 }
-document.querySelectorAll("[data-scenario]").forEach(b=>b.addEventListener("click",()=>renderHotmapScenario(b.dataset.scenario)));
-$("hotmapReset").addEventListener("click",()=>renderHotmapScenario("iran"));
+function runHotmapTest(){
+ const choice=$("hotmapTestType").value, routes=$("demoRoutes"), paths=routes.querySelectorAll(".radar-route"), intercept=routes.querySelectorAll(".radar-intercept"), dots=routes.querySelectorAll(".radar-dot"), cluster=$("clusterDemo");
+ routes.querySelectorAll(".radar-route,.radar-intercept,.radar-dot,.radar-pulse").forEach(n=>n.style.display="none");
+ cluster.style.display="none";
+ let origin="מאיראן",label="טיל מתפצל",d="M585 88Q470 112 350 182T279 255";
+ if(choice==="iran-normal"){origin="מאיראן";label="טיל רגיל"}
+ if(choice==="lebanon-missile"){origin="מלבנון";label="טיל";d="M278 190Q270 216 270 242T280 276"}
+ if(choice==="lebanon-uav"){origin="מלבנון";label="כטב״ם";d="M278 190Q250 220 258 247T280 276"}
+ if(choice==="gaza-missile"){origin="מעזה";label="טיל רגיל";d="M254 346Q258 320 268 300T280 276"}
+ paths[0].setAttribute("d",d);paths[0].style.display="";
+ if(choice==="iran-cluster"){cluster.style.display="";$( "hotmapScenarioName").textContent="בדיקה: "+origin+" · "+label}
+ else $("hotmapScenarioName").textContent="בדיקה: "+origin+" · "+label;
+ $("hotmapTestStatus").textContent="מצב בדיקה — "+label+" "+origin+". האנימציה מומצאת לצורך בדיקת הממשק, ואינה שיגור או נתון חי.";
+ $("hotmapTestStatus").className="hotmap-note";
+}
+$("hotmapTest").addEventListener("click",runHotmapTest);
+$("hotmapReset").addEventListener("click",()=>{renderHotmapScenario("iran");$("demoRoutes").querySelectorAll(".radar-route,.radar-intercept,.radar-dot,.radar-pulse").forEach(n=>n.style.display="none");$("clusterDemo").style.display="none";$("hotmapScenarioName").textContent="ממתין לבדיקה";$("hotmapTestStatus").textContent="המפה ממתינה. לחיצה על „בדיקה” תפעיל אנימציה מדומה בלבד.";$("hotmapTestStatus").className="muted"});
 
 function renderEvents(){
  const q=$("search").value.trim().toLocaleLowerCase("he");
@@ -198,6 +214,6 @@ $("refresh").onclick=poll;
 $("demoToggle").onchange=()=>{demo=$("demoToggle").checked;store();renderAll();$("settingsMsg").textContent=demo?"נתוני הדגמה מוצגים ומסומנים.":"מצב נתונים חיים נבחר; אם המקור לא זמין, לא יוצגו נתוני הדגמה."};
 $("autoSound").onchange=()=>{autoSound=$("autoSound").checked;store();$("settingsMsg").textContent=autoSound?"צליל אוטומטי הופעל לשינויים חדשים בזמן שהדף פתוח ולאחר לחיצה שמאפשרת שמע.":"צליל אוטומטי כבוי."};
 $("clearHistory").onclick=()=>{history=[];store();renderHistory();$("settingsMsg").textContent="ההיסטוריה המקומית נוקתה."};
-renderAll();poll();setInterval(poll,10000);
+renderAll();renderHotmapScenario("");$("hotmapScenarioName").textContent="ממתין לבדיקה";poll();setInterval(poll,10000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 </script></body></html>
