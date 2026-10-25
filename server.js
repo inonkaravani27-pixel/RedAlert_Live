@@ -294,7 +294,7 @@ async function fetchTelegramChannel(channel, limit = 15) {
   return request;
 }
 
-async function fetchPublicNewsGroup(group, limit = 15) {
+async function fetchPublicNewsGroupUncached(group, limit = 15) {
   if (group.telegram) return fetchTelegramChannel(group.telegram, limit);
 
   let lastError = "public news source unavailable";
@@ -345,6 +345,35 @@ async function fetchPublicNewsGroup(group, limit = 15) {
   } catch (error) {
     throw new Error("GDELT/Google News unavailable (" + lastError + "; " + msg(error) + ")");
   }
+}
+
+
+// Cache per source as well, so unavailable media providers are not retried every 20 seconds.
+const publicNewsGroupCache = new Map();
+const publicNewsGroupInFlight = new Map();
+async function fetchPublicNewsGroup(group, limit = 15) {
+  const key = group.id + ":" + limit;
+  const cached = publicNewsGroupCache.get(key);
+  if (cached && Date.now() < cached.until) {
+    if (cached.error) throw new Error(cached.error);
+    return cached.articles;
+  }
+  if (publicNewsGroupInFlight.has(key)) return publicNewsGroupInFlight.get(key);
+  const request = (async () => {
+    try {
+      const articles = await fetchPublicNewsGroupUncached(group, limit);
+      publicNewsGroupCache.set(key, { articles, until: Date.now() + 60_000 });
+      return articles;
+    } catch (error) {
+      const message = msg(error);
+      publicNewsGroupCache.set(key, { error: message, until: Date.now() + 120_000 });
+      throw error;
+    } finally {
+      publicNewsGroupInFlight.delete(key);
+    }
+  })();
+  publicNewsGroupInFlight.set(key, request);
+  return request;
 }
 
 let publicNewsCache = null;
