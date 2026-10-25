@@ -266,26 +266,58 @@ function filterFreshPublicArticles(articles) {
 }
 async function refreshPublicNewsCache() {
   if (publicNewsRefreshPromise) return publicNewsRefreshPromise;
+  const previous = publicNewsCache;
+  const previousGroups = new Map((previous && previous.groups || []).map(g => [g.id, g]));
+  const results = PUBLIC_NEWS_GROUPS.map(group => {
+    const old = previousGroups.get(group.id);
+    return old ? { ...old, articles: filterFreshPublicArticles(old.articles || []), refreshing: true } :
+      { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: [], unavailable: false, refreshing: true };
+  });
+  // Publish a cache immediately and update it as each source finishes. The browser no longer
+  // waits for every Telegram/news source before receiving the first response.
+  publicNewsCache = {
+    source: "GDELT / Google News RSS / public Telegram channel previews",
+    fetchedAt: previous && previous.fetchedAt || null,
+    partial: true, refreshing: true,
+    note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
+    groups: results
+  };
   publicNewsRefreshPromise = (async () => {
-    const previous = publicNewsCache;
-    const previousGroups = new Map((previous && previous.groups || []).map(g => [g.id, g]));
-    const results = await Promise.all(PUBLIC_NEWS_GROUPS.map(async group => {
-      try {
-        const articles = filterFreshPublicArticles(await fetchPublicNewsGroup(group, 20));
-        return { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles, unavailable: false };
-      } catch (error) {
-        console.error("Public news group failed (" + group.id + "):", msg(error));
-        const old = previousGroups.get(group.id);
-        return { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור",
-          articles: filterFreshPublicArticles(old && old.articles || []), unavailable: true, error: msg(error) };
+    let nextIndex = 0;
+    const worker = async () => {
+      while (nextIndex < PUBLIC_NEWS_GROUPS.length) {
+        const index = nextIndex++;
+        const group = PUBLIC_NEWS_GROUPS[index];
+        try {
+          const articles = filterFreshPublicArticles(await fetchPublicNewsGroup(group, 20));
+          results[index] = { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles, unavailable: false, refreshing: false };
+        } catch (error) {
+          console.error("Public news group failed (" + group.id + "):", msg(error));
+          const old = previousGroups.get(group.id);
+          results[index] = {
+            id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור",
+            articles: filterFreshPublicArticles(old && old.articles || []), unavailable: true, error: msg(error), refreshing: false
+          };
+        }
+        publicNewsCache = {
+          source: "GDELT / Google News RSS / public Telegram channel previews",
+          fetchedAt: new Date().toISOString(),
+          partial: results.some(g => g.unavailable || g.refreshing),
+          refreshing: true,
+          note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
+          groups: [...results]
+        };
       }
-    }));
+    };
+    // Limit concurrency to reduce Telegram throttling and publish useful results progressively.
+    await Promise.all(Array.from({ length: 10 }, () => worker()));
     publicNewsCache = {
       source: "GDELT / Google News RSS / public Telegram channel previews",
       fetchedAt: new Date().toISOString(),
       partial: results.some(g => g.unavailable),
+      refreshing: false,
       note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
-      groups: results
+      groups: [...results]
     };
     publicNewsLastRefresh = Date.now();
     return publicNewsCache;
@@ -430,13 +462,8 @@ const server = http.createServer((req, res) => {
       const freshSnapshot = { ...snapshot, groups: (snapshot.groups || []).map(group => ({ ...group, articles: filterFreshPublicArticles(group.articles || []) })) };
       res.end(JSON.stringify({ ...freshSnapshot, refreshing: Boolean(publicNewsRefreshPromise), refreshIntervalMs: PUBLIC_NEWS_REFRESH_MS, maxArticleAgeMs: PUBLIC_NEWS_MAX_AGE_MS }));
     };
-    if (!publicNewsCache) {
-      ensurePublicNewsRefresh().then(sendSnapshot).catch(error => {
-        console.error("Initial public news refresh failed:", msg(error));
-        sendSnapshot();
-      });
-      return;
-    }
+    // Respond immediately with whatever is cached; refresh runs in the background and
+    // progressively fills this endpoint. This avoids the browser timing out while dozens of sources load.
     ensurePublicNewsRefresh();
     sendSnapshot();
     return;
