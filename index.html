@@ -38,6 +38,11 @@
 <section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
 <section id="page-home">
 <div class="card"><div class="row"><input id="search" placeholder="חיפוש יישוב…" aria-label="חיפוש יישוב" style="flex:1;min-width:170px"></div><div id="alertList"></div></div>
+<div class="card" id="iranLaunchCard">
+<h2 class="section-title">דיווחים פומביים על שיגורים מאיראן</h2>
+<p class="muted">מוצגים רק דיווחים ציבוריים רלוונטיים. טווח יוצג רק אם צוין במפורש במקור. אין כאן מעקב אחר מיקום משגרים או חיזוי שיגור.</p>
+<div id="iranLaunchStatus" class="muted" aria-live="polite">מתחבר למקורות דיווח…</div><div id="iranLaunchFeed"></div>
+</div>
 <div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="systemTest" class="primary">בדיקת מערכת</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div><div id="sourceDiagnosticsResult" class="muted" style="margin-top:10px;line-height:1.7" aria-live="polite"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
 </section>
 
@@ -91,7 +96,7 @@ let demo=false;localStorage.setItem("ral-demo","false");
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function allEvents(){return (demo?demoEvents:realEvents).filter(x=>primaryScope==="all"||primaryCities.has(x.city)||secondaryCities.has(x.city))}
 function store(){localStorage.setItem("ral-history",JSON.stringify(history.slice(0,300)));localStorage.setItem("ral-demo",String(demo));localStorage.setItem("ral-primary-cities",JSON.stringify([...primaryCities]));localStorage.setItem("ral-secondary-cities",JSON.stringify([...secondaryCities]));localStorage.setItem("ral-primary-scope",primaryScope);localStorage.setItem("ral-primary-sound",primarySound);localStorage.setItem("ral-secondary-sound",secondarySound)}
-function setPage(page){try{localStorage.setItem("ral-active-page",page)}catch{}$("hero").classList.toggle("hidden",page==="map");document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","settings","map"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page));$("settingsButton").classList.toggle("active",page==="settings");$("settingsButton").setAttribute("aria-label",page==="settings"?"סגירת הגדרות":"פתיחת הגדרות");if(page==="prelim")loadPrelimFromPublicFeed()}
+function setPage(page){try{localStorage.setItem("ral-active-page",page)}catch{}$("hero").classList.toggle("hidden",page==="map");document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","settings","map"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page));$("settingsButton").classList.toggle("active",page==="settings");$("settingsButton").setAttribute("aria-label",page==="settings"?"סגירת הגדרות":"פתיחת הגדרות");if(page==="prelim")loadPrelimFromPublicFeed();if(page==="home")loadIranLaunchBriefs()}
 $("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)});
 $("settingsButton").addEventListener("click",()=>setPage($("page-settings").classList.contains("hidden")?"settings":"home"));
 function renderEvents(){
@@ -208,6 +213,60 @@ async function poll(){try{
  if(active.length){for(const x of active){if(!history.some(h=>h.id===x.id&&!h.demo))history.unshift(x)}history=history.slice(0,300);store()}
  renderAll();
  }catch(e){$("connection").textContent="תקלה בחיבור";$("connection").className="status err";$("source").textContent="לא ניתן לאמת מקור: "+String(e.message||e);$("headline").textContent="אין אימות עדכני להתרעות";$("sub").textContent="בדקו את היישומון הרשמי. היעדר מידע אינו אומר שאין סכנה.";if(!demo){realEvents=[];renderEvents()}}
+}
+let iranLaunchRequestInFlight=false;
+function iranLaunchMatch(article, groupId) {
+ const text=[article.title,article.description,article.summary,article.source,article.groupLabel,groupId].filter(Boolean).join(" ");
+ const iran=/(iran|iranian|tehran|איראן|איראני|טהרן)/i.test(text);
+ const israel=/(israel|israeli|toward israel|at israel|ישראל|לישראל|לעבר ישראל)/i.test(text);
+ const launch=/(launch(?:ed|es|ing)?|missile volley|ballistic missile|fired|firing|rocket attack|drone attack|שיגור|שוגרו|שיגרה|שיגר|טיל בליסטי|טילים לעבר|מטחים|ירי לעבר)/i.test(text);
+ return launch && (iran || groupId==="launch" || groupId==="iran") && (israel || /(iran.*(israel|israeli)|איראן.*ישראל|ישראל.*איראן)/i.test(text));
+}
+function iranLaunchRange(article) {
+ const text=[article.title,article.description,article.summary].filter(Boolean).join(" ");
+ const a=/(?:range|טווח(?:\s+ירי)?)[^\n.]{0,60}?\b(\d{2,5})\s*(?:km|kilomet(?:er|re)s?|קילומטר(?:ים)?|ק״מ)/i.exec(text);
+ const b=/\b(\d{2,5})\s*(?:km|kilomet(?:er|re)s?|קילומטר(?:ים)?|ק״מ)\b[^\n.]{0,45}?(?:range|טווח)/i.exec(text);
+ const match=a||b;
+ return match ? (match[1] + " ק״מ · כפי שדווח במקור") : "";
+}
+async function loadIranLaunchBriefs(){
+ const box=$("iranLaunchFeed"),status=$("iranLaunchStatus");
+ if(!box||iranLaunchRequestInFlight)return;
+ iranLaunchRequestInFlight=true;
+ try{
+  const response=await fetch("/api/iran-indicators?ts="+Date.now(),{cache:"no-store"});
+  if(!response.ok)throw new Error("HTTP "+response.status);
+  const data=await response.json(), all=[];
+  for(const group of (data.groups||[])) for(const article of (group.articles||[])){
+   if(!article.url||!article.title)continue;
+   const item={...article,groupLabel:group.label,groupId:group.id};
+   if(iranLaunchMatch(item,group.id)&&!all.some(x=>x.url===item.url))all.push(item);
+  }
+  const now=Date.now();
+  const fresh=all.filter(a=>{const t=Date.parse(a.date||"");return Number.isFinite(t)&&t<=now+5*60*1000&&now-t<=6*60*60*1000})
+    .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,12);
+  if(!fresh.length){
+   box.innerHTML='<div class="empty">אין כרגע דיווחים פומביים תואמים מהשעות האחרונות. זה לא מעיד שאין שיגור או סכנה.</div>';
+  }else{
+   box.innerHTML=fresh.map((a,i)=>{
+    const isTelegram=/t\.me\//i.test(a.source||"")||/טלגרם/i.test(a.groupLabel||"");
+    const range=iranLaunchRange(a);
+    const title=/[\u0590-\u05FF]/.test(a.title)?a.title:"";
+    return '<article class="item"><div class="news-flags"><span class="tag">'+(isTelegram?'טלגרם · לא מאומת':'דיווח תקשורתי')+'</span><span class="tag">לא אימות עצמאי</span></div><b id="iran-launch-title-'+i+'">'+esc(title||"טוען כותרת…")+'</b>'+(range?'<p class="muted">טווח שדווח: '+esc(range)+'</p>':'')+'<p class="muted">'+esc(a.groupLabel||"מקור ציבורי")+' · '+esc(a.source||"מקור לא ידוע")+'<br>'+esc(formatIranDate(a.date))+'</p><a class="map-link" href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer">פתח מקור ↗</a></article>';
+   }).join("");
+   await Promise.all(fresh.map(async(a,i)=>{
+    const node=$("iran-launch-title-"+i);
+    if(node&&!/[\u0590-\u05FF]/.test(a.title)){
+     const translated=await translateNewsTitle(a.title);
+     if(translated&&node.isConnected)node.textContent=translated;
+     else if(node.isConnected)node.textContent=a.title;
+    }
+   }));
+  }
+  status.textContent="עודכן: "+new Date().toLocaleTimeString("he-IL")+" · דיווחים פומביים בלבד; אין חיזוי או מעקב מבצעי אחר משגרים.";
+ }catch(e){
+  status.textContent="לא ניתן כרגע לקבל דיווחים מהמקורות: "+String(e.message||e);
+ }finally{iranLaunchRequestInFlight=false;}
 }
 let prelimRequestInFlight=false;
 let ralScrollIdleTimer=null;
