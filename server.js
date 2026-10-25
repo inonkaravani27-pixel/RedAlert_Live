@@ -106,6 +106,13 @@ function parseFeed(x) {
   return out;
 }
 
+function normalizeNewsDate(value) {
+  const raw = String(value || "").trim();
+  const compact = raw.match(/^(\\d{4})(\\d{2})(\\d{2})T(\\d{2})(\\d{2})(\\d{2})Z?$/);
+  if (compact) return new Date(Date.UTC(+compact[1], +compact[2] - 1, +compact[3], +compact[4], +compact[5], +compact[6])).toISOString();
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+}
 const PUBLIC_NEWS_GROUPS = [
   { id: "iran", label: "דיווחים על איראן — כלי תקשורת", query: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard")', rssQuery: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard") when:1d', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
   { id: "launch", label: "שיגורים, יירוטים ותקיפות — דיווחים", query: '((Iran OR Iranian OR Israel) (missile OR rocket OR drone OR strike OR attack OR interception OR launch))', rssQuery: '((Iran OR Iranian OR Israel) (missile OR rocket OR drone OR strike OR attack OR interception OR launch)) when:1d', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
@@ -161,7 +168,7 @@ async function fetchPublicNewsGroup(group, limit = 15) {
       const data = JSON.parse(body);
       const articles = (data.articles || []).map(a => ({
         title: String(a.title || "").trim(), url: String(a.url || ""),
-        source: String(a.domain || "מקור חדשות"), date: String(a.seendate || "")
+        source: String(a.domain || "מקור חדשות"), date: normalizeNewsDate(a.seendate || "")
       })).filter(a => a.title && /^https?:\/\//i.test(a.url));
       if (articles.length) return articles.slice(0, limit);
       lastError = "GDELT returned no articles";
