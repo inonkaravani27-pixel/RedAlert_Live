@@ -157,10 +157,17 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-hotnews", label: "החדשות החמות", telegram: "hotnews1", verification: "טלגרם — דיווחים לא מאומתים" },
   { id: "telegram-kolisrael", label: "קול ישראל — דיווחי ביטחון", telegram: "kolisrael", verification: "טלגרם — יש להצליב דיווחים" },
   { id: "telegram-amirbohbot", label: "אמיר בוחבוט — ביטחון", telegram: "amirbohbot", verification: "טלגרם — יש להצליב דיווחים" },
-  { id: "telegram-divuchim-online", label: "דיווחים אונליין", telegram: "divuchim_online", verification: "טלגרם — דיווחים לא מאומתים" }
+  { id: "telegram-divuchim-online", label: "דיווחים אונליין", telegram: "divuchim_online", verification: "טלגרם — דיווחים לא מאומתים" },
+  { id: "telegram-aharon-yediot", label: "אהרון ידיעות", telegram: "aharonyediotnews", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" }
 ];
 async function fetchTelegramChannel(channel, limit = 15) {
-  const html = await get("https://t.me/s/" + encodeURIComponent(channel));
+  let html, firstError;
+  try { html = await get("https://t.me/s/" + encodeURIComponent(channel)); }
+  catch (error) { firstError = error; }
+  if (!html) {
+    try { html = await get("https://telegram.me/s/" + encodeURIComponent(channel)); }
+    catch (error) { throw new Error("Telegram preview unavailable (" + msg(firstError || error) + "; " + msg(error) + ")"); }
+  }
   // Telegram's public preview markup changes periodically; split on the message class
   // rather than relying on one exact class attribute layout.
   const starts = [...html.matchAll(/<div\b(?=[^>]*class=["'][^"']*tgme_widget_message_wrap)[^>]*>/gi)];
