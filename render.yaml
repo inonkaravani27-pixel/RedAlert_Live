@@ -11,7 +11,7 @@ services:
       - key: NODE_VERSION
         value: "22"
       - key: VAPID_PUBLIC_KEY
-        value: "BDfmuL9yE8HQAYb1U2VjsVVbivV2kFjTaFg-A-ZlhrNunyU0sBNLakO8C5tIT8NVIL84MkF5EdTRV-WY9b3zPTE"
+        value: "BLD0K2r11FqEnEhpAW22STYS6CZkswp6hYf6hyCf8NSh2iHcfOvqg4h36dMMahcRon3O12GUaXkDwPAKW67BDrc"
       - key: VAPID_PRIVATE_KEY
         sync: false
       - key: VAPID_SUBJECT
