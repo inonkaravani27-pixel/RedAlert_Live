@@ -12,7 +12,7 @@
 <header class="top"><h1>RedAlert <span>Live</span></h1><button id="settingsButton" class="settings-icon" aria-label="פתיחת הגדרות" title="הגדרות">⚙</button></header>
 <div class="banner">כלי משלים בלבד — אינו שירות רשמי ואינו תחליף ליישומון פיקוד העורף. אין להסתמך עליו להצלת חיים.</div>
 <nav class="nav" id="nav">
-<button class="active" data-page="home">ראשי</button><button data-page="prelim">מבזקים ראשונים</button><button class="map-link" data-page="map" type="button"><span class="map-dot" aria-hidden="true">●</span> Maps Live</button>
+<button class="active" data-page="home">ראשי</button><button data-page="prelim">מבזקים ראשונים</button>
 </nav>
 <div class="row" style="justify-content:flex-start;direction:ltr;gap:8px"><span id="mode" class="status">נתונים חיים</span><span id="connection" class="status">בודק חיבור…</span></div>
 <section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
@@ -20,16 +20,9 @@
 <div class="card"><div class="row"><input id="search" placeholder="חיפוש יישוב…" aria-label="חיפוש יישוב" style="flex:1;min-width:170px"></div><div id="alertList"></div></div>
 <div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="systemTest" class="primary">בדיקת מערכת</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div><div id="sourceDiagnosticsResult" class="muted" style="margin-top:10px;line-height:1.7" aria-live="polite"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
 </section>
-<section id="page-map" class="card hidden"><h2 class="section-title">ניטור איראן — דיווחים ציבוריים</h2><p class="muted">כאן יוצגו דיווחי חדשות ציבוריים על איראן ועל שיגורים, יירוטים ותקיפות שדווחו. אלה דיווחים תקשורתיים, לא התרעה רשמית ולא אימות עצמאי.</p><div class="card" style="margin:10px 0">
-<h3 class="section-title">אינדיקציות פתוחות לגבי איראן</h3>
-<p class="muted">העדכון מתבצע אוטומטית כל דקה בזמן שהאתר פתוח. המערכת מציגה כתבות וקישורים למקורות; היא אינה עוקבת אחר מיקום משגרים ואינה מחשבת חלונות זמן לשיגור.</p>
-<div class="map-controls row"><button id="indicatorRefresh" type="button">עדכן עכשיו</button><button id="iranNotifyButton" type="button">הפעל התראות על דיווחים חדשים</button></div>
-<div id="iranNotifyStatus" class="muted" style="margin-top:6px">התראות Push דורשות אישור חד־פעמי והגדרת שרת. לאחר ההרשמה הן יכולות להגיע גם כשהאתר סגור.</div>
-<div id="indicatorStatus" class="muted" aria-live="polite">האינדיקציות ייטענו בפתיחת המפה.</div>
-<div id="indicatorFeed"></div>
-</div></section>
+
 <section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
-<section id="page-prelim" class="card hidden"><h2 class="section-title">מבזקים ראשונים</h2><p class="muted">דיווחים חדשותיים אינם התרעות רשמיות ואינם מעידים ששיגור קרוב.</p><div class="row"><label>מקורות להצגה<select id="newsFilter"><option value="all">כל המקורות</option><option value="arabic">מקורות ערביים בלבד</option></select></label><label><input type="checkbox" id="translateNews" checked> תרגום לעברית</label></div><p id="translationStatus" class="muted">התרגום נעשה דרך שירות חיצוני כשזמין.</p><div id="pre"></div></section>
+<section id="page-prelim" class="card hidden"><h2 class="section-title">מבזקים ראשונים</h2><p class="muted">דיווחים חדשותיים ציבוריים על איראן, שיגורים, יירוטים ותקיפות. הדיווחים אינם התרעות רשמיות ולא תמיד מאומתים באופן עצמאי.</p><div class="row"><label>מקורות להצגה<select id="newsFilter"><option value="all">כל המקורות</option><option value="arabic">מקורות ערביים בלבד</option></select></label><label><input type="checkbox" id="translateNews" checked> תרגום אוטומטי לעברית</label></div><div class="row" style="margin:8px 0"><button id="indicatorRefresh" type="button">עדכן עכשיו</button><button id="iranNotifyButton" type="button">הפעל התראות על דיווחים חדשים</button></div><div id="iranNotifyStatus" class="muted" style="margin-top:6px">התראות Push דורשות אישור חד־פעמי. קבלתן תלויה בזמינות שרת המקור וההתראות.</div><p id="translationStatus" class="muted">הכותרות יתורגמו אוטומטית לעברית כששירות התרגום זמין.</p><div id="indicatorStatus" class="muted" aria-live="polite"></div><div id="pre"></div></section>
 <section id="page-settings" class="card hidden">
 <h2 class="section-title">הגדרות התרעות</h2>
 <div class="card"><h3 class="section-title">התרעות ראשיות</h3>
@@ -72,10 +65,9 @@ let demo=false;localStorage.setItem("ral-demo","false");
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function allEvents(){return (demo?demoEvents:realEvents).filter(x=>primaryScope==="all"||primaryCities.has(x.city)||secondaryCities.has(x.city))}
 function store(){localStorage.setItem("ral-history",JSON.stringify(history.slice(0,300)));localStorage.setItem("ral-demo",String(demo));localStorage.setItem("ral-primary-cities",JSON.stringify([...primaryCities]));localStorage.setItem("ral-secondary-cities",JSON.stringify([...secondaryCities]));localStorage.setItem("ral-primary-scope",primaryScope);localStorage.setItem("ral-primary-sound",primarySound);localStorage.setItem("ral-secondary-sound",secondarySound)}
-function setPage(page){$("hero").classList.toggle("hidden",page==="map");document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","settings","map"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page));$("settingsButton").classList.toggle("active",page==="settings");$("settingsButton").setAttribute("aria-label",page==="settings"?"סגירת הגדרות":"פתיחת הגדרות");if(page==="map"){loadIranIndicators()}}
-$("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)});if($("indicatorRefresh"))$("indicatorRefresh").addEventListener("click",loadIranIndicators);
-const mapFrame=$("iranMapFrame"),mapInteraction=$("mapInteraction");if(mapFrame&&mapInteraction)mapInteraction.addEventListener("click",()=>{const active=mapFrame.classList.toggle("interactive");mapInteraction.textContent=active?"אפשר גלילה בעמוד":"הפעל אינטראקציה במפה";});
-setInterval(()=>{loadIranIndicators()},60000);$("settingsButton").addEventListener("click",()=>setPage($("page-settings").classList.contains("hidden")?"settings":"home"));
+function setPage(page){$("hero").classList.remove("hidden");document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","settings"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page));$("settingsButton").classList.toggle("active",page==="settings");$("settingsButton").setAttribute("aria-label",page==="settings"?"סגירת הגדרות":"פתיחת הגדרות");if(page==="prelim")loadPrelimFromPublicFeed()}
+$("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)});if($("indicatorRefresh"))$("indicatorRefresh").addEventListener("click",loadPrelimFromPublicFeed);
+$("settingsButton").addEventListener("click",()=>setPage($("page-settings").classList.contains("hidden")?"settings":"home"));
 function renderEvents(){
  const q=$("search").value.trim().toLocaleLowerCase("he");
  let ev=allEvents().filter(x=>!q||x.city.toLocaleLowerCase("he").includes(q));
@@ -185,18 +177,45 @@ async function poll(){try{
    previousAlertKey=key;
  } else if(s.state==="ok") previousAlertKey="";
  if(active.length){for(const x of active){if(!history.some(h=>h.id===x.id&&!h.demo))history.unshift(x)}history=history.slice(0,300);store()}
- loadPrelimFromPublicFeed();renderAll();
+ renderAll();
  }catch(e){$("connection").textContent="תקלה בחיבור";$("connection").className="status err";$("source").textContent="לא ניתן לאמת מקור: "+String(e.message||e);$("headline").textContent="אין אימות עדכני להתרעות";$("sub").textContent="בדקו את היישומון הרשמי. היעדר מידע אינו אומר שאין סכנה.";if(!demo){realEvents=[];renderEvents()}}
 }
-$("newsFilter").addEventListener("change",()=>{if(liveState)renderGroup($("pre"),liveState.prelim)});$("translateNews").addEventListener("change",()=>{if(liveState)renderGroup($("pre"),liveState.prelim)});
+$("newsFilter").addEventListener("change",loadPrelimFromPublicFeed);$("translateNews").addEventListener("change",loadPrelimFromPublicFeed);
 let prelimRequestInFlight=false;
-async function loadPrelimFromPublicFeed(){const box=$("pre"),status=$("translationStatus");if(!box||prelimRequestInFlight)return;prelimRequestInFlight=true;const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);try{const r=await fetch("/api/prelim?ts="+Date.now(),{cache:"no-store",signal:controller.signal});if(!r.ok)throw new Error("HTTP "+r.status);const d=await r.json();const items=d.items||[];if(!items.length){box.innerHTML='<p class="muted">מקור החדשות הגיב, אך לא נמצאו כותרות מתאימות ב־24 השעות האחרונות.</p>';if(status)status.textContent="מקור: GDELT · לא התקבלו כותרות מתאימות.";return}box.innerHTML=items.map(x=>'<article class="item"><div class="itemhead"><b>'+esc(x.title)+'</b></div><p class="muted">'+esc((x.sources||[]).join(", "))+' · '+esc(x.published?new Date(x.published).toLocaleString("he-IL"):"זמן פרסום לא זמין")+'</p><a class="map-link" href="'+esc(x.link)+'" target="_blank" rel="noopener noreferrer">לכתבה המקורית ↗</a></article>').join("");if(status)status.textContent="מקור: GDELT · עודכן "+new Date(d.fetchedAt).toLocaleTimeString("he-IL")+" · דיווחים חדשותיים אינם התרעות רשמיות."}catch(e){box.innerHTML='<p class="muted">לא ניתן לקבל כותרות ממקור החדשות כרגע. אפשר לנסות שוב בעוד דקה.</p>';if(status)status.textContent="מקור החדשות אינו זמין כרגע (שגיאת חיבור או שרת)."}finally{clearTimeout(timer);prelimRequestInFlight=false}}
-$("newsFilter").addEventListener("change",loadPrelimFromPublicFeed);
+async function loadPrelimFromPublicFeed(){
+ const box=$("pre"),status=$("translationStatus"),sourceStatus=$("indicatorStatus");
+ if(!box||prelimRequestInFlight)return;
+ prelimRequestInFlight=true;
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);
+ try{
+  const response=await fetch("/api/iran-indicators?ts="+Date.now(),{cache:"no-store",signal:controller.signal});
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||"news source unavailable");
+  let articles=[];
+  for(const group of (data.groups||[]))for(const article of (group.articles||[])){
+   if(article.url&&!articles.some(existing=>existing.url===article.url))articles.push({...article,groupLabel:group.label});
+  }
+  articles.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+  if(($("newsFilter")?.value||"all")==="arabic")articles=articles.filter(a=>/aljazeera|alarabiya|skynewsarabia|almanar|arabic|middleeastmonitor/i.test(String(a.source||""))||/[\u0600-\u06ff]/.test(a.title||""));
+  articles=articles.slice(0,30);
+  if(!articles.length){box.innerHTML='<p class="muted">לא נמצאו כרגע דיווחים מתאימים ב־24 השעות האחרונות.</p>';if(sourceStatus)sourceStatus.textContent="מקור החדשות הגיב, אך לא התקבלו כתבות מתאימות.";return;}
+  box.innerHTML=articles.map((a,i)=>'<article class="item"><b id="iran-news-title-'+i+'">'+esc(a.title)+'</b><p class="muted">'+esc(a.groupLabel||"דיווח ציבורי")+' · '+esc(a.source||"מקור לא ידוע")+' · '+esc(formatIranDate(a.date))+'</p><a class="map-link" href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer">לכתבה המקורית ↗</a></article>').join("");
+  if(sourceStatus)sourceStatus.textContent="מקור: GDELT עם מקור גיבוי · "+articles.length+" כתבות מהיממה האחרונה · נבדק "+new Date(data.fetchedAt).toLocaleTimeString("he-IL")+(data.partial?" · חלק מהמקורות לא זמינים":"");
+  if($("translateNews")?.checked){
+   if(status)status.textContent="מתרגם כותרות לעברית…";
+   let next=0;
+   const workers=Array.from({length:4},async()=>{while(next<articles.length){const i=next++,article=articles[i];const node=$("iran-news-title-"+i);if(iranTranslationCache.has(article.title)){if(node)node.textContent=iranTranslationCache.get(article.title);continue;}const translated=await translateIranTitle(article.title);if(node)node.textContent=translated;}});
+   await Promise.all(workers);
+   if(status)status.textContent="התרגום לעברית מופעל אוטומטית; ייתכנו שגיאות תרגום. המקור המקורי זמין בכל כתבה.";
+  }else if(status)status.textContent="התרגום כבוי. אפשר להפעיל אותו באמצעות הסימון למעלה.";
+ }catch(error){box.innerHTML='<p class="muted">לא ניתן לקבל כותרות ממקורות החדשות כרגע. אפשר לנסות שוב בעוד דקה.</p>';if(sourceStatus)sourceStatus.textContent="מקור החדשות אינו זמין כרגע. אין להסיק מכך שאין פעילות.";if(status)status.textContent="לא ניתן לעדכן כותרות כרגע."}
+ finally{clearTimeout(timer);prelimRequestInFlight=false}
+}
 $("refresh").onclick=poll;
 if($("demoToggle"))$("demoToggle").onchange=()=>{demo=$("demoToggle").checked;store();renderAll();$("settingsMsg").textContent=demo?"נתוני הדגמה מוצגים ומסומנים.":"מצב נתונים חיים נבחר; אם המקור לא זמין, לא יוצגו נתוני הדגמה."};
 
 $("clearHistory").onclick=()=>{history=[];store();renderHistory();$("settingsMsg").textContent="ההיסטוריה המקומית נוקתה."};
-renderAll();poll();setInterval(poll,10000);
+renderAll();poll();setInterval(poll,10000);loadPrelimFromPublicFeed();setInterval(loadPrelimFromPublicFeed,60000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 
 
