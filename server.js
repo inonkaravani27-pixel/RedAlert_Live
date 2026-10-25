@@ -158,7 +158,7 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-kolisrael", label: "קול ישראל — דיווחי ביטחון", telegram: "kolisrael", verification: "טלגרם — יש להצליב דיווחים" },
   { id: "telegram-amirbohbot", label: "אמיר בוחבוט — ביטחון", telegram: "amirbohbot", verification: "טלגרם — יש להצליב דיווחים" },
   { id: "telegram-divuchim-online", label: "דיווחים אונליין", telegram: "divuchim_online", verification: "טלגרם — דיווחים לא מאומתים" },
-  { id: "telegram-aharon-yediot", label: "אהרון ידיעות", telegram: "aharonyediotnews", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" }
+  { id: "telegram-aharon-yediot", label: "אהרון ידיעות", telegram: "aharonyediotnews", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-mivzak-afel", label: "מבזק אפל", telegram: "yyyttehdbsj", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-lelotsenzura", label: "חדשות ביטחון מהשטח ללא צנזורה", telegram: "lelotsenzura", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-newsisrael-live", label: "חדשות ישראל מהשטח | ללא צנזורה", telegram: "newsisrael_live", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
