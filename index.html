@@ -218,7 +218,9 @@ async function loadPrelimFromPublicFeed(){
   const telegramCount=articles.filter(a=>String(a.source||"").includes("t.me/")).length;
   const telegramGroups=(data.groups||[]).filter(g=>g.id&&String(g.id).startsWith("telegram-"));
   const telegramWorking=telegramGroups.filter(g=>(g.articles||[]).length>0&&!g.unavailable).length;
-  if(sourceStatus)sourceStatus.textContent="מקור: כלי תקשורת + טלגרם ציבורי · "+articles.length+" כתבות · טלגרם: "+telegramCount+" דיווחים מ־"+telegramWorking+"/"+telegramGroups.length+" ערוצים · נבדק "+(data.fetchedAt?new Date(data.fetchedAt).toLocaleTimeString("he-IL"):"מתעדכן")+(data.partial?" · חלק מהמקורות לא זמינים":"");
+  const telegramFailed=telegramGroups.filter(g=>g.unavailable||g.error);
+  const telegramEmpty=telegramGroups.filter(g=>!g.unavailable&&!(g.articles||[]).length);
+  if(sourceStatus)sourceStatus.textContent="מקור: כלי תקשורת + טלגרם ציבורי · "+articles.length+" כתבות · טלגרם: "+telegramCount+" דיווחים מ־"+telegramWorking+"/"+telegramGroups.length+" ערוצים · תקלות טלגרם: "+telegramFailed.length+" · ללא פוסטים טריים: "+telegramEmpty.length+" · נבדק "+(data.fetchedAt?new Date(data.fetchedAt).toLocaleTimeString("he-IL"):"מתעדכן")+(data.partial?" · חלק מהמקורות לא זמינים":"")+(telegramFailed.length?" · תקלה בערוצים: "+telegramFailed.slice(0,3).map(g=>g.label+" ("+(g.error||"לא זמין")+")").join(", "):"");
   if(status)status.textContent="מתרגם את הכותרות אוטומטית לעברית…";
   let next=0;
   const renderToken=(window.__ralNewsRenderToken=(window.__ralNewsRenderToken||0)+1);
