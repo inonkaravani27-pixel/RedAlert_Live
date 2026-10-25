@@ -101,7 +101,9 @@ function parseFeed(x) {
   for (const m of x.matchAll(/<(item|entry)[\s>][\s\S]*?<\/\1>/gi)) {
     const b = m[0]; let link = tag(b, "link");
     if (!link) { const h = b.match(/<link[^>]*href="([^"]+)"/i); link = h ? h[1] : ""; }
-    out.push({ title: tag(b, "title"), desc: tag(b, "description") || tag(b, "summary"), link, pub: Date.parse(tag(b, "pubDate") || tag(b, "published") || tag(b, "updated")) });
+    const mediaMatch = b.match(/<(?:media:content|media:thumbnail|enclosure)\b[^>]*url=["']([^"']+)["']/i) || b.match(/<img\b[^>]*src=["']([^"']+)["']/i);
+    const mediaUrl = ((mediaMatch && mediaMatch[1]) || "").replace(/&amp;/g, "&");
+    out.push({ title: tag(b, "title"), desc: tag(b, "description") || tag(b, "summary"), link, pub: Date.parse(tag(b, "pubDate") || tag(b, "published") || tag(b, "updated")), mediaUrl: /^https:\/\//i.test(mediaUrl) ? mediaUrl : "", mediaType: mediaUrl ? "image" : "" });
   }
   return out;
 }
@@ -114,13 +116,15 @@ function normalizeNewsDate(value) {
   return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
 }
 const PUBLIC_NEWS_GROUPS = [
-  { id: "iran", label: "דיווחים על איראן — כלי תקשורת", query: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard" OR איראן OR טהרן)', rssQuery: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard" OR איראן OR טהרן) when:1d', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
-  { id: "launch", label: "שיגורים, יירוטים ותקיפות — דיווחים", query: '((Iran OR Iranian OR Israel OR איראן OR ישראל) (missile OR rocket OR drone OR strike OR attack OR interception OR launch OR טיל OR רקטה OR שיגור OR יירוט OR תקיפה))', rssQuery: '((Iran OR Iranian OR Israel OR איראן OR ישראל) (missile OR rocket OR drone OR strike OR attack OR interception OR launch OR טיל OR רקטה OR שיגור OR יירוט OR תקיפה) ) when:1d', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
-  { id: "media-n12", label: "N12 / mako", query: 'domain:mako.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:mako.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:1d' },
-  { id: "media-kan", label: "כאן חדשות", query: 'domain:kan.org.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:kan.org.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:1d' },
-  { id: "media-13", label: "חדשות 13", query: 'domain:13tv.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:13tv.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:1d' },
-  { id: "media-14", label: "עכשיו 14", query: 'domain:now14.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:now14.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:1d' },
-  { id: "media-i24", label: "i24NEWS", query: 'domain:i24news.tv (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:i24news.tv (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:1d' },
+  { id: "iran", label: "דיווחים על איראן — כלי תקשורת", query: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard" OR איראן OR טהרן)', rssQuery: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard" OR איראן OR טהרן) when:6h', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
+  { id: "launch", label: "שיגורים, יירוטים ותקיפות — דיווחים", query: '((Iran OR Iranian OR Israel OR איראן OR ישראל) (missile OR rocket OR drone OR strike OR attack OR interception OR launch OR טיל OR רקטה OR שיגור OR יירוט OR תקיפה))', rssQuery: '((Iran OR Iranian OR Israel OR איראן OR ישראל) (missile OR rocket OR drone OR strike OR attack OR interception OR launch OR טיל OR רקטה OR שיגור OR יירוט OR תקיפה) ) when:6h', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
+  { id: "media-n12", label: "N12 / mako", query: 'domain:mako.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:mako.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
+  { id: "media-kan", label: "כאן חדשות", query: 'domain:kan.org.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:kan.org.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
+  { id: "media-13", label: "חדשות 13", query: 'domain:13tv.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:13tv.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
+  { id: "media-14", label: "עכשיו 14", query: 'domain:now14.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:now14.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
+  { id: "media-ynet", label: "ynet", query: 'domain:ynet.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:ynet.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
+  { id: "media-walla", label: "וואלה חדשות", query: 'domain:walla.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:walla.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
+  { id: "media-i24", label: "i24NEWS", query: 'domain:i24news.tv (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:i24news.tv (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
   { id: "telegram-n12", label: "חדשות N12 בטלגרם", telegram: "n12_news", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
   { id: "telegram-kan11", label: "כאן חדשות בטלגרם", telegram: "KAN11NEWS", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
   { id: "telegram-newsil", label: "חדשות ישראל בטלגרם", telegram: "newsil", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
@@ -150,7 +154,7 @@ async function fetchTelegramChannel(channel, limit = 15) {
     let title = textMatch ? dec(textMatch[1]).replace(/\s+/g, " ").trim() : "";
     const dateRaw = (block.match(/<time[^>]*datetime="([^"]+)"/i) || [])[1] || "";
     const pub = Date.parse(dateRaw);
-    if (!Number.isFinite(pub) || Date.now() - pub > 24 * 60 * 60 * 1000 || pub > Date.now() + 5 * 60 * 1000) continue;
+    if (!Number.isFinite(pub) || Date.now() - pub > 6 * 60 * 60 * 1000 || pub > Date.now() + 5 * 60 * 1000) continue;
     const photoBg = block.match(/class="tgme_widget_message_photo_wrap"[^>]*style="[^"]*background-image:\s*url\(['"]?(https:\/\/[^)'"]+)/i)
       || block.match(/background-image:\s*url\(['"]?(https:\/\/[^)'"]+)/i);
     const photoTag = [...block.matchAll(/<img\b[^>]*>/gi)].map(m => m[0]).find(tag => /tgme_widget_message_photo/i.test(tag));
@@ -183,7 +187,7 @@ async function fetchPublicNewsGroup(group, limit = 15) {
 
   let lastError = "public news source unavailable";
   const gdeltUrl = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(group.query) +
-    "&mode=ArtList&format=json&sort=datedesc&maxrecords=" + Math.max(limit, 20) + "&timespan=24h";
+    "&mode=ArtList&format=json&sort=datedesc&maxrecords=" + Math.max(limit, 20) + "&timespan=6h";
   try {
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
     try {
@@ -193,12 +197,13 @@ async function fetchPublicNewsGroup(group, limit = 15) {
       const data = JSON.parse(body);
       const articles = (data.articles || []).map(a => ({
         title: String(a.title || "").trim(), url: String(a.url || ""),
-        source: String(a.domain || "מקור חדשות"), date: normalizeNewsDate(a.seendate || "")
+        source: String(a.domain || "מקור חדשות"), date: normalizeNewsDate(a.seendate || ""),
+        mediaUrl: /^https:\/\//i.test(String(a.socialimage || "")) ? String(a.socialimage) : "", mediaType: a.socialimage ? "image" : ""
       })).filter(a => {
         const age = Date.parse(a.date);
         const relevant = /iran|iranian|tehran|israel|israeli|missile|rocket|drone|strike|attack|intercept|launch|war|security|טיל|שיגור|יירוט|איראן|ישראל|תקיפה|כטב.?ם|מלחמה|ביטחון/i.test(a.title);
         return a.title.length >= 12 && /^https?:\/\//i.test(a.url) && relevant &&
-          (Number.isFinite(age) && Date.now() - age <= 24 * 60 * 60 * 1000 && age <= Date.now() + 5 * 60 * 1000);
+          (Number.isFinite(age) && Date.now() - age <= 6 * 60 * 60 * 1000 && age <= Date.now() + 5 * 60 * 1000);
       });
       if (articles.length) return articles.slice(0, limit);
       lastError = "GDELT returned no recent relevant articles";
@@ -207,7 +212,7 @@ async function fetchPublicNewsGroup(group, limit = 15) {
 
   // Fallback to Google News RSS when GDELT is blocked, rate-limited, or returns no usable articles.
   const rssUrl = "https://news.google.com/rss/search?q=" + encodeURIComponent(group.rssQuery) +
-    "&hl=en-US&gl=US&ceid=US:en";
+    "&hl=he&gl=IL&ceid=IL:he";
   try {
     const xml = await get(rssUrl);
     const seen = new Set();
@@ -215,12 +220,12 @@ async function fetchPublicNewsGroup(group, limit = 15) {
       const title = item.title || "";
       const match = title.match(/\s+-\s+([^\-]+)$/);
       return { title, url: item.link || "", source: match ? match[1].trim() : "Google News",
-        date: Number.isFinite(item.pub) ? new Date(item.pub).toISOString() : "" };
+        date: Number.isFinite(item.pub) ? new Date(item.pub).toISOString() : "", mediaUrl: item.mediaUrl || "", mediaType: item.mediaType || "" };
     }).filter(a => {
       const age = Date.parse(a.date);
       const relevant = /iran|iranian|tehran|israel|israeli|missile|rocket|drone|strike|attack|intercept|launch|war|security|טיל|שיגור|יירוט|איראן|ישראל|תקיפה|כטב.?ם|מלחמה|ביטחון/i.test(a.title);
       if (!a.title || a.title.length < 12 || !/^https?:\/\//i.test(a.url) || seen.has(a.url) || !relevant ||
-          (!Number.isFinite(age) || Date.now() - age > 24 * 60 * 60 * 1000 || age > Date.now() + 5 * 60 * 1000)) return false;
+          (!Number.isFinite(age) || Date.now() - age > 6 * 60 * 60 * 1000 || age > Date.now() + 5 * 60 * 1000)) return false;
       seen.add(a.url); return true;
     });
     if (articles.length) return articles.slice(0, limit);
@@ -234,7 +239,7 @@ let publicNewsCache = null;
 let publicNewsRefreshPromise = null;
 let publicNewsLastRefresh = 0;
 const PUBLIC_NEWS_REFRESH_MS = 20000;
-const PUBLIC_NEWS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const PUBLIC_NEWS_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 function filterFreshPublicArticles(articles) {
   const now = Date.now();
   return (articles || []).filter(article => {
