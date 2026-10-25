@@ -166,7 +166,7 @@ const server = http.createServer((req, res) => {
       .then(data => {
         const seen = new Set();
         const items = (data.articles || []).map(a => ({id:a.url || a.title, title:a.title || "", link:a.url || "", sources:[a.domain || "מקור לא ידוע"], published:Date.parse(a.seendate || "") || null, description:""}))
-          .filter(a => a.title && a.link && a.link.startsWith("https://") || a.link.startsWith("http://") && !seen.has(a.link) && seen.add(a.link)).slice(0,20);
+          .filter(a => { if (!a.title || !/^https?:\\/\\//i.test(a.link) || seen.has(a.link)) return false; seen.add(a.link); return true; }).slice(0,20);
         clearTimeout(timer);
         if (!res.headersSent) { res.writeHead(200, h); res.end(JSON.stringify({items, fetchedAt:new Date().toISOString(), source:"GDELT"})); }
       }).catch(() => {
@@ -199,7 +199,7 @@ const server = http.createServer((req, res) => {
   if (FILES[p]) { const f = path.join(PUB, FILES[p][0]); if (fs.existsSync(f)) { res.writeHead(200, { ...h, "Content-Type": FILES[p][1] }); return res.end(fs.readFileSync(f)); } }
   if ((p === "/" || p === "/index.html") && fs.existsSync(INDEX)) {
     const html = fs.readFileSync(INDEX, "utf8").replace("<head>", "<head><script>window.RAL_SAME_ORIGIN=true;window.RAL_POLL_MS=" + POLL + "</script>");
-    res.writeHead(200, { ...h, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' https:; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.basemaps.cartocdn.com; font-src 'self' data: https://unpkg.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'", "X-Frame-Options": "DENY" }); return res.end(html);
+    res.writeHead(200, { ...h, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' https:; frame-src 'self' https://iwm.diskin.net; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.basemaps.cartocdn.com; font-src 'self' data: https://unpkg.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'", "X-Frame-Options": "DENY" }); return res.end(html);
   }
   res.writeHead(404, h); res.end("{}");
 });
