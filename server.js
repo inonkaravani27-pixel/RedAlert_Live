@@ -114,19 +114,19 @@ const PUBLIC_NEWS_GROUPS = [
 ];
 async function fetchTelegramChannel(channel, limit = 15) {
   const html = await get("https://t.me/s/" + encodeURIComponent(channel));
-  const blocks = [...html.matchAll(/<div class="tgme_widget_message_wrap[^"]*"[^>]*>[\\s\\S]*?(?=<div class="tgme_widget_message_wrap|<div class="footer|$)/gi)].map(m => m[0]);
+  const blocks = [...html.matchAll(/<div class="tgme_widget_message_wrap[^"]*"[^>]*>[\s\S]*?(?=<div class="tgme_widget_message_wrap|<div class="footer|$)/gi)].map(m => m[0]);
   const out = [];
   for (const block of blocks) {
     const post = (block.match(/data-post="([^"]+)"/i) || [])[1];
     if (!post) continue;
-    const textMatch = block.match(/<div class="tgme_widget_message_text[^"]*"[^>]*>([\\s\\S]*?)<\\/div>/i);
-    const title = textMatch ? dec(textMatch[1]).replace(/\\s+/g, " ").trim() : "";
+    const textMatch = block.match(/<div class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+    const title = textMatch ? dec(textMatch[1]).replace(/\s+/g, " ").trim() : "";
     const dateRaw = (block.match(/<time[^>]*datetime="([^"]+)"/i) || [])[1] || "";
     const pub = Date.parse(dateRaw);
     if (!title || !Number.isFinite(pub) || Date.now() - pub > 36 * 60 * 60 * 1000) continue;
-    const imgMatch = block.match(/<img[^>]+src="(https:\\/\\/[^"]+)"/i);
-    const videoMatch = block.match(/class="tgme_widget_message_video_player[^"]*"[^>]*style="[^"]*background-image:\\s*url\\('?(https:\\/\\/[^)'"]+)/i);
-    const mediaUrl = imgMatch ? imgMatch[1].replace(/&amp;/g, "&") : (videoMatch ? videoMatch[1].replace(/&amp;/g, "&") : "");
+    const imgMatch = block.match(/<img[^>]+src="(https:\/\/[^"]+)"/i);
+    const videoMatch = /class="tgme_widget_message_video_player/.test(block);
+    const mediaUrl = imgMatch ? imgMatch[1].replace(/&amp;/g, "&") : "";
     out.push({
       title: title.slice(0, 600),
       url: "https://t.me/" + post,
@@ -139,7 +139,7 @@ async function fetchTelegramChannel(channel, limit = 15) {
     });
   }
   const seen = new Set();
-  return out.sort((a,b) => Date.parse(b.date)-Date.parse(a.date)).filter(a => !seen.has(a.url) && seen.add(a.url)).slice(0, limit);
+  return out.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).filter(a => !seen.has(a.url) && seen.add(a.url)).slice(0, limit);
 }
 async function fetchPublicNewsGroup(group, limit = 15) {
   if (group.telegram) return fetchTelegramChannel(group.telegram, limit);
