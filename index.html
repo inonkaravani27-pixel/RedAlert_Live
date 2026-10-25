@@ -20,10 +20,11 @@
 <div class="card"><div class="row"><input id="search" placeholder="חיפוש יישוב…" aria-label="חיפוש יישוב" style="flex:1;min-width:170px"></div><div id="alertList"></div></div>
 <div class="grid"><div class="card"><h2 class="section-title">תקינות מקור</h2><div id="source" class="muted">ממתין לתשובה מהשרת…</div><div id="updated" class="muted"></div><div class="row" style="margin-top:10px"><button id="refresh">רענון עכשיו</button><button id="systemTest" class="primary">בדיקת מערכת</button></div><div id="soundmsg" class="muted" style="margin-top:8px"></div><div id="sourceDiagnosticsResult" class="muted" style="margin-top:10px;line-height:1.7" aria-live="polite"></div></div><div class="card"><h2 class="section-title">מצב המערכת</h2><div id="freshness" class="muted">עדכון אחרון: אין מידע</div><p class="muted">במצב נתונים חיים, היעדר התרעה במערכת אינו אישור שאין סכנה.</p></div></div>
 </section>
-<section id="page-map" class="card hidden"><h2 class="section-title">Maps Live — מפת אירועים</h2><p class="muted">מפה חיצונית של אירועים. המפה אינה מקור התרעה רשמי. כדי לאפשר גלילה נוחה, המפה אינה מקבלת מגעים עד להפעלת האינטראקציה.</p><div class="row" style="margin:10px 0"><a href="https://iwm.diskin.net/portal" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;background:#263b57;border:1px solid #49698f;color:#fff;border-radius:10px;padding:10px 14px;font-weight:650">פתח את Iran War Monitor עם הדיווחים המלאים ↗</a><span class="muted" style="font-size:12px">נפתח בכרטיסייה נפרדת</span></div><button id="mapInteraction" type="button" style="margin-bottom:8px">הפעל אינטראקציה במפה</button><iframe id="iranMapFrame" class="map-frame" title="Iran War Monitor — מפת אירועים חיצונית" src="https://iwm.diskin.net/portal" loading="lazy" referrerpolicy="no-referrer" allowfullscreen></iframe><div class="card" style="margin:14px 0">
+<section id="page-map" class="card hidden"><h2 class="section-title">ניטור איראן — דיווחים ציבוריים</h2><p class="muted">כאן יוצגו דיווחי חדשות ציבוריים על איראן ועל שיגורים, יירוטים ותקיפות שדווחו. אלה דיווחים תקשורתיים, לא התרעה רשמית ולא אימות עצמאי.</p><div class="card" style="margin:10px 0">
 <h3 class="section-title">אינדיקציות פתוחות לגבי איראן</h3>
-<p class="muted">תמונת מצב ממקורות ציבוריים. לצפייה בדיווחים החיים של Iran War Monitor השתמש בקישור שמעל המפה. אין לנו API ציבורי מאושר להעברת הנתונים שלו ישירות לכאן; הסיכום המקומי הוא שירות נפרד ואינו תחליף לדיווחים המלאים.</p>
-<div class="map-controls"><button id="indicatorRefresh" type="button">עדכון תמונת מצב</button></div>
+<p class="muted">העדכון מתבצע אוטומטית כל דקה בזמן שהאתר פתוח. המערכת מציגה כתבות וקישורים למקורות; היא אינה עוקבת אחר מיקום משגרים ואינה מחשבת חלונות זמן לשיגור.</p>
+<div class="map-controls row"><button id="indicatorRefresh" type="button">עדכן עכשיו</button><button id="iranNotifyButton" type="button">הפעל התראות על דיווחים חדשים</button></div>
+<div id="iranNotifyStatus" class="muted" style="margin-top:6px">התראות מבזק דורשות אישור מהדפדפן והאתר חייב להיות פתוח כדי לבדוק דיווחים חדשים.</div>
 <div id="indicatorStatus" class="muted" aria-live="polite">האינדיקציות ייטענו בפתיחת המפה.</div>
 <div id="indicatorFeed"></div>
 </div></section>
@@ -74,7 +75,7 @@ function store(){localStorage.setItem("ral-history",JSON.stringify(history.slice
 function setPage(page){$("hero").classList.toggle("hidden",page==="map");document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","settings","map"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page));$("settingsButton").classList.toggle("active",page==="settings");$("settingsButton").setAttribute("aria-label",page==="settings"?"סגירת הגדרות":"פתיחת הגדרות");if(page==="map"){loadIranIndicators()}}
 $("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)});if($("indicatorRefresh"))$("indicatorRefresh").addEventListener("click",loadIranIndicators);
 const mapFrame=$("iranMapFrame"),mapInteraction=$("mapInteraction");if(mapFrame&&mapInteraction)mapInteraction.addEventListener("click",()=>{const active=mapFrame.classList.toggle("interactive");mapInteraction.textContent=active?"אפשר גלילה בעמוד":"הפעל אינטראקציה במפה";});
-setInterval(()=>{if(!$("page-map").classList.contains("hidden"))loadIranIndicators()},300000);$("settingsButton").addEventListener("click",()=>setPage($("page-settings").classList.contains("hidden")?"settings":"home"));
+setInterval(()=>{loadIranIndicators()},60000);$("settingsButton").addEventListener("click",()=>setPage($("page-settings").classList.contains("hidden")?"settings":"home"));
 function renderEvents(){
  const q=$("search").value.trim().toLocaleLowerCase("he");
  let ev=allEvents().filter(x=>!q||x.city.toLocaleLowerCase("he").includes(q));
@@ -221,27 +222,53 @@ function formatIranDate(value){
  const parsed=Date.parse(normalized);
  return Number.isFinite(parsed)?new Date(parsed).toLocaleString("he-IL"):"זמן פרסום לא זמין";
 }
+let iranNotifyEnabled=localStorage.getItem("iranNotifyEnabled")==="1";
+let knownIranArticles=new Set();
+let iranFirstLoad=true;
+const iranNotifyButton=$("iranNotifyButton");
+function updateIranNotifyButton(){
+ const b=$("iranNotifyButton"),st=$("iranNotifyStatus");
+ if(!b||!st)return;
+ b.textContent=iranNotifyEnabled?"התראות על דיווחים: מופעלות":"הפעל התראות על דיווחים חדשים";
+ st.textContent=iranNotifyEnabled?"התראות פעילות בזמן שהאתר פתוח. אם סוגרים את האתר, בדיקת הדיווחים נעצרת.":"כדי לקבל מבזקים, אשר התראות בדפדפן. בדיקת דיווחים מתבצעת רק כשהאתר פתוח.";
+}
+if(iranNotifyButton)iranNotifyButton.addEventListener("click",async()=>{
+ if(!("Notification"in window)){ $("iranNotifyStatus").textContent="הדפדפן הזה אינו תומך בהתראות.";return; }
+ const permission=Notification.permission==="granted"?"granted":await Notification.requestPermission();
+ if(permission!=="granted"){iranNotifyEnabled=false;localStorage.setItem("iranNotifyEnabled","0");$("iranNotifyStatus").textContent="לא אושרה הרשאת התראות.";updateIranNotifyButton();return;}
+ iranNotifyEnabled=true;localStorage.setItem("iranNotifyEnabled","1");updateIranNotifyButton();
+ try{const reg=await navigator.serviceWorker.ready;await reg.showNotification("RedAlert Live",{body:"התראות על דיווחי חדשות ציבוריים הופעלו.",tag:"iran-feed-enabled"});}catch{}
+});
+updateIranNotifyButton();
 async function loadIranIndicators(){
  const status=$("indicatorStatus"),feed=$("indicatorFeed");
  if(!status||!feed)return;
- status.textContent="מעדכן תמונת מצב ממקורות ציבוריים…";
+ status.textContent="מעדכן דיווחים ממקורות ציבוריים…";
  try{
-  const r=await fetch("/api/iran-indicators",{cache:"no-store"});
-  if(!r.ok)throw new Error("feed unavailable");
-  const d=await r.json(),groups=d.groups||[];
+  const r=await fetch("/api/iran-indicators?ts="+Date.now(),{cache:"no-store"});
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.error||"feed unavailable");
+  const groups=d.groups||[];
   if(!groups.length){status.textContent="לא התקבל מידע מהמקור כרגע.";feed.innerHTML="";return}
-  const total=groups.reduce((n,g)=>n+(g.articles||[]).length,0);
+  const all=[];
+  for(const g of groups)for(const a of (g.articles||[]))if(a.url&&!all.some(x=>x.url===a.url))all.push({...a,groupLabel:g.label});
+  all.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+  const currentKeys=new Set(all.map(a=>a.url));
+  if(!iranFirstLoad&&iranNotifyEnabled&&"Notification"in window&&Notification.permission==="granted"){
+   const fresh=all.filter(a=>!knownIranArticles.has(a.url)).slice(0,3);
+   for(const a of fresh){
+    try{const reg=await navigator.serviceWorker.ready;await reg.showNotification("RedAlert Live — דיווח חדש",{body:(a.title||"דיווח חדשותי")+(a.source?" · "+a.source:""),tag:"iran-news-"+btoa(unescape(encodeURIComponent(a.url))).slice(0,60),data:{url:"/"} });}catch{}
+   }
+  }
+  knownIranArticles=currentKeys;iranFirstLoad=false;
+  const total=all.length;
   feed.innerHTML=groups.map(g=>{
-   const items=g.articles||[];
-   const latest=items.reduce((best,a)=>!best||String(a.date||"")>String(best.date||"")?a:best,null);
-   const state=g.unavailable?"המקור אינו זמין כרגע":"המקור החזיר תוצאות";
-   const count=g.unavailable?"לא ניתן לקבוע":String(items.length);
-   const latestTime=latest?formatIranDate(latest.date):"אין זמן דיווח זמין";
-   const latestSource=latest?esc(latest.source||"מקור לא ידוע"):"—";
-   const note=g.id==="movement"?"המקור אינו מזהה תזוזת משגרים בשטח ואינו מאפשר להסיק כוונת שיגור.":g.id==="range"?"מידע על טווחים מתאר יכולות כלליות, לא הכנה לשיגור מסוים.":"דיווחים על שיגורים אינם בהכרח בזמן אמת; להתרעות בישראל יש להסתמך על פיקוד העורף.";
-   return '<section class="card" style="margin:10px 0"><h4 class="section-title">'+esc(g.label)+'</h4><div class="row"><span class="tag">'+esc(state)+'</span><span class="tag">תוצאות ציבוריות: '+esc(count)+'</span></div><p class="muted">העדכון האחרון שנמצא: '+esc(latestTime)+'</p><p class="muted">מקור אחרון: '+latestSource+'</p><p class="muted">'+esc(note)+'</p></section>';
+   const items=(g.articles||[]).slice(0,12);
+   const state=g.unavailable?"המקור אינו זמין כרגע":"מקור ציבורי";
+   const cards=items.length?items.map(a=>'<article class="item" style="margin-top:9px"><b>'+esc(a.title)+'</b><p class="muted">'+esc(a.source||"מקור לא ידוע")+' · '+esc(formatIranDate(a.date))+'</p><a class="map-link" href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer">לכתבה המקורית ↗</a></article>').join(""):'<p class="muted">'+(g.unavailable?"לא ניתן לקבל דיווחים מהמקור כרגע.":"לא נמצאו כתבות מתאימות ב־24 השעות האחרונות.")+'</p>';
+   return '<section class="card" style="margin:10px 0"><h4 class="section-title">'+esc(g.label)+'</h4><div class="row"><span class="tag">'+esc(state)+'</span><span class="tag">כתבות: '+items.length+'</span></div>'+cards+'</section>';
   }).join("");
-  status.textContent="מקור: GDELT · "+total+" תוצאות ציבוריות לא מאומתות בחלון של 7 ימים · נבדק "+new Date(d.fetchedAt).toLocaleTimeString("he-IL")+" · עדכון אוטומטי כל 5 דקות.";
- }catch(e){status.textContent="מקור המידע אינו זמין כרגע. אין להסיק מכך שאין פעילות.";feed.innerHTML=""}
+  status.textContent="מקור: GDELT · "+total+" כתבות ציבוריות בחלון של 24 שעות · נבדק "+new Date(d.fetchedAt).toLocaleTimeString("he-IL")+(d.partial?" · חלק מהקטגוריות לא זמינות":"")+" · רענון כל דקה בזמן שהאתר פתוח.";
+ }catch(e){status.textContent="מקור החדשות אינו זמין כרגע. אין להסיק מכך שאין פעילות. אפשר לנסות שוב.";feed.innerHTML=""}
 }
 </script></body></html>
