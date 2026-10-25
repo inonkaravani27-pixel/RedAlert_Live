@@ -234,7 +234,7 @@ let publicNewsCache = null;
 let publicNewsRefreshPromise = null;
 let publicNewsLastRefresh = 0;
 const PUBLIC_NEWS_REFRESH_MS = 20000;
-const PUBLIC_NEWS_MAX_AGE_MS = 20 * 60 * 1000;
+const PUBLIC_NEWS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 function filterFreshPublicArticles(articles) {
   const now = Date.now();
   return (articles || []).filter(article => {
