@@ -157,7 +157,7 @@ function processNewAlertEvent({key,cities=[],test=false}={}){
 function triggerAlertUI({test=false,cities=[]}={}){
  const isSecondary=!test&&cities.some(city=>secondaryCities.has(city));
  const area=isSecondary?"secondary":"primary",prefs=alertPrefs[area];
- if(audioUnlocked&&!prefs.silent)playAlertSound(isSecondary?secondarySound:primarySound);
+ if((audioUnlocked||prefs.bypassSilent)&&!prefs.silent)playAlertSound(isSecondary?secondarySound:primarySound);
  if(prefs.vibrate&&typeof navigator!=="undefined"&&typeof navigator.vibrate==="function"){try{navigator.vibrate([300,120,300,120,450])}catch{}}
  showInAppAlert({test,cities});
 }
