@@ -191,7 +191,7 @@ async function fetchPublicNewsGroup(group, limit = 15) {
         const age = Date.parse(a.date);
         const relevant = /iran|iranian|tehran|israel|israeli|missile|rocket|drone|strike|attack|intercept|launch|war|security|טיל|שיגור|יירוט|איראן|ישראל|תקיפה|כטב.?ם|מלחמה|ביטחון/i.test(a.title);
         return a.title.length >= 12 && /^https?:\/\//i.test(a.url) && relevant &&
-          (!Number.isFinite(age) || (Date.now() - age <= 24 * 60 * 60 * 1000 && age <= Date.now() + 5 * 60 * 1000));
+          (Number.isFinite(age) && Date.now() - age <= 24 * 60 * 60 * 1000 && age <= Date.now() + 5 * 60 * 1000);
       });
       if (articles.length) return articles.slice(0, limit);
       lastError = "GDELT returned no recent relevant articles";
@@ -213,7 +213,7 @@ async function fetchPublicNewsGroup(group, limit = 15) {
       const age = Date.parse(a.date);
       const relevant = /iran|iranian|tehran|israel|israeli|missile|rocket|drone|strike|attack|intercept|launch|war|security|טיל|שיגור|יירוט|איראן|ישראל|תקיפה|כטב.?ם|מלחמה|ביטחון/i.test(a.title);
       if (!a.title || a.title.length < 12 || !/^https?:\/\//i.test(a.url) || seen.has(a.url) || !relevant ||
-          (Number.isFinite(age) && (Date.now() - age > 24 * 60 * 60 * 1000 || age > Date.now() + 5 * 60 * 1000))) return false;
+          (!Number.isFinite(age) || Date.now() - age > 24 * 60 * 60 * 1000 || age > Date.now() + 5 * 60 * 1000)) return false;
       seen.add(a.url); return true;
     });
     if (articles.length) return articles.slice(0, limit);
