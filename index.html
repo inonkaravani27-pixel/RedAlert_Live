@@ -274,10 +274,6 @@ if(iranNotifyButton)iranNotifyButton.addEventListener("click",async()=>{
   st.textContent="נרשמת בהצלחה ל-Push. דיווחים חדשים יכולים להגיע גם כשהאתר סגור, כל עוד שרת Render פעיל.";
  }catch(error){st.textContent="הפעלת Push נכשלה: "+String(error.message||error);}
 });
-updateIranNotifyButton();return;}
- iranNotifyEnabled=true;localStorage.setItem("iranNotifyEnabled","1");updateIranNotifyButton();
- try{const reg=await navigator.serviceWorker.ready;await reg.showNotification("RedAlert Live",{body:"התראות על דיווחי חדשות ציבוריים הופעלו.",tag:"iran-feed-enabled"});}catch{}
-});
 updateIranNotifyButton();
 async function loadIranIndicators(){
  const status=$("indicatorStatus"),feed=$("indicatorFeed");
