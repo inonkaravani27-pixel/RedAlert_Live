@@ -191,7 +191,6 @@ async function poll(){try{
  renderAll();
  }catch(e){$("connection").textContent="תקלה בחיבור";$("connection").className="status err";$("source").textContent="לא ניתן לאמת מקור: "+String(e.message||e);$("headline").textContent="אין אימות עדכני להתרעות";$("sub").textContent="בדקו את היישומון הרשמי. היעדר מידע אינו אומר שאין סכנה.";if(!demo){realEvents=[];renderEvents()}}
 }
-$("translateNews").addEventListener("change",loadPrelimFromPublicFeed);
 let prelimRequestInFlight=false;
 async function loadPrelimFromPublicFeed(){
  const box=$("pre"),status=$("translationStatus"),sourceStatus=$("indicatorStatus");
