@@ -169,9 +169,14 @@ async function fetchPublicNewsGroup(group, limit = 15) {
       const articles = (data.articles || []).map(a => ({
         title: String(a.title || "").trim(), url: String(a.url || ""),
         source: String(a.domain || "מקור חדשות"), date: normalizeNewsDate(a.seendate || "")
-      })).filter(a => a.title && /^https?:\/\//i.test(a.url));
+      })).filter(a => {
+        const age = Date.parse(a.date);
+        const relevant = /iran|iranian|tehran|israel|israeli|missile|rocket|drone|strike|attack|intercept|launch|war|security|טיל|שיגור|יירוט|איראן|ישראל|תקיפה|כטב.?ם|מלחמה|ביטחון/i.test(a.title);
+        return a.title.length >= 12 && /^https?:\/\//i.test(a.url) && relevant &&
+          (!Number.isFinite(age) || (Date.now() - age <= 24 * 60 * 60 * 1000 && age <= Date.now() + 5 * 60 * 1000));
+      });
       if (articles.length) return articles.slice(0, limit);
-      lastError = "GDELT returned no articles";
+      lastError = "GDELT returned no recent relevant articles";
     } finally { clearTimeout(timer); }
   } catch (error) { lastError = msg(error); }
 
@@ -187,7 +192,10 @@ async function fetchPublicNewsGroup(group, limit = 15) {
       return { title, url: item.link || "", source: match ? match[1].trim() : "Google News",
         date: Number.isFinite(item.pub) ? new Date(item.pub).toISOString() : "" };
     }).filter(a => {
-      if (!a.title || !/^https?:\/\//i.test(a.url) || seen.has(a.url)) return false;
+      const age = Date.parse(a.date);
+      const relevant = /iran|iranian|tehran|israel|israeli|missile|rocket|drone|strike|attack|intercept|launch|war|security|טיל|שיגור|יירוט|איראן|ישראל|תקיפה|כטב.?ם|מלחמה|ביטחון/i.test(a.title);
+      if (!a.title || a.title.length < 12 || !/^https?:\/\//i.test(a.url) || seen.has(a.url) || !relevant ||
+          (Number.isFinite(age) && (Date.now() - age > 24 * 60 * 60 * 1000 || age > Date.now() + 5 * 60 * 1000))) return false;
       seen.add(a.url); return true;
     });
     if (articles.length) return articles.slice(0, limit);
