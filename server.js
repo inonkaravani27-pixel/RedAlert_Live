@@ -20,7 +20,7 @@ function readJsonBody(req, limit = 16384) {
 }
 let pushNewsInitialized = false;
 const knownPushArticleUrls = new Set();
-const POLL = +E.POLL_MS || 10000, STALE = +E.STALE_MS || 45000, MAXAGE = +E.MAX_AGE_MS || 1800000;
+const POLL = +E.POLL_MS || 5000, STALE = +E.STALE_MS || 30000, MAXAGE = +E.MAX_AGE_MS || 1800000;
 const OREF_URLS = (E.OREF_URLS || "https://api.tzevaadom.co.il/notifications,https://orefproxy5.oref-map.org/api2/alerts,https://oref-map.org/api/alerts").split(",").map(s => s.trim()).filter(Boolean);
 const list = v => (v || "").split(",").map(s => s.trim()).filter(Boolean);
 const msg = e => String((e && e.message) || e).replace(/https?:\/\/\S+/g, "[url]").slice(0, 120);
@@ -348,7 +348,7 @@ const server = http.createServer((req, res) => {
   if (FILES[p]) { const f = path.join(PUB, FILES[p][0]); if (fs.existsSync(f)) { res.writeHead(200, { ...h, "Content-Type": FILES[p][1] }); return res.end(fs.readFileSync(f)); } }
   if ((p === "/" || p === "/index.html") && fs.existsSync(INDEX)) {
     const html = fs.readFileSync(INDEX, "utf8").replace("<head>", "<head><script>window.RAL_SAME_ORIGIN=true;window.RAL_POLL_MS=" + POLL + "</script>");
-    res.writeHead(200, { ...h, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' https:; frame-src 'self' https://iwm.diskin.net; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.basemaps.cartocdn.com; font-src 'self' data: https://unpkg.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'", "X-Frame-Options": "DENY" }); return res.end(html);
+    res.writeHead(200, { ...h, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' https:; frame-src 'self' https://iwm.diskin.net; img-src 'self' data: blob: https:; font-src 'self' data: https://unpkg.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'", "X-Frame-Options": "DENY" }); return res.end(html);
   }
   res.writeHead(404, h); res.end("{}");
 });
