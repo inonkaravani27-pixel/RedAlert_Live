@@ -180,6 +180,12 @@ async function fetchTelegramChannel(channel, limit = 15) {
   // rather than relying on one exact class attribute layout.
   const starts = [...html.matchAll(/<div\b(?=[^>]*class=["'][^"']*tgme_widget_message_wrap)[^>]*>/gi)];
   const blocks = starts.map((match, index) => html.slice(match.index, starts[index + 1]?.index ?? html.length));
+  if (!starts.length) {
+    const htmlHint = /captcha|too many requests|temporarily unavailable|please enable javascript|cloudflare/i.test(html)
+      ? "Telegram returned a challenge/rate-limit page"
+      : "Telegram HTML contained no recognizable public message blocks";
+    throw new Error(htmlHint + " (HTML " + html.length + " chars)");
+  }
   const out = [];
   for (const block of blocks) {
     const post = (block.match(/data-post=["']([^"']+)["']/i) || [])[1];
@@ -211,7 +217,11 @@ async function fetchTelegramChannel(channel, limit = 15) {
     });
   }
   const seen = new Set();
-  return out.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).filter(a => !seen.has(a.url) && seen.add(a.url)).slice(0, limit);
+  const parsed = out.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).filter(a => !seen.has(a.url) && seen.add(a.url)).slice(0, limit);
+  if (!parsed.length) {
+    throw new Error("Telegram page loaded (" + starts.length + " message blocks), but no posts passed the parser's 6-hour freshness/media filters");
+  }
+  return parsed;
 }
 async function fetchPublicNewsGroup(group, limit = 15) {
   if (group.telegram) return fetchTelegramChannel(group.telegram, limit);
