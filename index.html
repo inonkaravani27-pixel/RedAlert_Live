@@ -197,12 +197,12 @@ async function loadPrelimFromPublicFeed(){
   for(const group of (data.groups||[]))for(const article of (group.articles||[])){
    if(article.url&&!articles.some(existing=>existing.url===article.url))articles.push({...article,groupLabel:group.label});
   }
-  articles.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+  articles.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
   if(($("newsFilter")?.value||"all")==="arabic")articles=articles.filter(a=>/aljazeera|alarabiya|skynewsarabia|almanar|arabic|middleeastmonitor/i.test(String(a.source||""))||/[\u0600-\u06ff]/.test(a.title||""));
   articles=articles.slice(0,30);
   if(!articles.length){box.innerHTML='<p class="muted">לא נמצאו כרגע דיווחים מתאימים ב־24 השעות האחרונות.</p>';if(sourceStatus)sourceStatus.textContent="מקור החדשות הגיב, אך לא התקבלו כתבות מתאימות.";return;}
   box.innerHTML=articles.map((a,i)=>{const tg=String(a.source||"").includes("t.me/")||String(a.groupLabel||"").includes("טלגרם");const media=a.mediaUrl&&/^https:\/\//i.test(a.mediaUrl)?'<a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer"><img class="news-media" src="'+esc(a.mediaUrl)+'" alt="תיעוד מתוך פוסט ציבורי" loading="lazy" referrerpolicy="no-referrer"></a>':"";return '<article class="item"><div class="news-flags"><span class="tag">'+(tg?"טלגרם · לא מאומת":"דיווח תקשורתי")+'</span>'+(a.mediaType==="video-preview"?'<span class="tag">ייתכן שיש וידאו בפוסט</span>':"")+'</div><b id="iran-news-title-'+i+'">'+esc(a.title)+'</b>'+media+'<p class="muted">'+esc(a.groupLabel||"דיווח ציבורי")+' · '+esc(a.source||"מקור לא ידוע")+' · '+esc(formatIranDate(a.date))+'</p><a class="map-link" href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer">'+(tg?"פתח פוסט בטלגרם ↗":"פתח מקור / כתבה ↗")+'</a></article>';}).join("");
-  if(sourceStatus)sourceStatus.textContent="מקור: GDELT עם מקור גיבוי · "+articles.length+" כתבות מהיממה האחרונה · נבדק "+new Date(data.fetchedAt).toLocaleTimeString("he-IL")+(data.partial?" · חלק מהמקורות לא זמינים":"");
+  if(sourceStatus)sourceStatus.textContent="מקור: כלי תקשורת + טלגרם ציבורי · "+articles.length+" כתבות מהיממה האחרונה · נבדק "+new Date(data.fetchedAt).toLocaleTimeString("he-IL")+(data.partial?" · חלק מהמקורות לא זמינים":"");
   if($("translateNews")?.checked){
    if(status)status.textContent="מתרגם כותרות לעברית…";
    let next=0;
