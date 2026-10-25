@@ -134,7 +134,10 @@ async function fetchTelegramChannel(channel, limit = 15) {
     const title = textMatch ? dec(textMatch[1]).replace(/\s+/g, " ").trim() : "";
     const dateRaw = (block.match(/<time[^>]*datetime="([^"]+)"/i) || [])[1] || "";
     const pub = Date.parse(dateRaw);
-    if (!title || title.length < 12 || !Number.isFinite(pub) || Date.now() - pub > 24 * 60 * 60 * 1000 || pub > Date.now() + 5 * 60 * 1000) continue;
+    const lowerTitle = title.toLowerCase();
+    const relevantTerms = ["iran","iranian","tehran","israel","israeli","missile","rocket","drone","strike","attack","intercept","launch","war","security","hezbollah","hamas","lebanon","syria","yemen","alert","sirens","איראן","ישראל","טיל","שיגור","יירוט","תקיפה","כטב","מלחמה","ביטחון","צה\"ל","חיזבאללה","חמאס","לבנון","סוריה","תימן","אזעקה","פיגוע","רקטה","צבא"];
+    const relevant = relevantTerms.some(term => lowerTitle.includes(term));
+    if (!title || title.length < 12 || !relevant || !Number.isFinite(pub) || Date.now() - pub > 24 * 60 * 60 * 1000 || pub > Date.now() + 5 * 60 * 1000) continue;
     const mediaMatch = block.match(/background-image:\s*url\(['"]?(https:\/\/[^)'"]+)/i);
     const imgMatch = block.match(/<img[^>]+src="(https:\/\/[^"]+)"/i);
     const videoMatch = /class="tgme_widget_message_video_player/.test(block);
