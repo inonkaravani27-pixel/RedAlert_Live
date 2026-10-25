@@ -168,9 +168,10 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-baznews", label: "רגע חדשות — צבא וביטחון", telegram: "baznews9", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-israel-yamin", label: "ישראל ימין — חדשות", telegram: "israel_yamin", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" }
 ];
-async function fetchTelegramChannel(channel, limit = 15) {
+async function fetchTelegramChannelUncached(channel, limit = 15) {
   // Prefer an RSS bridge: Telegram's HTML preview is currently returning markup
   // the in-process scraper cannot parse from the hosted Render instance.
+  // Keep to listed public instances; mirrors are tried only after earlier instances fail.
   const rssHosts = [
     "https://rsshub.app",
     "https://rsshub.rssforever.com",
@@ -179,8 +180,8 @@ async function fetchTelegramChannel(channel, limit = 15) {
     "https://rsshub.rss.tips",
     "https://rsshub.ktachibana.party",
     "https://rsshub.cups.moe",
-    "https://rsshub.tandav.me",
-    "https://rh.nas.syn.im"
+    "https://rss.owo.nz",
+    "https://rss.wudifeixue.com"
   ];
   let rssError = "";
   for (const host of rssHosts) {
@@ -262,6 +263,37 @@ async function fetchTelegramChannel(channel, limit = 15) {
   if (!parsed.length) throw new Error("No recent Telegram posts could be parsed (RSS bridge: " + rssError + ")");
   return parsed;
 }
+
+// Avoid hammering shared public RSS bridges every 20 seconds when they are rate-limiting
+// or temporarily unavailable. Successful feeds are briefly cached; failures back off.
+const telegramFetchCache = new Map();
+const telegramFetchInFlight = new Map();
+async function fetchTelegramChannel(channel, limit = 15) {
+  const key = String(channel).toLowerCase() + ":" + limit;
+  const cached = telegramFetchCache.get(key);
+  const now = Date.now();
+  if (cached && now < cached.until) {
+    if (cached.error) throw new Error(cached.error);
+    return cached.items;
+  }
+  if (telegramFetchInFlight.has(key)) return telegramFetchInFlight.get(key);
+  const request = (async () => {
+    try {
+      const items = await fetchTelegramChannelUncached(channel, limit);
+      telegramFetchCache.set(key, { items, until: Date.now() + 60_000 });
+      return items;
+    } catch (error) {
+      const message = msg(error);
+      telegramFetchCache.set(key, { error: message, until: Date.now() + 120_000 });
+      throw error;
+    } finally {
+      telegramFetchInFlight.delete(key);
+    }
+  })();
+  telegramFetchInFlight.set(key, request);
+  return request;
+}
+
 async function fetchPublicNewsGroup(group, limit = 15) {
   if (group.telegram) return fetchTelegramChannel(group.telegram, limit);
 
@@ -373,7 +405,7 @@ async function refreshPublicNewsCache() {
       }
     };
     // Limit concurrency to reduce Telegram throttling and publish useful results progressively.
-    await Promise.all(Array.from({ length: 10 }, () => worker()));
+    await Promise.all(Array.from({ length: 4 }, () => worker()));
     publicNewsCache = {
       source: "GDELT / Google News RSS / public Telegram channel previews",
       fetchedAt: new Date().toISOString(),
