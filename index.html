@@ -222,7 +222,7 @@ async function loadPrelimFromPublicFeed(){
    Promise.all(workers).catch(()=>{});
    if(status)status.textContent="התרגום לעברית מופעל ברקע; ייתכנו שגיאות תרגום. המקור המקורי זמין בכל כתבה.";
   }else if(status)status.textContent="התרגום כבוי. אפשר להפעיל אותו באמצעות הסימון למעלה.";
- }catch(error){if(!box.dataset.cacheShown)box.innerHTML='<p class="muted">לא ניתן לקבל כותרות ממקורות החדשות כרגע. נמשיך לבדוק אוטומטית; בדקו גם מקורות רשמיים.</p>';if(sourceStatus)sourceStatus.textContent="מקור החדשות אינו זמין כרגע. אין להסיק מכך שאין פעילות.";if(status)status.textContent="לא ניתן לעדכן כותרות כרגע."}
+ }catch(error){box.innerHTML='<p class="muted">מקורות החדשות לא החזירו כרגע דיווחים עדכניים. ננסה שוב אוטומטית.</p>';delete box.dataset.cacheShown;if(sourceStatus)sourceStatus.textContent="מקורות החדשות אינם זמינים כרגע.";if(status)status.textContent="לא ניתן לעדכן כותרות כרגע."}
  finally{clearTimeout(timer);prelimRequestInFlight=false}
 }
 $("refresh").onclick=poll;
@@ -244,7 +244,7 @@ if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(
 const iranTranslationCache = new Map();
 async function translateIranTitle(title){
  if(iranTranslationCache.has(title))return iranTranslationCache.get(title);
- if(/[\\u0590-\\u05FF]/.test(title))return title;
+ if(/[\u0590-\u05FF]/.test(title))return title;
  try{
   const r=await fetch("/api/translate?text="+encodeURIComponent(title),{cache:"no-store"});
   if(!r.ok)throw new Error("translation unavailable");
@@ -259,7 +259,7 @@ function formatIranDate(value){
  if(!value)return "זמן פרסום לא זמין";
  const raw=String(value).trim();
  let normalized=raw;
- const m=raw.match(/^(\\d{4})(\\d{2})(\\d{2})T(\\d{2})(\\d{2})(\\d{2})Z?$/);
+ const m=raw.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/);
  if(m)normalized=m[1]+"-"+m[2]+"-"+m[3]+"T"+m[4]+":"+m[5]+":"+m[6]+"Z";
  const parsed=Date.parse(normalized);
  return Number.isFinite(parsed)?new Date(parsed).toLocaleString("he-IL"):"זמן פרסום לא זמין";
