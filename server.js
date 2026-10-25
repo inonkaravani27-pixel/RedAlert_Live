@@ -32,10 +32,10 @@ const mk = p => ({
 });
 const G = { prelim: mk("PRELIM"), military: mk("MILITARY") };
 
-const get = async url => {
+const get = async (url, extraHeaders = {}) => {
   const c = new AbortController(), t = setTimeout(() => c.abort(), 8000);
   try {
-    const r = await fetch(url, { signal: c.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; RedAlertLive/1.0)", Accept: "application/json, text/plain, */*", "Referer": "https://www.oref.org.il/", "X-Requested-With": "XMLHttpRequest" } });
+    const r = await fetch(url, { signal: c.signal, headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36", Accept: "application/json, text/plain, */*", "X-Requested-With": "XMLHttpRequest", ...extraHeaders } });
     if (!r.ok) throw new Error("HTTP " + r.status);
     return await r.text();
   } finally { clearTimeout(t); }
@@ -169,28 +169,35 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-israel-yamin", label: "ישראל ימין — חדשות", telegram: "israel_yamin", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" }
 ];
 async function fetchTelegramChannel(channel, limit = 15) {
-  let html, firstError;
-  try { html = await get("https://t.me/s/" + encodeURIComponent(channel)); }
-  catch (error) { firstError = error; }
-  if (!html) {
-    try { html = await get("https://telegram.me/s/" + encodeURIComponent(channel)); }
-    catch (error) { throw new Error("Telegram preview unavailable (" + msg(firstError || error) + "; " + msg(error) + ")"); }
+  // Telegram previews use their own browser-like request headers, not the Oref referer.
+  const urls = ["https://t.me/s/" + encodeURIComponent(channel), "https://telegram.me/s/" + encodeURIComponent(channel)];
+  let html = "", lastError = "";
+  for (const url of urls) {
+    try {
+      const candidate = await get(url, {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://t.me/"
+      });
+      html = candidate;
+      if (/tgme_widget_message_wrap|tgme_widget_message_text|data-post=["'][^"']+\//i.test(candidate)) break;
+      lastError = "public preview markup not found";
+    } catch (error) { lastError = msg(error); }
   }
-  // Telegram's public preview markup changes periodically; split on the message class
-  // rather than relying on one exact class attribute layout.
-  const starts = [...html.matchAll(/<div\b(?=[^>]*class=["'][^"']*tgme_widget_message_wrap)[^>]*>/gi)];
+  if (!html) throw new Error("Telegram preview unavailable (" + lastError + ")");
+  const starts = [...html.matchAll(/<div\b[^>]*class=["'][^"']*\btgme_widget_message_wrap\b[^"']*["'][^>]*>/gi)];
   const blocks = starts.map((match, index) => html.slice(match.index, starts[index + 1]?.index ?? html.length));
   if (!starts.length) {
-    const htmlHint = /captcha|too many requests|temporarily unavailable|please enable javascript|cloudflare/i.test(html)
-      ? "Telegram returned a challenge/rate-limit page"
-      : "Telegram HTML contained no recognizable public message blocks";
-    throw new Error(htmlHint + " (HTML " + html.length + " chars)");
+    const htmlHint = /captcha|too many requests|temporarily unavailable|please enable javascript|cloudflare|sorry, too many/i.test(html)
+      ? "Telegram returned a challenge/rate-limit page" : "Telegram public preview markup unavailable";
+    throw new Error(htmlHint);
   }
   const out = [];
   for (const block of blocks) {
     const post = (block.match(/data-post=["']([^"']+)["']/i) || [])[1];
     if (!post) continue;
-    const textMatch = block.match(/<div\b[^>]*class=["'][^"']*tgme_widget_message_text[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+    const textMatch = block.match(/<div\b[^>]*class=["'][^"']*\btgme_widget_message_text\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
     let title = textMatch ? dec(textMatch[1].replace(/<br\s*\/?\s*>/gi, " ").replace(/<\/p>/gi, " ")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
     const dateRaw = (block.match(/<time\b[^>]*datetime=["']([^"']+)["']/i) || [])[1] || "";
     const pub = Date.parse(dateRaw);
@@ -205,22 +212,13 @@ async function fetchTelegramChannel(channel, limit = 15) {
     if (!title && !videoMatch && !hasPhoto) continue;
     if (!title) title = videoMatch ? "תיעוד וידאו מצורף לפוסט" : "תמונה מצורפת לפוסט";
     if (title.length < 6 && !videoMatch && !hasPhoto) continue;
-    out.push({
-      title: title.slice(0, 600),
-      url: "https://t.me/" + post,
-      source: "t.me/" + channel,
-      date: new Date(pub).toISOString(),
-      mediaUrl,
-      mediaType: videoMatch ? "video-preview" : (hasPhoto ? "image" : ""),
-      unverified: true,
-      verification: "מקור טלגרם — דיווח לא מאומת עד להצלבה מול מקור נוסף"
-    });
+    out.push({ title: title.slice(0, 600), url: "https://t.me/" + post, source: "t.me/" + channel,
+      date: new Date(pub).toISOString(), mediaUrl, mediaType: videoMatch ? "video-preview" : (hasPhoto ? "image" : ""),
+      unverified: true, verification: "מקור טלגרם — דיווח לא מאומת עד להצלבה מול מקור נוסף" });
   }
   const seen = new Set();
   const parsed = out.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).filter(a => !seen.has(a.url) && seen.add(a.url)).slice(0, limit);
-  if (!parsed.length) {
-    throw new Error("Telegram page loaded (" + starts.length + " message blocks), but no posts passed the parser's 6-hour freshness/media filters");
-  }
+  if (!parsed.length) throw new Error("No recent Telegram posts could be parsed");
   return parsed;
 }
 async function fetchPublicNewsGroup(group, limit = 15) {
