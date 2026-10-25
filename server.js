@@ -107,10 +107,14 @@ function parseFeed(x) {
 }
 
 const PUBLIC_NEWS_GROUPS = [
-  { id: "iran", label: "דיווחים מכלי תקשורת על איראן", query: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard")', rssQuery: 'Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard" when:1d', verification: "דיווח תקשורתי — יש לפתוח את המקור" },
-  { id: "launch", label: "דיווחים על שיגורים, יירוטים ותקיפות", query: '((Iran OR Iranian) (missile OR rocket OR drone) (launch OR launched OR attack OR interception OR Israel))', rssQuery: '(Iran OR Iranian) (missile OR rocket OR drone) (launch OR launched OR attack OR interception OR Israel) when:1d', verification: "דיווח תקשורתי — יש לפתוח את המקור" },
-  { id: "telegram-n12", label: "עדכונים מהירים — טלגרם N12", telegram: "N12nws", verification: "מקור טלגרם — בדקו מול מקור נוסף" },
-  { id: "telegram-newsil", label: "עדכונים מהירים — חדשות ישראל בטלגרם", telegram: "newsil", verification: "מקור טלגרם — לא מאומת עד לאישור נוסף" }
+  { id: "iran", label: "דיווחים על איראן — כלי תקשורת", query: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard")', rssQuery: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard") when:1d', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
+  { id: "launch", label: "שיגורים, יירוטים ותקיפות — דיווחים", query: '((Iran OR Iranian OR Israel) (missile OR rocket OR drone OR strike OR attack OR interception OR launch))', rssQuery: '((Iran OR Iranian OR Israel) (missile OR rocket OR drone OR strike OR attack OR interception OR launch)) when:1d', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
+  { id: "telegram-n12", label: "חדשות N12 בטלגרם", telegram: "n12_news", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
+  { id: "telegram-kan11", label: "כאן חדשות בטלגרם", telegram: "KAN11NEWS", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
+  { id: "telegram-newsil", label: "חדשות ישראל בטלגרם", telegram: "newsil", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
+  { id: "telegram-hamal", label: "חמ״ל — דיווחים בטלגרם", telegram: "hamalnews", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
+  { id: "telegram-abualiexpress", label: "אבו עלי אקספרס — טלגרם", telegram: "abualiexpress", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
+  { id: "telegram-tzevaadom", label: "צופר — צבע אדום בטלגרם", telegram: "tzevaadom", verification: "ערוץ התרעות ציבורי — אינו תחליף למקור הרשמי" }
 ];
 async function fetchTelegramChannel(channel, limit = 15) {
   const html = await get("https://t.me/s/" + encodeURIComponent(channel));
@@ -123,7 +127,7 @@ async function fetchTelegramChannel(channel, limit = 15) {
     const title = textMatch ? dec(textMatch[1]).replace(/\s+/g, " ").trim() : "";
     const dateRaw = (block.match(/<time[^>]*datetime="([^"]+)"/i) || [])[1] || "";
     const pub = Date.parse(dateRaw);
-    if (!title || !Number.isFinite(pub) || Date.now() - pub > 36 * 60 * 60 * 1000) continue;
+    if (!title || title.length < 12 || !Number.isFinite(pub) || Date.now() - pub > 24 * 60 * 60 * 1000 || pub > Date.now() + 5 * 60 * 1000) continue;
     const mediaMatch = block.match(/background-image:\s*url\(['"]?(https:\/\/[^)'"]+)/i);
     const imgMatch = block.match(/<img[^>]+src="(https:\/\/[^"]+)"/i);
     const videoMatch = /class="tgme_widget_message_video_player/.test(block);
