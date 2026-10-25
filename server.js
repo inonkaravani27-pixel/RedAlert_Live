@@ -1,4 +1,4 @@
-// RedAlert Live proxy. Node 18+, no dependencies. See README.md.
+// RedAlert Live proxy. Node 18+. Web Push uses the web-push package. See README.md.
 const http = require("http"), crypto = require("crypto"), fs = require("fs"), path = require("path");
 const webpush = require("web-push");
 const E = process.env, PORT = +E.PORT || 8787, ORIGIN = E.ALLOWED_ORIGIN || "";
