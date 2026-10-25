@@ -222,20 +222,59 @@ function formatIranDate(value){
  const parsed=Date.parse(normalized);
  return Number.isFinite(parsed)?new Date(parsed).toLocaleString("he-IL"):"זמן פרסום לא זמין";
 }
-let iranNotifyEnabled=localStorage.getItem("iranNotifyEnabled")==="1";
-let knownIranArticles=new Set();
-let iranFirstLoad=true;
+let iranNotifyEnabled=false;
 const iranNotifyButton=$("iranNotifyButton");
-function updateIranNotifyButton(){
+function urlBase64ToUint8Array(value){
+ const padding="=".repeat((4-(value.length%4))%4);
+ const raw=atob((value+padding).replace(/-/g,"+").replace(/_/g,"/"));
+ const out=new Uint8Array(raw.length);
+ for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+ return out;
+}
+async function updateIranNotifyButton(){
  const b=$("iranNotifyButton"),st=$("iranNotifyStatus");
  if(!b||!st)return;
- b.textContent=iranNotifyEnabled?"התראות על דיווחים: מופעלות":"הפעל התראות על דיווחים חדשים";
- st.textContent=iranNotifyEnabled?"התראות פעילות בזמן שהאתר פתוח. אם סוגרים את האתר, בדיקת הדיווחים נעצרת.":"כדי לקבל מבזקים, אשר התראות בדפדפן. בדיקת דיווחים מתבצעת רק כשהאתר פתוח.";
+ try{
+  const r=await fetch("/api/push/public-key",{cache:"no-store"});
+  const cfg=await r.json();
+  const reg=await navigator.serviceWorker.ready;
+  const sub=reg.pushManager?await reg.pushManager.getSubscription():null;
+  iranNotifyEnabled=Boolean(cfg.enabled&&sub);
+  if(iranNotifyEnabled)localStorage.setItem("iranNotifyEnabled","1");
+  else localStorage.setItem("iranNotifyEnabled","0");
+  b.textContent=iranNotifyEnabled?"התראות Push: מופעלות":"הפעל התראות Push";
+  if(!cfg.enabled)st.textContent="שרת Push נוסף לקוד, אבל חסר מפתח פרטי VAPID בהגדרות Render. אחרי הגדרת המפתח אפשר להירשם.";
+  else if(iranNotifyEnabled)st.textContent="Push רשום במכשיר. התראות יכולות להגיע גם כשהאתר סגור, כל עוד שירות השרת פעיל.";
+  else st.textContent="לחץ כדי לאשר התראות ולהירשם ל-Push גם כשהאתר סגור.";
+ }catch{
+  b.textContent="הפעל התראות Push";
+  st.textContent="לא ניתן לבדוק כרגע את מצב שירות Push. נסה לרענן.";
+ }
 }
 if(iranNotifyButton)iranNotifyButton.addEventListener("click",async()=>{
- if(!("Notification"in window)){ $("iranNotifyStatus").textContent="הדפדפן הזה אינו תומך בהתראות.";return; }
- const permission=Notification.permission==="granted"?"granted":await Notification.requestPermission();
- if(permission!=="granted"){iranNotifyEnabled=false;localStorage.setItem("iranNotifyEnabled","0");$("iranNotifyStatus").textContent="לא אושרה הרשאת התראות.";updateIranNotifyButton();return;}
+ const st=$("iranNotifyStatus");
+ if(!("Notification"in window)||!("serviceWorker"in navigator)||!("PushManager"in window)){
+  st.textContent="הדפדפן הזה אינו תומך ב-Web Push. נסה לפתוח את האתר ב-Chrome או להתקין אותו למסך הבית.";
+  return;
+ }
+ try{
+  const cfgResponse=await fetch("/api/push/public-key",{cache:"no-store"});
+  const cfg=await cfgResponse.json();
+  if(!cfg.enabled){st.textContent="כמעט מוכן: צריך להוסיף את VAPID_PRIVATE_KEY בהגדרות Environment של שירות Render, ואז לפרוס מחדש.";return;}
+  const permission=Notification.permission==="granted"?"granted":await Notification.requestPermission();
+  if(permission!=="granted"){st.textContent="לא אושרה הרשאת התראות בדפדפן.";return;}
+  const reg=await navigator.serviceWorker.ready;
+  let subscription=await reg.pushManager.getSubscription();
+  if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)});
+  const saved=await fetch("/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(subscription)});
+  const result=await saved.json().catch(()=>({}));
+  if(!saved.ok)throw new Error(result.error||"שגיאת הרשמה לשרת");
+  iranNotifyEnabled=true;localStorage.setItem("iranNotifyEnabled","1");
+  await updateIranNotifyButton();
+  st.textContent="נרשמת בהצלחה ל-Push. דיווחים חדשים יכולים להגיע גם כשהאתר סגור, כל עוד שרת Render פעיל.";
+ }catch(error){st.textContent="הפעלת Push נכשלה: "+String(error.message||error);}
+});
+updateIranNotifyButton();return;}
  iranNotifyEnabled=true;localStorage.setItem("iranNotifyEnabled","1");updateIranNotifyButton();
  try{const reg=await navigator.serviceWorker.ready;await reg.showNotification("RedAlert Live",{body:"התראות על דיווחי חדשות ציבוריים הופעלו.",tag:"iran-feed-enabled"});}catch{}
 });
@@ -254,12 +293,7 @@ async function loadIranIndicators(){
   for(const g of groups)for(const a of (g.articles||[]))if(a.url&&!all.some(x=>x.url===a.url))all.push({...a,groupLabel:g.label});
   all.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
   const currentKeys=new Set(all.map(a=>a.url));
-  if(!iranFirstLoad&&iranNotifyEnabled&&"Notification"in window&&Notification.permission==="granted"){
-   const fresh=all.filter(a=>!knownIranArticles.has(a.url)).slice(0,3);
-   for(const a of fresh){
-    try{const reg=await navigator.serviceWorker.ready;await reg.showNotification("RedAlert Live — דיווח חדש",{body:(a.title||"דיווח חדשותי")+(a.source?" · "+a.source:""),tag:"iran-news-"+btoa(unescape(encodeURIComponent(a.url))).slice(0,60),data:{url:"/"} });}catch{}
-   }
-  }
+  // Background notifications are sent by the server through Web Push.
   knownIranArticles=currentKeys;iranFirstLoad=false;
   const total=all.length;
   feed.innerHTML=groups.map(g=>{
