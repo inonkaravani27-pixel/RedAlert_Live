@@ -127,7 +127,7 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-hamal", label: "חמ״ל — דיווחים בטלגרם", telegram: "hamalnews", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
   { id: "telegram-abualiexpress", label: "אבו עלי אקספרס — טלגרם", telegram: "abualiexpress", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
   { id: "telegram-tzevaadom", label: "צופר — צבע אדום בטלגרם", telegram: "tzevaadom", verification: "ערוץ התרעות ציבורי — אינו תחליף למקור הרשמי" },
-  { id: "telegram-yediot", label: "ידיעות / חדשות מהשטח בטלגרם", telegram: "yediotnews", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
+  { id: "telegram-yediot", label: "ידיעות / חדשות מהשטח בטלגרם", telegram: "yediotnews25", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
   { id: "telegram-ram", label: "מבזקי רעם בטלגרם", telegram: "ramreports", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
   { id: "telegram-301", label: "301 העולם הערבי בטלגרם", telegram: "arabworld301news", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
   { id: "telegram-firstreports", label: "חדשות ישראל בזמן אמת בטלגרם", telegram: "firstreportsnews", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
@@ -233,7 +233,15 @@ async function fetchPublicNewsGroup(group, limit = 15) {
 let publicNewsCache = null;
 let publicNewsRefreshPromise = null;
 let publicNewsLastRefresh = 0;
-const PUBLIC_NEWS_REFRESH_MS = 30000;
+const PUBLIC_NEWS_REFRESH_MS = 20000;
+const PUBLIC_NEWS_MAX_AGE_MS = 20 * 60 * 1000;
+function filterFreshPublicArticles(articles) {
+  const now = Date.now();
+  return (articles || []).filter(article => {
+    const published = Date.parse(article.date || "");
+    return Number.isFinite(published) && published <= now + 5 * 60 * 1000 && now - published <= PUBLIC_NEWS_MAX_AGE_MS;
+  }).sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+}
 async function refreshPublicNewsCache() {
   if (publicNewsRefreshPromise) return publicNewsRefreshPromise;
   publicNewsRefreshPromise = (async () => {
@@ -241,13 +249,13 @@ async function refreshPublicNewsCache() {
     const previousGroups = new Map((previous && previous.groups || []).map(g => [g.id, g]));
     const results = await Promise.all(PUBLIC_NEWS_GROUPS.map(async group => {
       try {
-        const articles = await fetchPublicNewsGroup(group, 20);
+        const articles = filterFreshPublicArticles(await fetchPublicNewsGroup(group, 20));
         return { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles, unavailable: false };
       } catch (error) {
         console.error("Public news group failed (" + group.id + "):", msg(error));
         const old = previousGroups.get(group.id);
         return { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור",
-          articles: old && old.articles || [], unavailable: true, error: msg(error) };
+          articles: filterFreshPublicArticles(old && old.articles || []), unavailable: true, error: msg(error) };
       }
     }));
     publicNewsCache = {
@@ -390,7 +398,8 @@ const server = http.createServer((req, res) => {
       groups: PUBLIC_NEWS_GROUPS.map(group => ({ id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: [], refreshing: true }))
     };
     res.writeHead(200, h);
-    res.end(JSON.stringify({ ...snapshot, refreshing: Boolean(publicNewsRefreshPromise), refreshIntervalMs: PUBLIC_NEWS_REFRESH_MS }));
+    const freshSnapshot = { ...snapshot, groups: (snapshot.groups || []).map(group => ({ ...group, articles: filterFreshPublicArticles(group.articles || []) })) };
+    res.end(JSON.stringify({ ...freshSnapshot, refreshing: Boolean(publicNewsRefreshPromise), refreshIntervalMs: PUBLIC_NEWS_REFRESH_MS, maxArticleAgeMs: PUBLIC_NEWS_MAX_AGE_MS }));
     return;
   }
   if (p === "/api/osint") {
