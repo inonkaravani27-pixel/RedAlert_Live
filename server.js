@@ -107,10 +107,43 @@ function parseFeed(x) {
 }
 
 const PUBLIC_NEWS_GROUPS = [
-  { id: "iran", label: "דיווחים ועדכונים על איראן", query: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard")', rssQuery: 'Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard" when:1d' },
-  { id: "launch", label: "דיווחים על שיגורים, יירוטים ותקיפות", query: '((Iran OR Iranian) (missile OR rocket OR drone) (launch OR launched OR attack OR interception OR Israel))', rssQuery: '(Iran OR Iranian) (missile OR rocket OR drone) (launch OR launched OR attack OR interception OR Israel) when:1d' }
+  { id: "iran", label: "דיווחים מכלי תקשורת על איראן", query: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard")', rssQuery: 'Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard" when:1d', verification: "דיווח תקשורתי — יש לפתוח את המקור" },
+  { id: "launch", label: "דיווחים על שיגורים, יירוטים ותקיפות", query: '((Iran OR Iranian) (missile OR rocket OR drone) (launch OR launched OR attack OR interception OR Israel))', rssQuery: '(Iran OR Iranian) (missile OR rocket OR drone) (launch OR launched OR attack OR interception OR Israel) when:1d', verification: "דיווח תקשורתי — יש לפתוח את המקור" },
+  { id: "telegram-n12", label: "עדכונים מהירים — טלגרם N12", telegram: "N12nws", verification: "מקור טלגרם — בדקו מול מקור נוסף" },
+  { id: "telegram-newsil", label: "עדכונים מהירים — חדשות ישראל בטלגרם", telegram: "newsil", verification: "מקור טלגרם — לא מאומת עד לאישור נוסף" }
 ];
+async function fetchTelegramChannel(channel, limit = 15) {
+  const html = await get("https://t.me/s/" + encodeURIComponent(channel));
+  const blocks = [...html.matchAll(/<div class="tgme_widget_message_wrap[^"]*"[^>]*>[\\s\\S]*?(?=<div class="tgme_widget_message_wrap|<div class="footer|$)/gi)].map(m => m[0]);
+  const out = [];
+  for (const block of blocks) {
+    const post = (block.match(/data-post="([^"]+)"/i) || [])[1];
+    if (!post) continue;
+    const textMatch = block.match(/<div class="tgme_widget_message_text[^"]*"[^>]*>([\\s\\S]*?)<\\/div>/i);
+    const title = textMatch ? dec(textMatch[1]).replace(/\\s+/g, " ").trim() : "";
+    const dateRaw = (block.match(/<time[^>]*datetime="([^"]+)"/i) || [])[1] || "";
+    const pub = Date.parse(dateRaw);
+    if (!title || !Number.isFinite(pub) || Date.now() - pub > 36 * 60 * 60 * 1000) continue;
+    const imgMatch = block.match(/<img[^>]+src="(https:\\/\\/[^"]+)"/i);
+    const videoMatch = block.match(/class="tgme_widget_message_video_player[^"]*"[^>]*style="[^"]*background-image:\\s*url\\('?(https:\\/\\/[^)'"]+)/i);
+    const mediaUrl = imgMatch ? imgMatch[1].replace(/&amp;/g, "&") : (videoMatch ? videoMatch[1].replace(/&amp;/g, "&") : "");
+    out.push({
+      title: title.slice(0, 600),
+      url: "https://t.me/" + post,
+      source: "t.me/" + channel,
+      date: new Date(pub).toISOString(),
+      mediaUrl,
+      mediaType: videoMatch ? "video-preview" : (mediaUrl ? "image" : ""),
+      unverified: true,
+      verification: "מקור טלגרם — בדקו מול מקור נוסף"
+    });
+  }
+  const seen = new Set();
+  return out.sort((a,b) => Date.parse(b.date)-Date.parse(a.date)).filter(a => !seen.has(a.url) && seen.add(a.url)).slice(0, limit);
+}
 async function fetchPublicNewsGroup(group, limit = 15) {
+  if (group.telegram) return fetchTelegramChannel(group.telegram, limit);
+
   let lastError = "public news source unavailable";
   const gdeltUrl = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(group.query) +
     "&mode=ArtList&format=json&sort=datedesc&maxrecords=" + Math.max(limit, 20) + "&timespan=24h";
@@ -268,7 +301,7 @@ const server = http.createServer((req, res) => {
   if (p === "/api/iran-indicators") {
     // Public news reports only. No launcher tracking or launch-time prediction.
     Promise.all(PUBLIC_NEWS_GROUPS.map(async group => {
-      try { return { id: group.id, label: group.label, articles: await fetchPublicNewsGroup(group, 15) }; }
+      try { return { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: await fetchPublicNewsGroup(group, 15) }; }
       catch (error) {
         console.error("Public news group failed (" + group.id + "):", msg(error));
         return { id: group.id, label: group.label, articles: [], unavailable: true };
@@ -278,11 +311,11 @@ const server = http.createServer((req, res) => {
       const failures = results.filter(g => g.unavailable).length;
       res.writeHead(failures === results.length ? 502 : 200, h);
       res.end(JSON.stringify({
-        source: "Public news search (GDELT with Google News RSS fallback)",
+        source: "GDELT / Google News RSS / public Telegram channel previews",
         fetchedAt: new Date().toISOString(),
         partial: failures > 0,
         error: failures === results.length ? "public news feed unavailable" : undefined,
-        note: "Public news only; not verified intelligence, launcher tracking, or launch-time prediction.",
+        note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
         groups: results
       }));
     }).catch(error => {
