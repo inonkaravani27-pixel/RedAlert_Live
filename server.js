@@ -175,6 +175,53 @@ const server = http.createServer((req, res) => {
       });
     return;
   }
+  if (p === "/api/iran-indicators") {
+    // Public-news indicators only: this endpoint does not detect vehicles or infer launch intent.
+    const groups = [
+      { id: "movement", label: "דיווחים על פעילות ומשגרים", query: 'Iran ("missile launcher" OR "mobile launcher" OR "launcher movement" OR "missile convoy")' },
+      { id: "range", label: "דיווחים על טווח ויכולות טילים", query: 'Iran ("missile range" OR "ballistic missile range" OR "range of Iranian missiles") Israel' },
+      { id: "launch", label: "דיווחים על שיגורים ותקיפות", query: '(Iran OR Iranian) (missile launch OR launched missiles OR missile attack) Israel' }
+    ];
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    Promise.all(groups.map(async group => {
+      const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(group.query) +
+        "&mode=ArtList&format=json&sort=datedesc&maxrecords=15&timespan=7d";
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) throw new Error("public news source unavailable");
+      const data = await response.json();
+      const seen = new Set();
+      const articles = (data.articles || []).map(a => ({
+        title: String(a.title || "").trim(),
+        url: String(a.url || ""),
+        source: String(a.domain || "מקור לא ידוע"),
+        date: a.seendate || ""
+      })).filter(a => {
+        if (!a.title || !/^https?:\/\//i.test(a.url) || seen.has(a.url)) return false;
+        seen.add(a.url);
+        return true;
+      }).slice(0, 10);
+      return { id: group.id, label: group.label, articles };
+    })).then(results => {
+      clearTimeout(timer);
+      if (!res.headersSent) {
+        res.writeHead(200, h);
+        res.end(JSON.stringify({
+          source: "GDELT public news search",
+          fetchedAt: new Date().toISOString(),
+          note: "News coverage only; not verified intelligence, vehicle tracking, or launch prediction.",
+          groups: results
+        }));
+      }
+    }).catch(() => {
+      clearTimeout(timer);
+      if (!res.headersSent) {
+        res.writeHead(502, h);
+        res.end(JSON.stringify({ error: "public indicator feed unavailable", note: "The source may be temporarily unavailable." }));
+      }
+    });
+    return;
+  }
   if (p === "/api/osint") {
     const query = encodeURIComponent('(Iran OR Israel OR missile OR rocket OR drone OR interception)') ;
     fetch("https://api.gdeltproject.org/api/v2/doc/doc?query="+query+"&mode=ArtList&format=json&maxrecords=25&sort=DateDesc")
