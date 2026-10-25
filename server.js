@@ -159,6 +159,14 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-amirbohbot", label: "אמיר בוחבוט — ביטחון", telegram: "amirbohbot", verification: "טלגרם — יש להצליב דיווחים" },
   { id: "telegram-divuchim-online", label: "דיווחים אונליין", telegram: "divuchim_online", verification: "טלגרם — דיווחים לא מאומתים" },
   { id: "telegram-aharon-yediot", label: "אהרון ידיעות", telegram: "aharonyediotnews", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" }
+  { id: "telegram-mivzak-afel", label: "מבזק אפל", telegram: "yyyttehdbsj", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
+  { id: "telegram-lelotsenzura", label: "חדשות ביטחון מהשטח ללא צנזורה", telegram: "lelotsenzura", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
+  { id: "telegram-newsisrael-live", label: "חדשות ישראל מהשטח | ללא צנזורה", telegram: "newsisrael_live", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
+  { id: "telegram-firstnewsil", label: "First News IL", telegram: "Firstnewsil", verification: "טלגרם — יש לוודא את זהות הערוץ ולהצליב דיווחים" },
+  { id: "telegram-realtimesecurity", label: "חדשות בזמן אמת", telegram: "Realtimesecurity1", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
+  { id: "telegram-hazfon", label: "חדשות לפני כולם", telegram: "hazfon1", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
+  { id: "telegram-baznews", label: "רגע חדשות — צבא וביטחון", telegram: "baznews9", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
+  { id: "telegram-israel-yamin", label: "ישראל ימין — חדשות", telegram: "israel_yamin", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" }
 ];
 async function fetchTelegramChannel(channel, limit = 15) {
   let html, firstError;
