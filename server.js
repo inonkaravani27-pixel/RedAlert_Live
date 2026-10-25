@@ -163,22 +163,22 @@ async function fetchTelegramChannel(channel, limit = 15) {
   const html = await get("https://t.me/s/" + encodeURIComponent(channel));
   // Telegram's public preview markup changes periodically; split on the message class
   // rather than relying on one exact class attribute layout.
-  const starts = [...html.matchAll(/<div\\b(?=[^>]*class=["'][^"']*tgme_widget_message_wrap)[^>]*>/gi)];
+  const starts = [...html.matchAll(/<div\b(?=[^>]*class=["'][^"']*tgme_widget_message_wrap)[^>]*>/gi)];
   const blocks = starts.map((match, index) => html.slice(match.index, starts[index + 1]?.index ?? html.length));
   const out = [];
   for (const block of blocks) {
     const post = (block.match(/data-post=["']([^"']+)["']/i) || [])[1];
     if (!post) continue;
-    const textMatch = block.match(/<div\\b[^>]*class=["'][^"']*tgme_widget_message_text[^"']*["'][^>]*>([\\s\\S]*?)<\\/div>/i);
-    let title = textMatch ? dec(textMatch[1].replace(/<br\\s*\\/?\\s*>/gi, " ").replace(/<\\/p>/gi, " ")).replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim() : "";
-    const dateRaw = (block.match(/<time\\b[^>]*datetime=["']([^"']+)["']/i) || [])[1] || "";
+    const textMatch = block.match(/<div\b[^>]*class=["'][^"']*tgme_widget_message_text[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+    let title = textMatch ? dec(textMatch[1].replace(/<br\s*\/?\s*>/gi, " ").replace(/<\/p>/gi, " ")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+    const dateRaw = (block.match(/<time\b[^>]*datetime=["']([^"']+)["']/i) || [])[1] || "";
     const pub = Date.parse(dateRaw);
     if (!Number.isFinite(pub) || Date.now() - pub > 6 * 60 * 60 * 1000 || pub > Date.now() + 5 * 60 * 1000) continue;
-    const photoBg = block.match(/class=["'][^"']*tgme_widget_message_photo_wrap[^"']*["'][^>]*style=["'][^"']*background-image:\\s*url\\(["']?(https:\\/\\/[^)'"]+)/i)
-      || block.match(/background-image:\\s*url\\(["']?(https:\\/\\/[^)'"]+)/i);
-    const photoTag = [...block.matchAll(/<img\\b[^>]*>/gi)].map(m => m[0]).find(tag => /tgme_widget_message_photo/i.test(tag));
+    const photoBg = block.match(/class=["'][^"']*tgme_widget_message_photo_wrap[^"']*["'][^>]*style=["'][^"']*background-image:\s*url\(["']?(https:\/\/[^)'"]+)/i)
+      || block.match(/background-image:\s*url\(["']?(https:\/\/[^)'"]+)/i);
+    const photoTag = [...block.matchAll(/<img\b[^>]*>/gi)].map(m => m[0]).find(tag => /tgme_widget_message_photo/i.test(tag));
     const imgSrc = photoTag ? (photoTag.match(/(?:src|srcset)=["']([^"' ,]+)["']/i) || [])[1] : "";
-    const videoMatch = /tgme_widget_message_video_player|tgme_widget_message_video|<video\\b|tgme_widget_message_roundvideo/i.test(block);
+    const videoMatch = /tgme_widget_message_video_player|tgme_widget_message_video|<video\b|tgme_widget_message_roundvideo/i.test(block);
     const mediaUrl = (photoBg ? photoBg[1] : (imgSrc || "")).replace(/&amp;/g, "&");
     const hasPhoto = Boolean(mediaUrl);
     if (!title && !videoMatch && !hasPhoto) continue;
