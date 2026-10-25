@@ -141,11 +141,28 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-israelhayom", label: "ישראל היום", telegram: "israelhayomofficial", verification: "ערוץ חדשות — בדקו את הכתבה המקורית" },
   { id: "telegram-israeluncensored", label: "חדשות ישראל ללא צנזורה", telegram: "IsraelNewsonTelegramm", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
   { id: "telegram-iran", label: "חדשות איראן", telegram: "hadshotiran", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
-  { id: "telegram-n12-reporters", label: "N12 — צ׳אט הכתבים", telegram: "N12chat", verification: "ערוץ/צ׳אט חדשות — יש להצליב דיווחים" }
+  { id: "telegram-n12-reporters", label: "N12 — צ׳אט הכתבים", telegram: "N12chat", verification: "ערוץ/צ׳אט חדשות — יש להצליב דיווחים" },
+  { id: "telegram-newssil", label: "חדשות ישראל IL", telegram: "newssil", verification: "טלגרם — יש להצליב דיווחים" },
+  { id: "telegram-news-il-h", label: "חדשות ישראל ללא צנזורה", telegram: "News_il_h", verification: "טלגרם — דיווחים לא מאומתים" },
+  { id: "telegram-divuhim", label: "דיווחים חמים מהשטח", telegram: "divuhim1234", verification: "טלגרם — דיווחים לא מאומתים" },
+  { id: "telegram-newsarmy", label: "צבא החדשות", telegram: "NewsArmy", verification: "טלגרם — יש להצליב דיווחים" },
+  { id: "telegram-israelnews", label: "חדשות ישראל", telegram: "israel_news_telegram", verification: "טלגרם — דיווחים לא מאומתים" },
+  { id: "telegram-israeltoday", label: "ישראל היום — טלגרם", telegram: "israeltoday", verification: "טלגרם — יש להצליב דיווחים" },
+  { id: "telegram-divuchimbizmanemet", label: "דיווחים בזמן אמת", telegram: "divuchimbizmanemet", verification: "טלגרם — דיווחים לא מאומתים" },
+  { id: "telegram-idfofficial", label: "צה״ל — הערוץ הרשמי באנגלית", telegram: "idfofficial", verification: "ערוץ רשמי — הודעות צה״ל" },
+  { id: "telegram-pikudhaoref", label: "פיקוד העורף — ערוץ טלגרם", telegram: "PikudHaOref_all", verification: "ערוץ רשמי — יש לפעול לפי הנחיות פיקוד העורף" },
+  { id: "telegram-tzenora", label: "חדשות ללא צנזורה", telegram: "tzenora", verification: "טלגרם — דיווחים לא מאומתים" },
+  { id: "telegram-raknet", label: "רק נטו חדשות", telegram: "raknetoooooo", verification: "טלגרם — דיווחים לא מאומתים" },
+  { id: "telegram-ntd-hebrew", label: "NTD עברית", telegram: "NTD_Hebrew", verification: "טלגרם — יש להצליב דיווחים" },
+  { id: "telegram-hotnews", label: "החדשות החמות", telegram: "hotnews1", verification: "טלגרם — דיווחים לא מאומתים" },
+  { id: "telegram-kolisrael", label: "קול ישראל — דיווחי ביטחון", telegram: "kolisrael", verification: "טלגרם — יש להצליב דיווחים" },
+  { id: "telegram-amirbohbot", label: "אמיר בוחבוט — ביטחון", telegram: "amirbohbot", verification: "טלגרם — יש להצליב דיווחים" },
+  { id: "telegram-divuchim-online", label: "דיווחים אונליין", telegram: "divuchim_online", verification: "טלגרם — דיווחים לא מאומתים" }
 ];
 async function fetchTelegramChannel(channel, limit = 15) {
   const html = await get("https://t.me/s/" + encodeURIComponent(channel));
-  const blocks = [...html.matchAll(/<div class="tgme_widget_message_wrap[^"]*"[^>]*>[\s\S]*?(?=<div class="tgme_widget_message_wrap|<div class="footer|$)/gi)].map(m => m[0]);
+  const starts = [...html.matchAll(/<div class="tgme_widget_message_wrap[^"]*"[^>]*>/gi)];
+  const blocks = starts.map((match, index) => html.slice(match.index, starts[index + 1]?.index ?? html.length));
   const out = [];
   for (const block of blocks) {
     const post = (block.match(/data-post="([^"]+)"/i) || [])[1];
@@ -166,8 +183,8 @@ async function fetchTelegramChannel(channel, limit = 15) {
     if (!title) title = videoMatch ? "תיעוד וידאו מצורף לפוסט" : "תמונה מצורפת לפוסט";
     const lowerTitle = title.toLowerCase();
     const relevantTerms = ["iran","iranian","tehran","israel","israeli","missile","rocket","drone","strike","attack","intercept","launch","war","security","hezbollah","hamas","lebanon","syria","yemen","alert","sirens","iranian","איראן","ישראל","טיל","שיגור","יירוט","תקיפה","כטב","מלחמה","ביטחון","צה\"ל","חיזבאללה","חמאס","לבנון","סוריה","תימן","אזעקה","פיגוע","רקטה","צבא","עזה","ירי","פגיעה","נפילה","נזק","מיירט","חדירה","פיצוץ","מל\"ט","חיל האוויר","פיקוד העורף","תיעוד","דיווח","מזרח התיכון","צפון","דרום","ירי","הותר לפרסום","ביטחוני"];
-    const relevant = relevantTerms.some(term => lowerTitle.includes(term)) || !textMatch;
-    if (!relevant || (title.length < 12 && !videoMatch && !hasPhoto)) continue;
+    // These are public news channels; keep general news and media posts too.
+    if (title.length < 6 && !videoMatch && !hasPhoto) continue;
     out.push({
       title: title.slice(0, 600),
       url: "https://t.me/" + post,
