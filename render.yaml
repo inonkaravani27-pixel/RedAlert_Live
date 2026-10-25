@@ -10,6 +10,12 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+      - key: VAPID_PUBLIC_KEY
+        value: "BDfmuL9yE8HQAYb1U2VjsVVbivV2kFjTaFg-A-ZlhrNunyU0sBNLakO8C5tIT8NVIL84MkF5EdTRV-WY9b3zPTE"
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: "https://redalert-live.onrender.com"
       - key: POLL_MS
         value: "10000"
       - key: STALE_MS
