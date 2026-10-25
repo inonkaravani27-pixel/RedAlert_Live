@@ -224,7 +224,7 @@ function iranLaunchMatch(article, groupId) {
  const launcherMovement=/(launcher movement|missile launcher movement|moving (?:missile )?launchers|launchers? (?:were )?moved|משגרי טילים|תזוזת משגרים|הזזת משגרים|העברת משגרים|העבירו משגרים)/i.test(headline);
  const publishedRange=iran && /(?:range|טווח(?:\s+ירי)?)[^\n.]{0,60}?\b\d{2,5}\s*(?:km|kilomet(?:er|re)s?|קילומטר(?:ים)?|ק״מ)/i.test(headline);
  // Only accept a clearly relevant headline; source/group names alone must never turn generic news into a match.
- return (iran && israel && launch) || launcherMovement || publishedRange;
+ return (iran && israel && launch) || (iran && launcherMovement) || publishedRange;
 }
 function iranLaunchRange(article) {
  const text=[article.title,article.description,article.summary].filter(Boolean).join(" ");
