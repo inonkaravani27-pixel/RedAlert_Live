@@ -171,7 +171,7 @@ const PUBLIC_NEWS_GROUPS = [
 async function fetchTelegramChannel(channel, limit = 15) {
   // Prefer an RSS bridge: Telegram's HTML preview is currently returning markup
   // the in-process scraper cannot parse from the hosted Render instance.
-  const rssHosts = ["https://rsshub.app", "https://rsshub.cups.moe"];
+  const rssHosts = ["https://rsshub.app", "https://rsshub.cups.moe", "https://rsshub.tandav.me", "https://rh.nas.syn.im"];
   let rssError = "";
   for (const host of rssHosts) {
     try {
