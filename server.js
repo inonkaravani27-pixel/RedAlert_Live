@@ -169,7 +169,42 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-israel-yamin", label: "ישראל ימין — חדשות", telegram: "israel_yamin", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" }
 ];
 async function fetchTelegramChannel(channel, limit = 15) {
-  // Telegram previews use their own browser-like request headers, not the Oref referer.
+  // Prefer an RSS bridge: Telegram's HTML preview is currently returning markup
+  // the in-process scraper cannot parse from the hosted Render instance.
+  const rssHosts = ["https://rsshub.app", "https://rsshub.cups.moe"];
+  let rssError = "";
+  for (const host of rssHosts) {
+    try {
+      const xml = await get(host + "/telegram/channel/" + encodeURIComponent(channel), {
+        "Accept": "application/rss+xml, application/xml, text/xml, */*",
+        "Referer": host + "/"
+      });
+      if (!/<(?:rss|feed|channel)\b/i.test(xml) || /<title>\s*(?:Error|Not Found|Internal Server Error)/i.test(xml.slice(0, 2000))) {
+        throw new Error("RSS bridge did not return a feed");
+      }
+      const now = Date.now();
+      const items = parseFeed(xml).map(item => {
+        const pub = Number.isFinite(item.pub) ? item.pub : Date.parse(item.pub || "");
+        const link = String(item.link || "");
+        const title = String(item.title || "").replace(/\s+/g, " ").trim();
+        return { title, url: link, source: "t.me/" + channel,
+          date: Number.isFinite(pub) ? new Date(pub).toISOString() : "",
+          mediaUrl: item.mediaUrl || "", mediaType: item.mediaType || "",
+          unverified: true, verification: "מקור טלגרם — דיווח לא מאומת עד להצלבה מול מקור נוסף" };
+      }).filter(item => {
+        const pub = Date.parse(item.date);
+        return item.title.length >= 3 && /^https?:\/\//i.test(item.url) &&
+          Number.isFinite(pub) && pub <= now + 5 * 60 * 1000 && now - pub <= 6 * 60 * 60 * 1000;
+      });
+      const seen = new Set();
+      const parsed = items.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
+        .filter(item => !seen.has(item.url) && seen.add(item.url)).slice(0, limit);
+      if (parsed.length) return parsed;
+      rssError = "RSS bridge returned no posts from the last 6 hours";
+    } catch (error) { rssError = msg(error); }
+  }
+
+  // Fallback to Telegram's public HTML preview if RSS bridge instances are unavailable.
   const urls = ["https://t.me/s/" + encodeURIComponent(channel), "https://telegram.me/s/" + encodeURIComponent(channel)];
   let html = "", lastError = "";
   for (const url of urls) {
@@ -185,14 +220,10 @@ async function fetchTelegramChannel(channel, limit = 15) {
       lastError = "public preview markup not found";
     } catch (error) { lastError = msg(error); }
   }
-  if (!html) throw new Error("Telegram preview unavailable (" + lastError + ")");
+  if (!html) throw new Error("Telegram/RSS preview unavailable (" + rssError + "; " + lastError + ")");
   const starts = [...html.matchAll(/<div\b[^>]*class=["'][^"']*\btgme_widget_message_wrap\b[^"']*["'][^>]*>/gi)];
   const blocks = starts.map((match, index) => html.slice(match.index, starts[index + 1]?.index ?? html.length));
-  if (!starts.length) {
-    const htmlHint = /captcha|too many requests|temporarily unavailable|please enable javascript|cloudflare|sorry, too many/i.test(html)
-      ? "Telegram returned a challenge/rate-limit page" : "Telegram public preview markup unavailable";
-    throw new Error(htmlHint);
-  }
+  if (!starts.length) throw new Error("Telegram/RSS preview markup unavailable (" + rssError + ")");
   const out = [];
   for (const block of blocks) {
     const post = (block.match(/data-post=["']([^"']+)["']/i) || [])[1];
@@ -218,7 +249,7 @@ async function fetchTelegramChannel(channel, limit = 15) {
   }
   const seen = new Set();
   const parsed = out.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).filter(a => !seen.has(a.url) && seen.add(a.url)).slice(0, limit);
-  if (!parsed.length) throw new Error("No recent Telegram posts could be parsed");
+  if (!parsed.length) throw new Error("No recent Telegram posts could be parsed (RSS bridge: " + rssError + ")");
   return parsed;
 }
 async function fetchPublicNewsGroup(group, limit = 15) {
