@@ -1,12 +1,39 @@
-name: RedAlert Live keep-alive
+name: RedAlert Live validation and keep-alive
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
 jobs:
-  ping:
+  validate:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+      - name: Check server syntax
+        run: node --check server.js
+      - name: Extract inline browser scripts
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>", html, re.I)
+          for i, script in enumerate(scripts):
+              if script.strip():
+                  Path(f"/tmp/ral-script-{i}.js").write_text(script, encoding="utf-8")
+          print(f"Found {len(scripts)} inline script(s)")
+          PY
+          for f in /tmp/ral-script-*.js; do node --check "$f"; done
+  keep-alive:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Keep Render service awake
-        run: |
-          curl --fail --silent --show-error --max-time 20 https://redalert-live.onrender.com/healthz
+        run: curl --fail --silent --show-error --max-time 20 https://redalert-live.onrender.com/healthz
