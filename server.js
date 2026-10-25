@@ -223,6 +223,43 @@ async function fetchPublicNewsGroup(group, limit = 15) {
   }
 }
 
+let publicNewsCache = null;
+let publicNewsRefreshPromise = null;
+let publicNewsLastRefresh = 0;
+const PUBLIC_NEWS_REFRESH_MS = 30000;
+async function refreshPublicNewsCache() {
+  if (publicNewsRefreshPromise) return publicNewsRefreshPromise;
+  publicNewsRefreshPromise = (async () => {
+    const previous = publicNewsCache;
+    const previousGroups = new Map((previous && previous.groups || []).map(g => [g.id, g]));
+    const results = await Promise.all(PUBLIC_NEWS_GROUPS.map(async group => {
+      try {
+        const articles = await fetchPublicNewsGroup(group, 20);
+        return { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles, unavailable: false };
+      } catch (error) {
+        console.error("Public news group failed (" + group.id + "):", msg(error));
+        const old = previousGroups.get(group.id);
+        return { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור",
+          articles: old && old.articles || [], unavailable: true, error: msg(error) };
+      }
+    }));
+    publicNewsCache = {
+      source: "GDELT / Google News RSS / public Telegram channel previews",
+      fetchedAt: new Date().toISOString(),
+      partial: results.some(g => g.unavailable),
+      note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
+      groups: results
+    };
+    publicNewsLastRefresh = Date.now();
+    return publicNewsCache;
+  })().finally(() => { publicNewsRefreshPromise = null; });
+  return publicNewsRefreshPromise;
+}
+function ensurePublicNewsRefresh() {
+  if (!publicNewsRefreshPromise && Date.now() - publicNewsLastRefresh >= PUBLIC_NEWS_REFRESH_MS) {
+    refreshPublicNewsCache().catch(error => console.error("Public news refresh failed:", msg(error)));
+  }
+}
 const norm = t => t.replace(/[^\u0590-\u05ffa-z0-9]/gi, "").toLowerCase();
 async function pollGroup(g) {
   for (const f of g.feeds.values()) {
@@ -337,29 +374,16 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (p === "/api/iran-indicators") {
-    // Public news reports only. No launcher tracking or launch-time prediction.
-    Promise.all(PUBLIC_NEWS_GROUPS.map(async group => {
-      try { return { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: await fetchPublicNewsGroup(group, 15) }; }
-      catch (error) {
-        console.error("Public news group failed (" + group.id + "):", msg(error));
-        return { id: group.id, label: group.label, articles: [], unavailable: true };
-      }
-    })).then(results => {
-      if (res.headersSent) return;
-      const failures = results.filter(g => g.unavailable).length;
-      res.writeHead(failures === results.length ? 502 : 200, h);
-      res.end(JSON.stringify({
-        source: "GDELT / Google News RSS / public Telegram channel previews",
-        fetchedAt: new Date().toISOString(),
-        partial: failures > 0,
-        error: failures === results.length ? "public news feed unavailable" : undefined,
-        note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
-        groups: results
-      }));
-    }).catch(error => {
-      console.error("Public news route failed:", msg(error));
-      if (!res.headersSent) { res.writeHead(502, h); res.end(JSON.stringify({ error: "public news feed unavailable" })); }
-    });
+    // Return the last known feed immediately; refresh sources in the background.
+    ensurePublicNewsRefresh();
+    const snapshot = publicNewsCache || {
+      source: "GDELT / Google News RSS / public Telegram channel previews",
+      fetchedAt: null, partial: true, refreshing: true,
+      note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
+      groups: PUBLIC_NEWS_GROUPS.map(group => ({ id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: [], refreshing: true }))
+    };
+    res.writeHead(200, h);
+    res.end(JSON.stringify({ ...snapshot, refreshing: Boolean(publicNewsRefreshPromise), refreshIntervalMs: PUBLIC_NEWS_REFRESH_MS }));
     return;
   }
   if (p === "/api/osint") {
