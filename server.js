@@ -2,7 +2,7 @@
 const http = require("http"), crypto = require("crypto"), fs = require("fs"), path = require("path");
 const webpush = require("web-push");
 const E = process.env, PORT = +E.PORT || 8787, ORIGIN = E.ALLOWED_ORIGIN || "";
-const PUSH_PUBLIC = E.VAPID_PUBLIC_KEY || "BDfmuL9yE8HQAYb1U2VjsVVbivV2kFjTaFg-A-ZlhrNunyU0sBNLakO8C5tIT8NVIL84MkF5EdTRV-WY9b3zPTE";
+const PUSH_PUBLIC = E.VAPID_PUBLIC_KEY || "BLD0K2r11FqEnEhpAW22STYS6CZkswp6hYf6hyCf8NSh2iHcfOvqg4h36dMMahcRon3O12GUaXkDwPAKW67BDrc";
 const PUSH_READY = Boolean(PUSH_PUBLIC && E.VAPID_PRIVATE_KEY);
 if (PUSH_READY) webpush.setVapidDetails(E.VAPID_SUBJECT || "https://redalert-live.onrender.com", PUSH_PUBLIC, E.VAPID_PRIVATE_KEY);
 const PUSH_STORE = path.join(__dirname, "push-subscriptions.json");
