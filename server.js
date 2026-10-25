@@ -1,6 +1,25 @@
 // RedAlert Live proxy. Node 18+, no dependencies. See README.md.
 const http = require("http"), crypto = require("crypto"), fs = require("fs"), path = require("path");
+const webpush = require("web-push");
 const E = process.env, PORT = +E.PORT || 8787, ORIGIN = E.ALLOWED_ORIGIN || "";
+const PUSH_PUBLIC = E.VAPID_PUBLIC_KEY || "BDfmuL9yE8HQAYb1U2VjsVVbivV2kFjTaFg-A-ZlhrNunyU0sBNLakO8C5tIT8NVIL84MkF5EdTRV-WY9b3zPTE";
+const PUSH_READY = Boolean(PUSH_PUBLIC && E.VAPID_PRIVATE_KEY);
+if (PUSH_READY) webpush.setVapidDetails(E.VAPID_SUBJECT || "https://redalert-live.onrender.com", PUSH_PUBLIC, E.VAPID_PRIVATE_KEY);
+const PUSH_STORE = path.join(__dirname, "push-subscriptions.json");
+const pushSubscriptions = new Map();
+try { for (const s of JSON.parse(fs.readFileSync(PUSH_STORE, "utf8"))) if (s && s.endpoint && s.keys) pushSubscriptions.set(s.endpoint, s); } catch (_) {}
+function savePushSubscriptions() { try { fs.writeFileSync(PUSH_STORE, JSON.stringify([...pushSubscriptions.values()])); } catch (e) { console.error("Could not persist push subscriptions:", msg(e)); } }
+function readJsonBody(req, limit = 16384) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.setEncoding("utf8");
+    req.on("data", chunk => { body += chunk; if (body.length > limit) { reject(new Error("request body too large")); req.destroy(); } });
+    req.on("end", () => { try { resolve(JSON.parse(body || "{}")); } catch (_) { reject(new Error("invalid JSON")); } });
+    req.on("error", reject);
+  });
+}
+let pushNewsInitialized = false;
+const knownPushArticleUrls = new Set();
 const POLL = +E.POLL_MS || 10000, STALE = +E.STALE_MS || 45000, MAXAGE = +E.MAX_AGE_MS || 1800000;
 const OREF_URLS = (E.OREF_URLS || "https://api.tzevaadom.co.il/notifications,https://orefproxy5.oref-map.org/api2/alerts,https://oref-map.org/api/alerts").split(",").map(s => s.trim()).filter(Boolean);
 const list = v => (v || "").split(",").map(s => s.trim()).filter(Boolean);
@@ -147,7 +166,31 @@ const server = http.createServer((req, res) => {
   const h = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
   if (ORIGIN) { h["Access-Control-Allow-Origin"] = ORIGIN; h["Vary"] = "Origin"; }
   const u = new URL(req.url, "http://x"), p = u.pathname;
-  if (req.method === "OPTIONS") { res.writeHead(204, { ...h, "Access-Control-Allow-Methods": "GET" }); return res.end(); }
+  if (req.method === "OPTIONS") { res.writeHead(204, { ...h, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" }); return res.end(); }
+  if (p === "/api/push/public-key" && req.method === "GET") {
+    res.writeHead(200, h);
+    return res.end(JSON.stringify({ enabled: PUSH_READY, publicKey: PUSH_PUBLIC, subscribers: pushSubscriptions.size }));
+  }
+  if (p === "/api/push/subscribe" && req.method === "POST") {
+    if (!PUSH_READY) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "push server keys are not configured" })); }
+    const origin = req.headers.origin;
+    if (origin) {
+      try { if (new URL(origin).host !== req.headers.host) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); } }
+      catch (_) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
+    }
+    readJsonBody(req).then(subscription => {
+      if (!subscription || typeof subscription.endpoint !== "string" || !subscription.endpoint.startsWith("https://") ||
+          !subscription.keys || typeof subscription.keys.p256dh !== "string" || typeof subscription.keys.auth !== "string") {
+        res.writeHead(400, h); return res.end(JSON.stringify({ error: "invalid push subscription" }));
+      }
+      pushSubscriptions.set(subscription.endpoint, subscription);
+      savePushSubscriptions();
+      res.writeHead(201, h); res.end(JSON.stringify({ ok: true }));
+    }).catch(error => {
+      if (!res.headersSent) { res.writeHead(400, h); res.end(JSON.stringify({ error: msg(error) })); }
+    });
+    return;
+  }
   if (req.method !== "GET") { res.writeHead(405, h); return res.end("{}"); }
   if (p === "/healthz") { res.writeHead(200, h); return res.end(JSON.stringify({ ok: true, uptime: Math.round(process.uptime()) })); }
   if (p === "/api/state") { res.writeHead(200, h); return res.end(JSON.stringify(state(parseAreas(u.searchParams.get("areas"))))); }
@@ -253,6 +296,54 @@ const server = http.createServer((req, res) => {
   }
   res.writeHead(404, h); res.end("{}");
 });
-server.listen(PORT, "0.0.0.0", () => console.log("RedAlert proxy on :" + PORT));
+async function pollPushNews() {
+  if (!PUSH_READY || pushSubscriptions.size === 0) return;
+  const queries = [
+    '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard")',
+    '((Iran OR Iranian) (missile OR rocket OR drone) (launch OR launched OR attack OR interception OR Israel))'
+  ];
+  try {
+    const results = await Promise.all(queries.map(async query => {
+      const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(query) + "&mode=ArtList&format=json&sort=datedesc&maxrecords=15&timespan=24h";
+      const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 12000);
+      try {
+        const response = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; RedAlertLive/1.0)", "Accept": "application/json" } });
+        if (!response.ok) throw new Error("GDELT HTTP " + response.status);
+        const data = await response.json();
+        return (data.articles || []).map(a => ({ title: String(a.title || "").trim(), url: String(a.url || ""), source: String(a.domain || "מקור חדשות"), date: String(a.seendate || "") }))
+          .filter(a => a.title && /^https?:\/\//i.test(a.url));
+      } finally { clearTimeout(timer); }
+    }));
+    const articles = [...new Map(results.flat().map(a => [a.url, a])).values()];
+    if (!pushNewsInitialized) {
+      for (const a of articles) knownPushArticleUrls.add(a.url);
+      pushNewsInitialized = true;
+      return;
+    }
+    const fresh = articles.filter(a => !knownPushArticleUrls.has(a.url));
+    for (const a of articles) knownPushArticleUrls.add(a.url);
+    if (!fresh.length) return;
+    for (const a of fresh.slice(0, 5)) {
+      const payload = JSON.stringify({ title: "RedAlert Live — דיווח חדש", body: (a.title + (a.source ? " · " + a.source : "")).slice(0, 180), url: a.url, tag: "ral-" + crypto.createHash("sha1").update(a.url).digest("hex").slice(0, 20) });
+      await Promise.allSettled([...pushSubscriptions.entries()].map(async ([endpoint, subscription]) => {
+        try { await webpush.sendNotification(subscription, payload, { TTL: 300, urgency: "normal" }); }
+        catch (error) {
+          const status = error && (error.statusCode || error.status);
+          if (status === 404 || status === 410) { pushSubscriptions.delete(endpoint); savePushSubscriptions(); }
+          else console.error("Push delivery failed:", status || msg(error));
+        }
+      }));
+    }
+    if (knownPushArticleUrls.size > 500) {
+      const keep = articles.map(a => a.url);
+      knownPushArticleUrls.clear(); keep.forEach(url => knownPushArticleUrls.add(url));
+    }
+  } catch (error) { console.error("Push news poll failed:", msg(error)); }
+}
+server.listen(PORT, "0.0.0.0", () => {
+  console.log("RedAlert proxy on :" + PORT + (PUSH_READY ? " (web push ready)" : " (web push needs VAPID_PRIVATE_KEY)"));
+  setTimeout(pollPushNews, 15000);
+  setInterval(pollPushNews, 60000);
+});
 process.on("SIGTERM", () => server.close(() => process.exit(0)));
 (async function loop() { await Promise.all([pollOref(), pollGroup(G.prelim), pollGroup(G.military)]); setTimeout(loop, POLL); })();
