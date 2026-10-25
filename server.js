@@ -457,6 +457,8 @@ server.listen(PORT, "0.0.0.0", () => {
   console.log("RedAlert proxy on :" + PORT + (PUSH_READY ? " (web push ready)" : " (web push needs VAPID_PRIVATE_KEY)"));
   setTimeout(pollPushNews, 15000);
   setInterval(pollPushNews, 60000);
+  setTimeout(() => refreshPublicNewsCache().catch(error => console.error("Initial public news refresh failed:", msg(error))), 1000);
+  setInterval(ensurePublicNewsRefresh, 5000);
 });
 process.on("SIGTERM", () => server.close(() => process.exit(0)));
 (async function loop() { await Promise.all([pollOref(), pollGroup(G.prelim), pollGroup(G.military)]); setTimeout(loop, POLL); })();
