@@ -24,7 +24,7 @@ jobs:
           import re
           from pathlib import Path
           html = Path("index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r"<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>", html, re.I)
+          scripts = re.findall(r"<script[^>]*>(.*?)</script>", html, re.I | re.S)
           for i, script in enumerate(scripts):
               if script.strip():
                   Path(f"/tmp/ral-script-{i}.js").write_text(script, encoding="utf-8")
