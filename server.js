@@ -32,8 +32,8 @@ const mk = p => ({
 });
 const G = { prelim: mk("PRELIM"), military: mk("MILITARY") };
 
-const get = async (url, extraHeaders = {}) => {
-  const c = new AbortController(), t = setTimeout(() => c.abort(), 8000);
+const get = async (url, extraHeaders = {}, timeoutMs = 8000) => {
+  const c = new AbortController(), t = setTimeout(() => c.abort(), timeoutMs);
   try {
     const r = await fetch(url, { signal: c.signal, headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36", Accept: "application/json, text/plain, */*", "X-Requested-With": "XMLHttpRequest", ...extraHeaders } });
     if (!r.ok) throw new Error("HTTP " + r.status);
@@ -171,7 +171,17 @@ const PUBLIC_NEWS_GROUPS = [
 async function fetchTelegramChannel(channel, limit = 15) {
   // Prefer an RSS bridge: Telegram's HTML preview is currently returning markup
   // the in-process scraper cannot parse from the hosted Render instance.
-  const rssHosts = ["https://rsshub.app", "https://rsshub.cups.moe", "https://rsshub.tandav.me", "https://rh.nas.syn.im"];
+  const rssHosts = [
+    "https://rsshub.app",
+    "https://rsshub.rssforever.com",
+    "https://hub.slarker.me",
+    "https://rsshub.pseudoyu.com",
+    "https://rsshub.rss.tips",
+    "https://rsshub.ktachibana.party",
+    "https://rsshub.cups.moe",
+    "https://rsshub.tandav.me",
+    "https://rh.nas.syn.im"
+  ];
   let rssError = "";
   for (const host of rssHosts) {
     try {
@@ -284,7 +294,7 @@ async function fetchPublicNewsGroup(group, limit = 15) {
   const rssUrl = "https://news.google.com/rss/search?q=" + encodeURIComponent(group.rssQuery) +
     "&hl=he&gl=IL&ceid=IL:he";
   try {
-    const xml = await get(rssUrl);
+    const xml = await get(rssUrl, { "Accept": "application/rss+xml, application/xml, text/xml, */*" }, 12000);
     const seen = new Set();
     const articles = parseFeed(xml).map(item => {
       const title = item.title || "";
