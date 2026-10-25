@@ -176,62 +176,52 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (p === "/api/iran-indicators") {
-    // Public-news indicators only: this endpoint does not detect vehicles or infer launch intent.
+    // Public news reports only. This endpoint does not track launcher positions or predict launch windows.
     const groups = [
-      { id: "movement", label: "דיווחים על פעילות ומשגרים", query: 'Iran ("missile launcher" OR "mobile launcher" OR "launcher movement" OR "missile convoy")' },
-      { id: "range", label: "דיווחים על טווח ויכולות טילים", query: 'Iran ("missile range" OR "ballistic missile range" OR "range of Iranian missiles") Israel' },
-      { id: "launch", label: "דיווחים על שיגורים ותקיפות", query: '(Iran OR Iranian) (missile launch OR launched missiles OR missile attack) Israel' }
+      { id: "iran", label: "דיווחים ועדכונים על איראן", query: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard")' },
+      { id: "launch", label: "דיווחים על שיגורים, יירוטים ותקיפות", query: '((Iran OR Iranian) (missile OR rocket OR drone) (launch OR launched OR attack OR interception OR Israel))' }
     ];
-    // Query categories independently so one failed request cannot discard all results.
-    (async () => {
-      const results = [];
-      let failures = 0;
-      for (const group of groups) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 15000);
-        try {
-          const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(group.query) +
-            "&mode=ArtList&format=json&sort=datedesc&maxrecords=15&timespan=7d";
-          const response = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; RedAlertLive/1.0)", "Accept": "application/json" } });
-          if (!response.ok) throw new Error("GDELT HTTP " + response.status);
-          const data = await response.json();
-          const seen = new Set();
-          const articles = (data.articles || []).map(a => ({
-            title: String(a.title || "").trim(),
-            url: String(a.url || ""),
-            source: String(a.domain || "מקור לא ידוע"),
-            date: a.seendate || ""
-          })).filter(a => {
-            if (!a.title || !/^https?:\/\//i.test(a.url) || seen.has(a.url)) return false;
-            seen.add(a.url);
-            return true;
-          }).slice(0, 10);
-          results.push({ id: group.id, label: group.label, articles });
-        } catch (e) {
-          failures++;
-          results.push({ id: group.id, label: group.label, articles: [], unavailable: true });
-        } finally {
-          clearTimeout(timer);
-        }
-      }
-      return { results, failures };
-    })().then(({ results, failures }) => {
+    const fetchGroup = async group => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 12000);
+      try {
+        const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(group.query) +
+          "&mode=ArtList&format=json&sort=datedesc&maxrecords=20&timespan=24h";
+        const response = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; RedAlertLive/1.0)", "Accept": "application/json" } });
+        const body = await response.text();
+        if (!response.ok) throw new Error("GDELT HTTP " + response.status);
+        let data;
+        try { data = JSON.parse(body); } catch { throw new Error("GDELT returned non-JSON response"); }
+        const seen = new Set();
+        const articles = (data.articles || []).map(a => ({
+          title: String(a.title || "").trim(),
+          url: String(a.url || ""),
+          source: String(a.domain || "מקור לא ידוע"),
+          date: a.seendate || ""
+        })).filter(a => {
+          if (!a.title || !/^https?:\/\//i.test(a.url) || seen.has(a.url)) return false;
+          seen.add(a.url);
+          return true;
+        }).slice(0, 15);
+        return { id: group.id, label: group.label, articles };
+      } catch (_) {
+        return { id: group.id, label: group.label, articles: [], unavailable: true };
+      } finally { clearTimeout(timer); }
+    };
+    Promise.all(groups.map(fetchGroup)).then(results => {
       if (res.headersSent) return;
-      if (failures === groups.length) {
-        res.writeHead(502, h);
-        res.end(JSON.stringify({ error: "public indicator feed unavailable", note: "The source may be temporarily unavailable." }));
-        return;
-      }
-      res.writeHead(200, h);
+      const failures = results.filter(g => g.unavailable).length;
+      res.writeHead(failures === groups.length ? 502 : 200, h);
       res.end(JSON.stringify({
         source: "GDELT public news search",
         fetchedAt: new Date().toISOString(),
         partial: failures > 0,
-        note: "News coverage only; not verified intelligence, vehicle tracking, or launch prediction.",
+        error: failures === groups.length ? "public news feed unavailable" : undefined,
+        note: "Public news only; not verified intelligence, launcher tracking, or launch-time prediction.",
         groups: results
       }));
     }).catch(() => {
-      if (!res.headersSent) { res.writeHead(502, h); res.end(JSON.stringify({ error: "public indicator feed unavailable" })); }
+      if (!res.headersSent) { res.writeHead(502, h); res.end(JSON.stringify({ error: "public news feed unavailable" })); }
     });
     return;
   }
