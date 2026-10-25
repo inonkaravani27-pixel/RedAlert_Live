@@ -1,0 +1,12 @@
+name: RedAlert Live keep-alive
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep Render service awake
+        run: |
+          curl --fail --silent --show-error --max-time 20 https://redalert-live.onrender.com/healthz
