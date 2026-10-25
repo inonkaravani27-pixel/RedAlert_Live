@@ -197,19 +197,49 @@ renderAll();poll();setInterval(poll,10000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 
 
+const iranTranslationCache = new Map();
+async function translateIranTitle(title){
+ if(iranTranslationCache.has(title))return iranTranslationCache.get(title);
+ try{
+  const r=await fetch("/api/translate?text="+encodeURIComponent(title),{cache:"no-store"});
+  if(!r.ok)throw new Error("translation unavailable");
+  const d=await r.json();
+  const translated=String(d.translated||"").trim();
+  if(!translated)throw new Error("empty translation");
+  iranTranslationCache.set(title,translated);
+  return translated;
+ }catch{return title}
+}
+function formatIranDate(value){
+ if(!value)return "זמן פרסום לא זמין";
+ const raw=String(value).trim();
+ let normalized=raw;
+ const m=raw.match(/^(\\d{4})(\\d{2})(\\d{2})T(\\d{2})(\\d{2})(\\d{2})Z?$/);
+ if(m)normalized=m[1]+"-"+m[2]+"-"+m[3]+"T"+m[4]+":"+m[5]+":"+m[6]+"Z";
+ const parsed=Date.parse(normalized);
+ return Number.isFinite(parsed)?new Date(parsed).toLocaleString("he-IL"):"זמן פרסום לא זמין";
+}
 async function loadIranIndicators(){
  const status=$("indicatorStatus"),feed=$("indicatorFeed");
  if(!status||!feed)return;
- status.textContent="אוסף כתבות ציבוריות לפי נושאים…";
+ status.textContent="טוען ומתרגם כתבות לעברית…";
  try{
   const r=await fetch("/api/iran-indicators",{cache:"no-store"});
   if(!r.ok)throw new Error("feed unavailable");
   const d=await r.json();
   const groups=d.groups||[];
   if(!groups.length){status.textContent="לא נמצאו כתבות זמינות כרגע.";feed.innerHTML="";return}
-  status.textContent="מקור: GDELT · עודכן "+new Date(d.fetchedAt).toLocaleTimeString("he-IL")+" · חלון חיפוש: 7 ימים";
-  feed.innerHTML=groups.map(g=>'<section class="card" style="margin:10px 0"><h4 class="section-title">'+esc(g.label)+'</h4>'+
-   ((g.articles||[]).length?(g.articles||[]).map(a=>'<article class="item"><b>'+esc(a.title)+'</b><p class="muted">'+esc(a.source||"מקור לא ידוע")+' · '+esc(a.date?new Date(a.date).toLocaleString("he-IL"):"זמן פרסום לא זמין")+'</p><a class="map-link" href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer">לכתבה המקורית ↗</a></article>').join(""):'<p class="muted">אין כתבות תואמות לנושא הזה כרגע.</p>')+'</section>').join("");
+  const total=groups.reduce((n,g)=>n+(g.articles||[]).length,0);
+  status.textContent="מקור: GDELT · עודכן "+new Date(d.fetchedAt).toLocaleTimeString("he-IL")+" · חלון חיפוש: 7 ימים · מתרגם כותרות…";
+  const rendered=await Promise.all(groups.map(async g=>{
+   const articles=await Promise.all((g.articles||[]).map(async a=>({...a,heTitle:await translateIranTitle(a.title)})));
+   const body=articles.length?articles.map(a=>'<article class="item"><b>'+esc(a.heTitle||a.title)+'</b>'+
+    (a.heTitle&&a.heTitle!==a.title?'<details style="margin-top:5px"><summary class="muted" style="cursor:pointer">הצג כותרת מקורית</summary><p class="muted">'+esc(a.title)+'</p></details>':'')+
+    '<p class="muted">'+esc(a.source||"מקור לא ידוע")+' · '+esc(formatIranDate(a.date))+'</p><a class="map-link" href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer">לכתבה המקורית ↗</a></article>').join(""):'<p class="muted">'+(g.unavailable?'המקור לא היה זמין עבור הנושא הזה.':'אין כתבות תואמות לנושא הזה כרגע.')+'</p>';
+   return '<section class="card" style="margin:10px 0"><h4 class="section-title">'+esc(g.label)+'</h4>'+body+'</section>';
+  }));
+  feed.innerHTML=rendered.join("");
+  status.textContent="מקור: GDELT · "+total+" כתבות שנמצאו · עודכן "+new Date(d.fetchedAt).toLocaleTimeString("he-IL")+" · התרגום אוטומטי ועלול להכיל טעויות.";
  }catch(e){status.textContent="לא ניתן לטעון אינדיקציות כרגע. נסו לרענן מאוחר יותר.";feed.innerHTML=""}
 }
 
