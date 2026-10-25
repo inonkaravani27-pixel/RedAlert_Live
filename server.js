@@ -202,7 +202,7 @@ const server = http.createServer((req, res) => {
             source: String(a.domain || "מקור לא ידוע"),
             date: a.seendate || ""
           })).filter(a => {
-            if (!a.title || !/^https?:\\/\\//i.test(a.url) || seen.has(a.url)) return false;
+            if (!a.title || !/^https?:\/\//i.test(a.url) || seen.has(a.url)) return false;
             seen.add(a.url);
             return true;
           }).slice(0, 10);
