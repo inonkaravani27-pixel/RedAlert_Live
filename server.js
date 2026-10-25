@@ -324,8 +324,14 @@ async function translateToHebrew(text) {
   if (!input) return "";
   if (translationCache.has(input)) return translationCache.get(input);
   const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
-  const response = await get(url);
-  const parsed = JSON.parse(response);
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
+  let responseText;
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; RedAlertLive/1.0)", "Accept": "application/json,text/plain,*/*", "Accept-Language": "he-IL,he;q=0.9,en;q=0.8" } });
+    if (!response.ok) throw new Error("translation HTTP " + response.status);
+    responseText = await response.text();
+  } finally { clearTimeout(timer); }
+  const parsed = JSON.parse(responseText);
   const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("") : "";
   if (!translated) throw new Error("translation unavailable");
   translationCache.set(input, translated);
