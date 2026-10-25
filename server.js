@@ -99,14 +99,15 @@ async function pollOref() {
   await pollOrefSource();
   // Never treat an unavailable source as an all-clear or trigger a push from stale data.
   if (oref.state !== "ok") return;
-  const current = [...new Set(Object.values(oref.active || {}).flat().filter(x => typeof x === "string"))].sort();
-  const currentSet = new Set(current);
+  const current = [...new Set(Object.entries(oref.active || {}).flatMap(([type, cities]) =>
+    (Array.isArray(cities) ? cities : []).filter(city => typeof city === "string").map(city => type + "::" + city)
+  ))].sort();
   if (orefPushBaseline === null) {
     orefPushBaseline = current;
     orefPushLastKey = current.join("|");
     return;
   }
-  const newlyActive = current.filter(city => !orefPushBaseline.includes(city));
+  const newlyActive = current.filter(item => !orefPushBaseline.includes(item));
   orefPushBaseline = current;
   const key = newlyActive.join("|");
   if (!key || key === orefPushLastKey || !PUSH_READY || pushSubscriptions.size === 0) {
@@ -114,9 +115,10 @@ async function pollOref() {
     return;
   }
   orefPushLastKey = current.join("|");
+  const newCities = [...new Set(newlyActive.map(item => item.split("::").slice(1).join("::")))];
   const payload = JSON.stringify({
     title: "RedAlert Live — התרעה מדווחת",
-    body: ("יישובים: " + newlyActive.slice(0, 8).join(", ") + (newlyActive.length > 8 ? " ועוד" : "") + ". בדקו מיד את יישומון פיקוד העורף.").slice(0, 180),
+    body: ("סוג: " + [...new Set(newlyActive.map(item => item.split("::")[0]))].join(", ") + ". יישובים: " + newCities.slice(0, 6).join(", ") + (newCities.length > 6 ? " ועוד" : "") + ". בדקו מיד את יישומון פיקוד העורף.").slice(0, 180),
     url: "/",
     tag: "ral-oref-" + crypto.createHash("sha1").update(key).digest("hex").slice(0, 20)
   });
