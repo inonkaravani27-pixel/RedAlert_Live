@@ -40,7 +40,7 @@ const get = async (url, extraHeaders = {}, timeoutMs = 8000) => {
     return await r.text();
   } finally { clearTimeout(t); }
 };
-async function pollOref() {
+async function pollOrefSource() {
   let lastError = "no source configured";
   for (const url of OREF_URLS) {
     try {
@@ -92,6 +92,42 @@ async function pollOref() {
     } catch (e) { lastError = msg(e); }
   }
   oref.state = "error"; oref.error = lastError;
+}
+let orefPushBaseline = null;
+let orefPushLastKey = "";
+async function pollOref() {
+  await pollOrefSource();
+  // Never treat an unavailable source as an all-clear or trigger a push from stale data.
+  if (oref.state !== "ok") return;
+  const current = [...new Set(Object.values(oref.active || {}).flat().filter(x => typeof x === "string"))].sort();
+  const currentSet = new Set(current);
+  if (orefPushBaseline === null) {
+    orefPushBaseline = current;
+    orefPushLastKey = current.join("|");
+    return;
+  }
+  const newlyActive = current.filter(city => !orefPushBaseline.includes(city));
+  orefPushBaseline = current;
+  const key = newlyActive.join("|");
+  if (!key || key === orefPushLastKey || !PUSH_READY || pushSubscriptions.size === 0) {
+    orefPushLastKey = current.join("|");
+    return;
+  }
+  orefPushLastKey = current.join("|");
+  const payload = JSON.stringify({
+    title: "RedAlert Live — התרעה מדווחת",
+    body: ("יישובים: " + newlyActive.slice(0, 8).join(", ") + (newlyActive.length > 8 ? " ועוד" : "") + ". בדקו מיד את יישומון פיקוד העורף.").slice(0, 180),
+    url: "/",
+    tag: "ral-oref-" + crypto.createHash("sha1").update(key).digest("hex").slice(0, 20)
+  });
+  await Promise.allSettled([...pushSubscriptions.entries()].map(async ([endpoint, subscription]) => {
+    try { await webpush.sendNotification(subscription, payload, { TTL: 60, urgency: "high" }); }
+    catch (error) {
+      const status = error && (error.statusCode || error.status);
+      if (status === 404 || status === 410) { pushSubscriptions.delete(endpoint); savePushSubscriptions(); }
+      else console.error("Oref push delivery failed:", status || msg(error));
+    }
+  }));
 }
 const dec = s => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "")
   .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, "&").trim();
