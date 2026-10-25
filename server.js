@@ -294,8 +294,9 @@ async function refreshPublicNewsCache() {
 }
 function ensurePublicNewsRefresh() {
   if (!publicNewsRefreshPromise && Date.now() - publicNewsLastRefresh >= PUBLIC_NEWS_REFRESH_MS) {
-    refreshPublicNewsCache().catch(error => console.error("Public news refresh failed:", msg(error)));
+    return refreshPublicNewsCache().catch(error => { console.error("Public news refresh failed:", msg(error)); return publicNewsCache; });
   }
+  return publicNewsRefreshPromise || Promise.resolve(publicNewsCache);
 }
 const norm = t => t.replace(/[^\u0590-\u05ffa-z0-9]/gi, "").toLowerCase();
 async function pollGroup(g) {
@@ -417,17 +418,27 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (p === "/api/iran-indicators") {
-    // Return the last known feed immediately; refresh sources in the background.
-    ensurePublicNewsRefresh();
-    const snapshot = publicNewsCache || {
-      source: "GDELT / Google News RSS / public Telegram channel previews",
-      fetchedAt: null, partial: true, refreshing: true,
-      note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
-      groups: PUBLIC_NEWS_GROUPS.map(group => ({ id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: [], refreshing: true }))
+    const sendSnapshot = () => {
+      if (res.destroyed || res.writableEnded) return;
+      const snapshot = publicNewsCache || {
+        source: "GDELT / Google News RSS / public Telegram channel previews",
+        fetchedAt: null, partial: true, refreshing: true,
+        note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
+        groups: PUBLIC_NEWS_GROUPS.map(group => ({ id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: [], refreshing: true }))
+      };
+      res.writeHead(200, h);
+      const freshSnapshot = { ...snapshot, groups: (snapshot.groups || []).map(group => ({ ...group, articles: filterFreshPublicArticles(group.articles || []) })) };
+      res.end(JSON.stringify({ ...freshSnapshot, refreshing: Boolean(publicNewsRefreshPromise), refreshIntervalMs: PUBLIC_NEWS_REFRESH_MS, maxArticleAgeMs: PUBLIC_NEWS_MAX_AGE_MS }));
     };
-    res.writeHead(200, h);
-    const freshSnapshot = { ...snapshot, groups: (snapshot.groups || []).map(group => ({ ...group, articles: filterFreshPublicArticles(group.articles || []) })) };
-    res.end(JSON.stringify({ ...freshSnapshot, refreshing: Boolean(publicNewsRefreshPromise), refreshIntervalMs: PUBLIC_NEWS_REFRESH_MS, maxArticleAgeMs: PUBLIC_NEWS_MAX_AGE_MS }));
+    if (!publicNewsCache) {
+      ensurePublicNewsRefresh().then(sendSnapshot).catch(error => {
+        console.error("Initial public news refresh failed:", msg(error));
+        sendSnapshot();
+      });
+      return;
+    }
+    ensurePublicNewsRefresh();
+    sendSnapshot();
     return;
   }
   if (p === "/api/osint") {
