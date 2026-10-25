@@ -130,7 +130,14 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-yediot", label: "ידיעות / חדשות מהשטח בטלגרם", telegram: "yediotnews", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
   { id: "telegram-ram", label: "מבזקי רעם בטלגרם", telegram: "ramreports", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
   { id: "telegram-301", label: "301 העולם הערבי בטלגרם", telegram: "arabworld301news", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
-  { id: "telegram-firstreports", label: "חדשות ישראל בזמן אמת בטלגרם", telegram: "firstreportsnews", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" }
+  { id: "telegram-firstreports", label: "חדשות ישראל בזמן אמת בטלגרם", telegram: "firstreportsnews", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
+  { id: "telegram-n12-official", label: "N12 — ערוץ החדשות", telegram: "N12_news_Israel", verification: "ערוץ חדשות — בדקו את הכתבה המקורית" },
+  { id: "telegram-ynet", label: "ynet חדשות", telegram: "ynetalerts", verification: "ערוץ חדשות — בדקו את הכתבה המקורית" },
+  { id: "telegram-idf", label: "צה״ל — ערוץ רשמי", telegram: "idf_telegram", verification: "ערוץ רשמי — הודעות צה״ל; אינו תחליף להנחיות פיקוד העורף" },
+  { id: "telegram-israelhayom", label: "ישראל היום", telegram: "israelhayomofficial", verification: "ערוץ חדשות — בדקו את הכתבה המקורית" },
+  { id: "telegram-israeluncensored", label: "חדשות ישראל ללא צנזורה", telegram: "IsraelNewsonTelegramm", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
+  { id: "telegram-iran", label: "חדשות איראן", telegram: "hadshotiran", verification: "טלגרם — דיווחים לא מאומתים עד לאישור נוסף" },
+  { id: "telegram-n12-reporters", label: "N12 — צ׳אט הכתבים", telegram: "N12chat", verification: "ערוץ/צ׳אט חדשות — יש להצליב דיווחים" }
 ];
 async function fetchTelegramChannel(channel, limit = 15) {
   const html = await get("https://t.me/s/" + encodeURIComponent(channel));
