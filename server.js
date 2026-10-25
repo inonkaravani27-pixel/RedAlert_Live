@@ -124,9 +124,10 @@ async function fetchTelegramChannel(channel, limit = 15) {
     const dateRaw = (block.match(/<time[^>]*datetime="([^"]+)"/i) || [])[1] || "";
     const pub = Date.parse(dateRaw);
     if (!title || !Number.isFinite(pub) || Date.now() - pub > 36 * 60 * 60 * 1000) continue;
+    const mediaMatch = block.match(/background-image:\s*url\(['"]?(https:\/\/[^)'"]+)/i);
     const imgMatch = block.match(/<img[^>]+src="(https:\/\/[^"]+)"/i);
     const videoMatch = /class="tgme_widget_message_video_player/.test(block);
-    const mediaUrl = imgMatch ? imgMatch[1].replace(/&amp;/g, "&") : "";
+    const mediaUrl = (mediaMatch ? mediaMatch[1] : (imgMatch ? imgMatch[1] : "")).replace(/&amp;/g, "&");
     out.push({
       title: title.slice(0, 600),
       url: "https://t.me/" + post,
