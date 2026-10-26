@@ -568,6 +568,17 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, h);
     return res.end(JSON.stringify({ enabled: PUSH_READY, publicKey: PUSH_PUBLIC, subscribers: pushSubscriptions.size }));
   }
+  if (p === "/api/push/preferences" && req.method === "POST") {
+    readJsonBody(req).then(data => {
+      if (!data || typeof data.endpoint !== "string" || !data.endpoint.startsWith("https://")) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "invalid endpoint" })); }
+      const sub = pushSubscriptions.get(data.endpoint);
+      if (!sub) { res.writeHead(404, h); return res.end(JSON.stringify({ error: "subscription not found" })); }
+      sub.notificationPrefs = { red: data.red !== false, news: data.news !== false };
+      pushSubscriptions.set(data.endpoint, sub); savePushSubscriptions();
+      res.writeHead(200, h); return res.end(JSON.stringify({ ok: true }));
+    }).catch(error => { if (!res.headersSent) { res.writeHead(400, h); res.end(JSON.stringify({ error: msg(error) })); } });
+    return;
+  }
   if (p === "/api/push/subscribe" && req.method === "POST") {
     if (!PUSH_READY) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "push server keys are not configured" })); }
     const origin = req.headers.origin;
@@ -580,6 +591,8 @@ const server = http.createServer((req, res) => {
           !subscription.keys || typeof subscription.keys.p256dh !== "string" || typeof subscription.keys.auth !== "string") {
         res.writeHead(400, h); return res.end(JSON.stringify({ error: "invalid push subscription" }));
       }
+      const existing = pushSubscriptions.get(subscription.endpoint);
+      subscription.notificationPrefs = subscription.notificationPrefs || (existing && existing.notificationPrefs) || { red: true, news: true };
       pushSubscriptions.set(subscription.endpoint, subscription);
       savePushSubscriptions();
       res.writeHead(201, h); res.end(JSON.stringify({ ok: true }));
@@ -686,7 +699,7 @@ async function pollPushNews() {
         url: article.url,
         tag: "ral-" + crypto.createHash("sha1").update(article.url).digest("hex").slice(0, 20)
       });
-      await Promise.allSettled([...pushSubscriptions.entries()].map(async ([endpoint, subscription]) => {
+      await Promise.allSettled([...pushSubscriptions.entries()].filter(([, subscription]) => !subscription.notificationPrefs || subscription.notificationPrefs.news !== false).map(async ([endpoint, subscription]) => {
         try { await webpush.sendNotification(subscription, payload, { TTL: 300, urgency: "normal" }); }
         catch (error) {
           const status = error && (error.statusCode || error.status);
