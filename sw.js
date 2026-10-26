@@ -13,6 +13,9 @@ self.addEventListener("push", event => {
     badge: "/icon-192.png",
     tag: String(payload.tag || "redalert-live"),
     renotify: false,
+    // Push notifications stay silent; Android/Chrome may honor the vibration pattern.
+    silent: true,
+    vibrate: [350, 180, 350, 180, 500],
     data: { url: payload.url || "/" }
   };
   event.waitUntil(self.registration.showNotification(title, options));
