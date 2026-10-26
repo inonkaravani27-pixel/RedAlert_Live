@@ -17,9 +17,17 @@ jobs:
       - name: Create source archive
         run: |
           set -eu
-          mkdir -p backup
-          git archive --format=zip --output="backup/redalert-live-source-${GITHUB_SHA}.zip" HEAD
+          mkdir -p backup restore-check
+          archive="backup/redalert-live-source-${GITHUB_SHA}.zip"
+          git archive --format=zip --output="$archive" HEAD
           printf 'Commit: %s\nCreated: %s\n' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > backup/backup-info.txt
+          unzip -t "$archive"
+          unzip -q "$archive" -d restore-check
+          test -s restore-check/server.js
+          test -s restore-check/package.json
+          test -s restore-check/public/index.html
+          node --check restore-check/server.js
+          echo "Backup archive passed integrity and restore smoke tests."
       - name: Store backup artifact
         uses: actions/upload-artifact@v4
         with:
