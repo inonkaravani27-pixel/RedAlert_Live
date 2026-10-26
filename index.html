@@ -434,12 +434,12 @@ if(iranNotifyButton)iranNotifyButton.addEventListener("click",async()=>{
   if(!saved.ok)throw new Error(result.error||"שגיאת הרשמה לשרת");
   iranNotifyEnabled=true;localStorage.setItem("iranNotifyEnabled","1");
   await syncPushPrefs();
- if($("savePushPrefs"))$("savePushPrefs").addEventListener("click",savePushPrefs);
  updateIranNotifyButton();
   st.textContent="נרשמת בהצלחה ל-Push. דיווחים חדשים יכולים להגיע גם כשהאתר סגור, כל עוד שרת Render פעיל.";
  }catch(error){st.textContent="הפעלת Push נכשלה: "+String(error.message||error);}
 });
 updateIranNotifyButton();
+for(const id of ["pushRedEnabled","pushNewsEnabled"]){const el=$(id);if(el)el.addEventListener("change",savePushPrefs)}
 async function loadIranIndicators(){
  const status=$("indicatorStatus"),feed=$("indicatorFeed");
  if(!status||!feed)return;
