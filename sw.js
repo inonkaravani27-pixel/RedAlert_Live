@@ -12,9 +12,10 @@ self.addEventListener("push", event => {
     icon: "/icon-192.png",
     badge: "/icon-192.png",
     tag: String(payload.tag || "redalert-live"),
-    renotify: false,
-    // Keep notifications alerting so Android can apply the device notification-channel sound/vibration settings.
-    vibrate: [350, 180, 350, 180, 500],
+    renotify: true,
+    // Explicit best-effort request for an alerting notification. Android may still override this via its notification channel or system silent/DND settings.
+    silent: false,
+    vibrate: [500, 150, 500, 150, 700, 200, 700],
     data: { url: payload.url || "/" }
   };
   event.waitUntil(self.registration.showNotification(title, options));
