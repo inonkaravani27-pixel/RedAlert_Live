@@ -181,8 +181,10 @@ function processNewAlertEvent({key,cities=[],test=false}={}){
 function triggerAlertUI({test=false,cities=[]}={}){
  const isSecondary=!test&&cities.some(city=>secondaryCities.has(city));
  const area=isSecondary?"secondary":"primary",prefs=alertPrefs[area];
- if((audioUnlocked||prefs.bypassSilent)&&!prefs.silent)playAlertSound(isSecondary?secondarySound:primarySound);
- if(prefs.vibrate&&typeof navigator!=="undefined"&&typeof navigator.vibrate==="function"){try{navigator.vibrate([300,120,300,120,450])}catch{}}
+ const vibrateOnly=prefs.bypassSilent&&prefs.bypassMode==="vibrate-only";
+ if(!vibrateOnly&&!prefs.silent&&(audioUnlocked||prefs.bypassSilent))playAlertSound(isSecondary?secondarySound:primarySound);
+ const shouldVibrate=prefs.vibrate||(prefs.bypassSilent&&(vibrateOnly||prefs.bypassMode==="sound-vibrate"));
+ if(shouldVibrate&&typeof navigator!=="undefined"&&typeof navigator.vibrate==="function"){try{navigator.vibrate(prefs.vibrationMode==="strong"?[500,100,500,100,700,150,700]:[350,180,350,180,500])}catch{}}
  showInAppAlert({test,cities});
 }
 function testAlertPrefs(area){const prefs=alertPrefs[area],sound=area==="primary"?primarySound:secondarySound;audioUnlocked=true;const vibrateOnly=prefs.bypassSilent&&prefs.bypassMode==="vibrate-only";if(!vibrateOnly&&!prefs.silent)playAlertSound(sound);if((prefs.vibrate||(prefs.bypassSilent&&prefs.bypassMode==="sound-vibrate")||vibrateOnly)&&navigator.vibrate)navigator.vibrate(prefs.vibrationMode==="strong"?[500,100,500,100,700,150,700]:[220,120,220]);$("settingsMsg").textContent="בדיקת ההתרעה "+(area==="primary"?"הראשית":"המשנית")+" הופעלה."} $("testPrimarySound").onclick=()=>testAlertPrefs("primary");$("testSecondarySound").onclick=()=>testAlertPrefs("secondary");
