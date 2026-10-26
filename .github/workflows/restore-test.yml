@@ -1,0 +1,31 @@
+name: Restore verification
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  restore-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source snapshot
+        uses: actions/checkout@v4
+      - name: Create a recovery archive from committed source
+        run: |
+          set -eu
+          mkdir -p /tmp/redalert-recovery
+          git archive --format=tar HEAD | tar -xf - -C /tmp/redalert-recovery
+      - name: Verify recovered files and server syntax
+        run: |
+          set -eu
+          test -s /tmp/redalert-recovery/server.js
+          test -s /tmp/redalert-recovery/package.json
+          test -s /tmp/redalert-recovery/public/index.html
+          node --check /tmp/redalert-recovery/server.js
+          node -e "const p=require('/tmp/redalert-recovery/package.json');if(!p.scripts?.start)process.exit(1);console.log('Recovery source structure is valid.')"
+      - name: Report recovery test
+        run: echo "Restore smoke test passed for commit $GITHUB_SHA. This validates source recovery, not live server failover."
