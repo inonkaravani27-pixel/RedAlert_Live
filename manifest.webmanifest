@@ -3,14 +3,14 @@
   "short_name": "RedAlert",
   "lang": "he",
   "dir": "rtl",
-  "start_url": "/",
+  "start_url": "/?appicon=5",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0e1013",
   "theme_color": "#0e1013",
   "icons": [
     {
-      "src": "/icon.svg?v=4",
+      "src": "/icon.svg?v=5",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

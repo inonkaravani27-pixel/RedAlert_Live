@@ -1,9 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#151d28"/><stop offset="1" stop-color="#030507"/></linearGradient><linearGradient id="red" x2=".8" y2="1"><stop stop-color="#ff5353"/><stop offset=".45" stop-color="#d90000"/><stop offset="1" stop-color="#650000"/></linearGradient><linearGradient id="silver" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#aeb5c0"/></linearGradient><radialGradient id="glow"><stop stop-color="#f22" stop-opacity=".5"/><stop offset="1" stop-color="#f22" stop-opacity="0"/></radialGradient></defs>
-<rect width="512" height="512" rx="82" fill="url(#bg)"/><path d="M0 90L120 0H0ZM512 0H370L512 150ZM0 420L170 512H0Z" fill="#202a37" opacity=".65"/>
-<g stroke="#293646" stroke-width="3" opacity=".8"><path d="M350 0L512 162M390 0L512 122M430 0L512 82M512 205L205 512M512 260L260 512M512 320L320 512M512 380L380 512M512 440L440 512"/></g>
-<circle cx="414" cy="140" r="70" fill="url(#glow)"/><circle cx="414" cy="140" r="17" fill="none" stroke="#f44" stroke-width="2"/><circle cx="414" cy="140" r="7" fill="#ff3333"/><circle cx="445" cy="225" r="28" fill="none" stroke="#f44" stroke-width="2" opacity=".7"/><circle cx="445" cy="225" r="7" fill="#ff3333"/>
-<path d="M256 40L397 105L386 278Q366 354 256 402Q146 354 126 278L115 105Z" fill="#050609" stroke="#4c0000" stroke-width="14"/><path d="M256 43L394 107L383 276Q362 347 256 394Q150 347 129 276L118 107Z" fill="none" stroke="url(#red)" stroke-width="17" stroke-linejoin="round"/>
-<g fill="none" stroke="#f21d25" stroke-width="13" stroke-linecap="round"><path d="M191 153Q160 182 181 216"/><path d="M215 166Q194 187 207 207"/><path d="M321 153Q352 182 331 216"/><path d="M297 166Q318 187 305 207"/></g>
-<path d="M229 244L239 173Q256 143 273 173L283 244Z" fill="url(#red)" stroke="url(#silver)" stroke-width="7"/><rect x="210" y="245" width="92" height="20" rx="8" fill="url(#silver)"/>
-<text x="256" y="327" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="43"><tspan fill="#f12229">Red</tspan><tspan fill="#f3f4f6">Alert</tspan></text><path d="M135 346H194M318 346H377" stroke="#ef2228" stroke-width="4"/><text x="256" y="369" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" letter-spacing="11" fill="#e8ebef">LIVE</text></svg>
+<defs>
+ <clipPath id="round"><rect x="8" y="8" width="496" height="496" rx="112"/></clipPath>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#253448"/><stop offset=".52" stop-color="#080d14"/><stop offset="1" stop-color="#020305"/></linearGradient>
+ <linearGradient id="red" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#ff7777"/><stop offset=".3" stop-color="#ff1b20"/><stop offset=".7" stop-color="#d50008"/><stop offset="1" stop-color="#650006"/></linearGradient>
+ <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#aeb6c2"/></linearGradient>
+ <radialGradient id="glow"><stop stop-color="#ff2028" stop-opacity=".75"/><stop offset="1" stop-color="#ff2028" stop-opacity="0"/></radialGradient>
+</defs>
+<g clip-path="url(#round)">
+ <rect width="512" height="512" fill="url(#bg)"/>
+ <path d="M0 70L112 0H0ZM512 0H370L512 150ZM0 430L170 512H0Z" fill="#202b3b" opacity=".7"/>
+ <g stroke="#2d3a4b" stroke-width="3" opacity=".8"><path d="M350 0L512 162M390 0L512 122M430 0L512 82M512 205L205 512M512 260L260 512M512 320L320 512M512 380L380 512M512 440L440 512M280 0L512 232"/></g>
+ <path d="M0 0H255L190 82L160 165L106 215L85 285L0 350Z" fill="#080c12" opacity=".65"/>
+ <circle cx="414" cy="112" r="75" fill="url(#glow)"/><circle cx="414" cy="112" r="24" fill="none" stroke="#ff4248" stroke-width="2"/><circle cx="414" cy="112" r="12" fill="none" stroke="#ff4248" stroke-width="2"/><circle cx="414" cy="112" r="7" fill="#ff333a"/>
+ <circle cx="440" cy="210" r="43" fill="url(#glow)"/><circle cx="440" cy="210" r="20" fill="none" stroke="#ff4248" stroke-width="2"/><circle cx="440" cy="210" r="7" fill="#ff333a"/>
+ <circle cx="420" cy="310" r="42" fill="url(#glow)"/><circle cx="420" cy="310" r="20" fill="none" stroke="#ff4248" stroke-width="2"/><circle cx="420" cy="310" r="7" fill="#ff333a"/>
+ <ellipse cx="256" cy="186" rx="175" ry="150" fill="url(#glow)"/>
+ <path d="M256 35L397 101L386 278Q366 354 256 402Q146 354 126 278L115 101Z" fill="#050609" stroke="#3e0004" stroke-width="17" stroke-linejoin="round"/>
+ <path d="M256 38L394 103L383 276Q362 347 256 394Q150 347 129 276L118 103Z" fill="none" stroke="url(#red)" stroke-width="18" stroke-linejoin="round"/>
+ <g fill="none" stroke="#ff2028" stroke-width="15" stroke-linecap="round"><path d="M191 151Q153 181 180 219"/><path d="M215 164Q190 187 207 210"/><path d="M321 151Q359 181 332 219"/><path d="M297 164Q322 187 305 210"/></g>
+ <path d="M229 244L239 173Q256 143 273 173L283 244Z" fill="url(#red)" stroke="url(#silver)" stroke-width="7"/><rect x="210" y="245" width="92" height="20" rx="8" fill="url(#silver)"/>
+ <text x="256" y="327" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="43"><tspan fill="#ff2028">Red</tspan><tspan fill="#f3f4f6">Alert</tspan></text>
+ <path d="M135 346H194M318 346H377" stroke="#ef2228" stroke-width="4"/><text x="256" y="369" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" letter-spacing="11" fill="#e8ebef">LIVE</text>
+</g></svg>
