@@ -1,0 +1,40 @@
+name: Live service health check
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Render health endpoint
+        run: |
+          set -eu
+          URL="https://redalert-live.onrender.com/healthz"
+          for attempt in 1 2 3 4 5; do
+            code="$(curl --silent --show-error --location --max-time 35 --output /tmp/health.json --write-out '%{http_code}' "$URL" || true)"
+            if [ "$code" = "200" ] && grep -q '"ok":true' /tmp/health.json; then
+              echo "Health endpoint responded successfully."
+              cat /tmp/health.json
+              exit 0
+            fi
+            echo "Health check attempt $attempt returned HTTP ${code:-none}; retrying."
+            sleep 10
+          done
+          echo "Health check failed after retries."
+          exit 1
+      - name: Check reports API returns valid JSON
+        run: |
+          set -eu
+          URL="https://redalert-live.onrender.com/api/iran-indicators"
+          code="$(curl --silent --show-error --location --max-time 45 --output /tmp/reports.json --write-out '%{http_code}' "$URL" || true)"
+          if [ "$code" != "200" ]; then
+            echo "Reports endpoint returned HTTP ${code:-none}."
+            exit 1
+          fi
+          node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync('/tmp/reports.json','utf8'));if(!Array.isArray(d.groups))process.exit(1);console.log('Reports API JSON valid; groups:',d.groups.length)"
