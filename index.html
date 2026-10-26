@@ -87,7 +87,7 @@ const allCities=[...new Set(["אבו גוש","אופקים","אור יהודה",
 let primaryCities=new Set(JSON.parse(localStorage.getItem("ral-primary-cities")||"[]")),secondaryCities=new Set(JSON.parse(localStorage.getItem("ral-secondary-cities")||"[]"));
 let primaryScope=localStorage.getItem("ral-primary-scope")||"all",primarySound=localStorage.getItem("ral-primary-sound")||"pulse",secondarySound=localStorage.getItem("ral-secondary-sound")||"pulse";
 let alertPrefs={primary:{bypassSilent:false,bypassMode:"sound-vibrate",vibrationMode:"normal"},secondary:{bypassSilent:false,bypassMode:"sound-vibrate",vibrationMode:"normal"}};
-try{const saved=JSON.parse(localStorage.getItem("ral-alert-prefs")||"{}");for(const area of ["primary","secondary"])alertPrefs[area]={...alertPrefs[area],...(saved[area]||{})}}catch{}
+try{const saved=JSON.parse(localStorage.getItem("ral-alert-prefs")||"{}");alertPrefs.primary={...alertPrefs.primary,...(saved.primary||{}),...(saved.secondary||{})}}catch{} alertPrefs.secondary={...alertPrefs.primary};
 function saveAlertPrefs(){try{localStorage.setItem("ral-alert-prefs",JSON.stringify(alertPrefs))}catch{}}
 function syncAlertPrefs(){for(const area of ["primary","secondary"]){for(const option of ["bypassSilent"]){const el=$(area+option[0].toUpperCase()+option.slice(1));if(el)el.checked=Boolean(alertPrefs[area][option])}const mode=$(area+"VibrationMode");if(mode)mode.value=alertPrefs[area].vibrationMode==="strong"?"strong":"normal";const bypassMode=$(area+"BypassMode");if(bypassMode)bypassMode.value=alertPrefs[area].bypassMode==="vibrate-only"?"vibrate-only":"sound-vibrate"}}
 const validSounds=["pulse","pulse-soft","pulse-low","pulse-double","pulse-wave"];if(!validSounds.includes(primarySound))primarySound="pulse";if(!validSounds.includes(secondarySound))secondarySound="pulse";
@@ -179,17 +179,15 @@ function processNewAlertEvent({key,cities=[],test=false}={}){
  return true;
 }
 function triggerAlertUI({test=false,cities=[]}={}){
- const isSecondary=!test&&cities.some(city=>secondaryCities.has(city));
- const area=isSecondary?"secondary":"primary",prefs=alertPrefs[area];
- const vibrateOnly=prefs.bypassSilent&&prefs.bypassMode==="vibrate-only";
- const shouldPlaySound=prefs.bypassSilent?(prefs.bypassMode==="sound-vibrate"):(audioUnlocked);
- if(shouldPlaySound)playAlertSound(isSecondary?secondarySound:primarySound);
+ const prefs=alertPrefs.primary;
+ const shouldPlaySound=prefs.bypassSilent?(prefs.bypassMode==="sound-vibrate"):audioUnlocked;
+ if(shouldPlaySound)playAlertSound(primarySound);
  if(typeof navigator!=="undefined"&&typeof navigator.vibrate==="function"){try{navigator.vibrate(prefs.vibrationMode==="strong"?[500,100,500,100,700,150,700]:[350,180,350,180,500])}catch{}}
  showInAppAlert({test,cities});
 }
 function testAlertPrefs(area){const prefs=alertPrefs[area],sound=area==="primary"?primarySound:secondarySound;audioUnlocked=true;if(prefs.bypassSilent&&prefs.bypassMode==="sound-vibrate")playAlertSound(sound);if(navigator.vibrate)navigator.vibrate(prefs.vibrationMode==="strong"?[500,100,500,100,700,150,700]:[350,180,350,180,500]);$("settingsMsg").textContent="בדיקת ההתרעה "+(area==="primary"?"הראשית":"המשנית")+" הופעלה."} $("testPrimarySound").onclick=()=>testAlertPrefs("primary");$("testSecondarySound").onclick=()=>testAlertPrefs("secondary");
-$("primaryScope").onchange=()=>{primaryScope=$("primaryScope").value;store();renderEvents()};$("primarySound").onchange=()=>{primarySound=$("primarySound").value;store()};$("secondarySound").onchange=()=>{secondarySound=$("secondarySound").value;store()};
-for(const area of ["primary","secondary"]){for(const option of ["bypassSilent"]){const el=$(area+option[0].toUpperCase()+option.slice(1));if(el)el.addEventListener("change",()=>{alertPrefs[area][option]=el.checked;saveAlertPrefs();$("settingsMsg").textContent=""})}for(const [suffix,key] of [["VibrationMode","vibrationMode"],["BypassMode","bypassMode"]]){const mode=$(area+suffix);if(mode)mode.addEventListener("change",()=>{alertPrefs[area][key]=mode.value;saveAlertPrefs();$("settingsMsg").textContent=""})}}
+$("primaryScope").onchange=()=>{primaryScope=$("primaryScope").value;store();renderEvents()};$("primarySound").onchange=()=>{primarySound=$("primarySound").value;secondarySound=primarySound;store();renderAll()};$("secondarySound").onchange=()=>{secondarySound=$("secondarySound").value;primarySound=secondarySound;store();renderAll()};
+for(const area of ["primary","secondary"]){for(const option of ["bypassSilent"]){const el=$(area+option[0].toUpperCase()+option.slice(1));if(el)el.addEventListener("change",()=>{for(const target of ["primary","secondary"])alertPrefs[target][option]=el.checked;saveAlertPrefs();syncAlertPrefs();$("settingsMsg").textContent=""})}for(const [suffix,key] of [["VibrationMode","vibrationMode"],["BypassMode","bypassMode"]]){const mode=$(area+suffix);if(mode)mode.addEventListener("change",()=>{for(const target of ["primary","secondary"])alertPrefs[target][key]=mode.value;saveAlertPrefs();syncAlertPrefs();$("settingsMsg").textContent=""})}}
 $("primarySearch").addEventListener("input",()=>renderCityChoices("primary"));$("secondarySearch").addEventListener("input",()=>renderCityChoices("secondary"));
 document.addEventListener("change",e=>{const x=e.target.closest("[data-city-kind]");if(!x)return;const set=x.dataset.cityKind==="primary"?primaryCities:secondaryCities;x.checked?set.add(x.value):set.delete(x.value);store();renderCityChoices(x.dataset.cityKind);renderEvents()});
 async function poll(){try{
