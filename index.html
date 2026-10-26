@@ -440,6 +440,7 @@ if(iranNotifyButton)iranNotifyButton.addEventListener("click",async()=>{
  }catch(error){st.textContent="הפעלת Push נכשלה: "+String(error.message||error);}
 });
 updateIranNotifyButton();
+syncPushPrefs();
 for(const id of ["pushRedEnabled","pushNewsEnabled"]){const el=$(id);if(el)el.addEventListener("change",savePushPrefs)}
 async function loadIranIndicators(){
  const status=$("indicatorStatus"),feed=$("indicatorFeed");
