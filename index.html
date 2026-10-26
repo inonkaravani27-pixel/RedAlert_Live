@@ -181,8 +181,9 @@ function processNewAlertEvent({key,cities=[],test=false}={}){
 function triggerAlertUI({test=false,cities=[]}={}){
  const isSecondary=!test&&cities.some(city=>secondaryCities.has(city));
  const area=isSecondary?"secondary":"primary",prefs=alertPrefs[area];
- const vibrateOnly=!prefs.bypassSilent||prefs.bypassMode==="vibrate-only";
- if(!vibrateOnly&&prefs.bypassSilent&&(audioUnlocked||prefs.bypassSilent))playAlertSound(isSecondary?secondarySound:primarySound);
+ const vibrateOnly=prefs.bypassSilent&&prefs.bypassMode==="vibrate-only";
+ const shouldPlaySound=prefs.bypassSilent?(prefs.bypassMode==="sound-vibrate"):(audioUnlocked);
+ if(shouldPlaySound)playAlertSound(isSecondary?secondarySound:primarySound);
  if(typeof navigator!=="undefined"&&typeof navigator.vibrate==="function"){try{navigator.vibrate(prefs.vibrationMode==="strong"?[500,100,500,100,700,150,700]:[350,180,350,180,500])}catch{}}
  showInAppAlert({test,cities});
 }
@@ -385,7 +386,7 @@ let iranNotifyEnabled=false;
 let pushPrefs={red:true,news:true};
 try{pushPrefs={...pushPrefs,...JSON.parse(localStorage.getItem("ral-push-prefs")||"{}")}}catch{};
 function syncPushPrefs(){if($("pushRedEnabled"))$("pushRedEnabled").checked=pushPrefs.red!==false;if($("pushNewsEnabled"))$("pushNewsEnabled").checked=pushPrefs.news!==false}
-async function savePushPrefs(){pushPrefs={red:$("pushRedEnabled").checked,news:$("pushNewsEnabled").checked};localStorage.setItem("ral-push-prefs",JSON.stringify(pushPrefs));const st=$("pushPrefsStatus");try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(!sub){st.textContent="הבחירה נשמרה במכשיר; הפעלת Push תסנכרן אותה לשרת.";return}const resp=await fetch("/api/push/preferences",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint,red:pushPrefs.red,news:pushPrefs.news})});if(!resp.ok)throw new Error("server");st.textContent="נשמר אוטומטית."}catch(e){st.textContent="נשמר במכשיר; הסנכרון לשרת ינסה שוב בהפעלה הבאה."}}
+async function savePushPrefs(){pushPrefs={red:$("pushRedEnabled").checked,news:$("pushNewsEnabled").checked};try{localStorage.setItem("ral-push-prefs",JSON.stringify(pushPrefs))}catch{}const st=$("pushPrefsStatus");try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(!sub){st.textContent="הבחירה נשמרה במכשיר; הפעלת Push תסנכרן אותה לשרת.";return}const resp=await fetch("/api/push/preferences",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint,red:pushPrefs.red,news:pushPrefs.news})});if(!resp.ok)throw new Error("server");st.textContent="נשמר אוטומטית."}catch(e){st.textContent="הבחירה נשמרה במכשיר; אם השרת לא היה זמין, הפעל מחדש Push כדי לסנכרן."}}
 const iranNotifyButton=$("iranNotifyButton");
 function urlBase64ToUint8Array(value){
  const padding="=".repeat((4-(value.length%4))%4);
