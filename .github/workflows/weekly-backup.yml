@@ -1,0 +1,29 @@
+name: Weekly source backup
+
+on:
+  schedule:
+    - cron: "41 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Create source archive
+        run: |
+          set -eu
+          mkdir -p backup
+          git archive --format=zip --output="backup/redalert-live-source-${GITHUB_SHA}.zip" HEAD
+          printf 'Commit: %s\nCreated: %s\n' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > backup/backup-info.txt
+      - name: Store backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: redalert-live-source-${{ github.run_number }}
+          path: backup/
+          retention-days: 30
+          if-no-files-found: error
