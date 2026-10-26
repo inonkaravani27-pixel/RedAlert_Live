@@ -14,6 +14,7 @@
  <circle cx="414" cy="112" r="75" fill="url(#glow)"/><circle cx="414" cy="112" r="24" fill="none" stroke="#ff4248" stroke-width="2"/><circle cx="414" cy="112" r="12" fill="none" stroke="#ff4248" stroke-width="2"/><circle cx="414" cy="112" r="7" fill="#ff333a"/>
  <circle cx="440" cy="210" r="43" fill="url(#glow)"/><circle cx="440" cy="210" r="20" fill="none" stroke="#ff4248" stroke-width="2"/><circle cx="440" cy="210" r="7" fill="#ff333a"/>
  <circle cx="420" cy="310" r="42" fill="url(#glow)"/><circle cx="420" cy="310" r="20" fill="none" stroke="#ff4248" stroke-width="2"/><circle cx="420" cy="310" r="7" fill="#ff333a"/>
+ <g transform="translate(0 28)">
  <ellipse cx="256" cy="186" rx="175" ry="150" fill="url(#glow)"/>
  <path d="M256 35L397 101L386 278Q366 354 256 402Q146 354 126 278L115 101Z" fill="#050609" stroke="#3e0004" stroke-width="17" stroke-linejoin="round"/>
  <path d="M256 38L394 103L383 276Q362 347 256 394Q150 347 129 276L118 103Z" fill="none" stroke="url(#red)" stroke-width="18" stroke-linejoin="round"/>
@@ -21,4 +22,5 @@
  <path d="M229 244L239 173Q256 143 273 173L283 244Z" fill="url(#red)" stroke="url(#silver)" stroke-width="7"/><rect x="210" y="245" width="92" height="20" rx="8" fill="url(#silver)"/>
  <text x="256" y="327" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="43"><tspan fill="#ff2028">Red</tspan><tspan fill="#f3f4f6">Alert</tspan></text>
  <path d="M135 346H194M318 346H377" stroke="#ef2228" stroke-width="4"/><text x="256" y="369" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" letter-spacing="11" fill="#e8ebef">LIVE</text>
+ </g>
 </g></svg>
