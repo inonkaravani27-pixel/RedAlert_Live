@@ -122,7 +122,7 @@ async function pollOref() {
     url: "/",
     tag: "ral-oref-" + crypto.createHash("sha1").update(key).digest("hex").slice(0, 20)
   });
-  await Promise.allSettled([...pushSubscriptions.entries()].map(async ([endpoint, subscription]) => {
+  await Promise.allSettled([...pushSubscriptions.entries()].filter(([, subscription]) => !subscription.notificationPrefs || subscription.notificationPrefs.red !== false).map(async ([endpoint, subscription]) => {
     try { await webpush.sendNotification(subscription, payload, { TTL: 60, urgency: "high" }); }
     catch (error) {
       const status = error && (error.statusCode || error.status);
