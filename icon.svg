@@ -1,1 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#0e1013"/><circle cx="256" cy="256" r="120" fill="#ef4444"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#26313e"/><stop offset=".52" stop-color="#090c12"/><stop offset="1" stop-color="#151b25"/></linearGradient><linearGradient id="red" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#ff5b5b"/><stop offset=".48" stop-color="#ed171f"/><stop offset="1" stop-color="#7c0710"/></linearGradient><linearGradient id="white" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#c7d0dc"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect width="512" height="512" rx="100" fill="url(#bg)"/>
+<g opacity=".18" stroke="#8d9aaa" stroke-width="2"><path d="M0 90L512 390M0 160L512 460M30 0L400 512M110 0L480 512M0 320L512 70M0 400L512 150M80 0L0 80M180 0L0 180M512 0L0 512"/></g>
+<g fill="none" stroke="#ff3038" opacity=".75"><circle cx="421" cy="118" r="25"/><circle cx="421" cy="118" r="12"/><circle cx="440" cy="224" r="18"/><circle cx="390" cy="306" r="13"/></g>
+<path d="M256 48L399 111L390 267Q365 351 256 405Q147 351 122 267L113 111Z" fill="#080a0e" stroke="#4c050b" stroke-width="13"/>
+<path d="M256 55L391 115L383 263Q359 340 256 390Q153 340 129 263L121 115Z" fill="#15171c" stroke="url(#red)" stroke-width="17"/>
+<g filter="url(#glow)" fill="none" stroke="#ff202b" stroke-width="13" stroke-linecap="round"><path d="M190 157Q153 190 178 226"/><path d="M322 157Q359 190 334 226"/><path d="M210 178Q190 199 204 218"/><path d="M302 178Q322 199 308 218"/></g>
+<path d="M215 267L225 194Q229 159 256 159Q283 159 287 194L297 267Z" fill="url(#red)" stroke="#fff" stroke-width="7" stroke-linejoin="round"/>
+<path d="M242 193L237 238" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+<path d="M204 272Q204 260 218 260H294Q308 260 308 272V282H204Z" fill="url(#white)"/>
+<text x="256" y="447" font-family="Arial,sans-serif" font-size="48" font-weight="900" text-anchor="middle"><tspan fill="#ff343b">Red</tspan><tspan fill="#f3f5f8">Alert</tspan></text>
+<text x="256" y="480" font-family="Arial,sans-serif" font-size="23" font-weight="700" letter-spacing="12" text-anchor="middle" fill="#e1e6ed">LIVE</text>
+</svg>
