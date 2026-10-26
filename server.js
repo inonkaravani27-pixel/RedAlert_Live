@@ -170,6 +170,7 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-abualiexpress", label: "אבו עלי אקספרס — טלגרם", telegram: "abualiexpress", verification: "טלגרם — בדקו מול מקור חדשות נוסף" },
   { id: "telegram-aharon-yediot", label: "אהרון ידיעות", telegram: "aharonyediotnews", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-pkpoi", label: "חדשות הבזק ללא צנזורה", telegram: "pkpoi", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
+  { id: "telegram-mnnews7", label: "MNnews7 — דיווחים בטלגרם", telegram: "MNnews7", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-shadow-unit-il", label: "Shadow Unit IL", telegram: "shadowUnitIL", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-salehdesk1", label: "Saleh Desk", telegram: "salehdesk1", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-tzevaadom", label: "צופר — צבע אדום בטלגרם", telegram: "tzevaadom", verification: "ערוץ התרעות ציבורי — אינו תחליף למקור הרשמי" },
