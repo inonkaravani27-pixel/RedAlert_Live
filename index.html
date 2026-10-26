@@ -51,6 +51,7 @@
 <section id="page-map" class="hidden" aria-label="Maps Live"><div class="map-scroll-controls"><button id="mapScrollToggle" type="button" class="primary">עצור מפה והמשך גלילה</button><span id="mapScrollStatus" class="muted">אפשר לגלול בעמוד; ניתן להפעיל אינטראקציה עם המפה.</span></div><iframe id="externalMapFrame" class="external-map-frame" src="https://iwm.diskin.net/" title="Iran War Monitor map" loading="lazy" referrerpolicy="no-referrer" allowfullscreen></iframe></section>
 <section id="page-settings" class="card hidden">
 <h2 class="section-title">הגדרות התרעות</h2>
+<div class="card"><h3 class="section-title">התראות כשהאפליקציה סגורה</h3><p class="muted">בחר בנפרד אילו התראות Push לקבל במכשיר הזה.</p><div class="alert-options"><label><input type="checkbox" id="pushRedEnabled" checked> התראות צבע אדום</label><label><input type="checkbox" id="pushNewsEnabled" checked> התראות דיווחים וחדשות</label></div><button id="savePushPrefs" type="button">שמור העדפות התראות</button><div id="pushPrefsStatus" class="muted" style="margin-top:8px"></div></div>
 <div class="card"><h3 class="section-title">התרעות ראשיות</h3>
 <details class="city-picker"><summary>חיפוש יישובים לאזור הראשי</summary><div class="city-picker-body"><label>אזור ראשי<select id="primaryScope" class="field"><option value="all">כל הארץ</option><option value="selected">רק היישובים שאבחר כאזור ראשי</option></select></label><div class="muted">בחר "רק היישובים שאבחר כאזור ראשי" כדי לסנן לפי היישובים שסימנת.</div><input id="primarySearch" class="field" placeholder="חיפוש יישוב"><div id="primaryChoices"></div></div></details>
 <label>בחר צליל<select id="primarySound" class="field"><option value="pulse">פולסים מהירים</option><option value="pulse-soft">פולסים רכים</option><option value="pulse-low">פולסים עמוקים</option><option value="pulse-double">פולסים כפולים</option><option value="pulse-wave">פולסים מדורגים</option></select></label><button id="testPrimarySound">▶ השמע דוגמה</button>
@@ -380,6 +381,10 @@ function formatIranDate(value){
  return Number.isFinite(parsed)?new Date(parsed).toLocaleString("he-IL"):"זמן פרסום לא זמין";
 }
 let iranNotifyEnabled=false;
+let pushPrefs={red:true,news:true};
+try{pushPrefs={...pushPrefs,...JSON.parse(localStorage.getItem("ral-push-prefs")||"{}")}}catch{};
+function syncPushPrefs(){if($("pushRedEnabled"))$("pushRedEnabled").checked=pushPrefs.red!==false;if($("pushNewsEnabled"))$("pushNewsEnabled").checked=pushPrefs.news!==false}
+async function savePushPrefs(){pushPrefs={red:$("pushRedEnabled").checked,news:$("pushNewsEnabled").checked};localStorage.setItem("ral-push-prefs",JSON.stringify(pushPrefs));const st=$("pushPrefsStatus");try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(!sub){st.textContent="ההעדפות נשמרו במכשיר. הפעל קודם התראות Push כדי לסנכרן לשרת.";return}const resp=await fetch("/api/push/preferences",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint,red:pushPrefs.red,news:pushPrefs.news})});if(!resp.ok)throw new Error("server");st.textContent="ההעדפות נשמרו גם בשרת."}catch(e){st.textContent="ההעדפות נשמרו במכשיר, אך לא סונכרנו לשרת. נסה שוב לאחר הפעלת Push."}}
 const iranNotifyButton=$("iranNotifyButton");
 function urlBase64ToUint8Array(value){
  const padding="=".repeat((4-(value.length%4))%4);
@@ -423,11 +428,13 @@ if(iranNotifyButton)iranNotifyButton.addEventListener("click",async()=>{
   const reg=await navigator.serviceWorker.ready;
   let subscription=await reg.pushManager.getSubscription();
   if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)});
-  const saved=await fetch("/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(subscription)});
+  const saved=await fetch("/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...subscription,notificationPrefs:pushPrefs})});
   const result=await saved.json().catch(()=>({}));
   if(!saved.ok)throw new Error(result.error||"שגיאת הרשמה לשרת");
   iranNotifyEnabled=true;localStorage.setItem("iranNotifyEnabled","1");
-  await updateIranNotifyButton();
+  await syncPushPrefs();
+ if($("savePushPrefs"))$("savePushPrefs").addEventListener("click",savePushPrefs);
+ updateIranNotifyButton();
   st.textContent="נרשמת בהצלחה ל-Push. דיווחים חדשים יכולים להגיע גם כשהאתר סגור, כל עוד שרת Render פעיל.";
  }catch(error){st.textContent="הפעלת Push נכשלה: "+String(error.message||error);}
 });
