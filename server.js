@@ -281,7 +281,6 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "arabic-extra-mehwaralmokawma", label: "mehwaralmokawma", telegram: "mehwaralmokawma", category: "arabic", verification: "מקור ציבורי בטלגרם — דיווח לא מאומת עד להצלבה" },
   { id: "arabic-extra-ne-wg", label: "NE_WG", telegram: "NE_WG", category: "arabic", verification: "מקור ציבורי בטלגרם — דיווח לא מאומת עד להצלבה" },
   { id: "arabic-extra-km-ap", label: "km_ap", telegram: "km_ap", category: "arabic", verification: "מקור ציבורי בטלגרם — דיווח לא מאומת עד להצלבה" },
-  { id: "arabic-extra-ayadeen", label: "ayadeen", telegram: "ayadeen", category: "arabic", verification: "מקור ציבורי בטלגרם — דיווח לא מאומת עד להצלבה" },
   { id: "arabic-extra-world-newsly", label: "World_Newsly", telegram: "World_Newsly", category: "arabic", verification: "מקור ציבורי בטלגרם — דיווח לא מאומת עד להצלבה" },
   { id: "arabic-extra-nasserkaveh44", label: "nasserkaveh44", telegram: "nasserkaveh44", category: "arabic", verification: "מקור ציבורי בטלגרם — דיווח לא מאומת עד להצלבה" },
   { id: "arabic-extra-naya-foriraq", label: "naya_foriraq", telegram: "naya_foriraq", category: "arabic", verification: "מקור ציבורי בטלגרם — דיווח לא מאומת עד להצלבה" },
