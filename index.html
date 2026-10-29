@@ -32,7 +32,7 @@
 <header class="top"><h1>RedAlert <span>Live</span></h1><button id="settingsButton" class="settings-icon" aria-label="פתיחת הגדרות" title="הגדרות">⚙</button></header>
 <div class="banner">כלי משלים בלבד — אינו שירות רשמי ואינו תחליף ליישומון פיקוד העורף. אין להסתמך עליו להצלת חיים.</div>
 <nav class="nav" id="nav">
-<button class="active" data-page="home">ראשי</button><button data-page="prelim">מבזקים ראשונים</button><button data-page="map"><span class="map-dot" aria-hidden="true">🔴</span>Maps Live</button>
+<button class="active" data-page="home">ראשי</button><button data-page="prelim">מבזקים ראשונים</button><button data-page="map"><span class="map-dot" aria-hidden="true">🔴</span>Maps Live</button><button data-page="arabic">ערוצים ערביים</button>
 </nav>
 <div class="row" style="justify-content:flex-start;direction:ltr;gap:8px"><span id="mode" class="status">נתונים חיים</span><span id="connection" class="status">בודק חיבור…</span></div>
 <section id="hero" class="hero"><div id="headline" class="big">בודק מצב…</div><div id="sub" class="sub">ממתין לנתונים</div></section>
@@ -49,6 +49,7 @@
 <section id="page-history" class="card hidden"><h2 class="section-title">היסטוריית אירועים</h2><input id="historySearch" class="field" placeholder="סינון היסטוריה לפי יישוב"><div id="historyList"></div><p class="muted">ההיסטוריה נשמרת בדפדפן הזה בלבד. אירועי הדגמה מסומנים בבירור.</p></section>
 <section id="page-prelim" class="card hidden"><h2 class="section-title">מבזקים ראשונים</h2><p class="muted">דיווחים שוטפים בזמן אמת.</p><div class="row" style="margin:8px 0"><button id="iranNotifyButton" type="button">הפעל התראות על דיווחים חדשים</button></div><div id="iranNotifyStatus" class="muted hidden" style="margin-top:6px"></div><p id="translationStatus" class="hidden"></p><div id="indicatorStatus" class="muted" aria-live="polite"></div><div id="pre"></div></section>
 <section id="page-map" class="hidden" aria-label="Maps Live"><div class="map-scroll-controls"><button id="mapScrollToggle" type="button" class="primary">עצור מפה והמשך גלילה</button><span id="mapScrollStatus" class="muted">אפשר לגלול בעמוד; ניתן להפעיל אינטראקציה עם המפה.</span></div><iframe id="externalMapFrame" class="external-map-frame" src="https://iwm.diskin.net/" title="Iran War Monitor map" loading="lazy" referrerpolicy="no-referrer" allowfullscreen></iframe></section>
+<section id="page-arabic" class="card hidden" aria-label="ערוצים ערביים"><h2 class="section-title">ערוצים ערביים</h2><p class="muted">איסוף ממבחר ערוצי טלגרם ציבוריים בערבית ובפרסית. יוצגו רק כותרות שמזוהות כחריגות במיוחד — למשל דיווח על שיגור טילים, מתקפה רחבה, פעילות חריגה של כטב״מים או סגירת מרחב אווירי. אלה דיווחים לא מאומתים; אין כאן מעקב מבצעי או אימות עצמאי.</p><div id="arabicChannelStatus" class="muted" aria-live="polite">מתחבר לערוצים הציבוריים…</div><div id="arabicChannelFeed"></div></section>
 <section id="page-settings" class="card hidden">
 <h2 class="section-title">הגדרות התרעות</h2>
 <div class="card"><h3 class="section-title">התראות כשהאפליקציה סגורה</h3><p class="muted">בחר בנפרד אילו התראות Push לקבל במכשיר הזה.</p><div class="alert-options"><label><input type="checkbox" id="pushRedEnabled" checked> התראות צבע אדום</label><label><input type="checkbox" id="pushNewsEnabled" checked> התראות דיווחים וחדשות</label></div><div id="pushPrefsStatus" class="muted" style="margin-top:8px">הבחירה נשמרת אוטומטית.</div></div>
@@ -97,7 +98,7 @@ let demo=false;localStorage.setItem("ral-demo","false");
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function allEvents(){return (demo?demoEvents:realEvents).filter(x=>primaryScope==="all"||primaryCities.has(x.city)||secondaryCities.has(x.city))}
 function store(){localStorage.setItem("ral-history",JSON.stringify(history.slice(0,300)));localStorage.setItem("ral-demo",String(demo));localStorage.setItem("ral-primary-cities",JSON.stringify([...primaryCities]));localStorage.setItem("ral-secondary-cities",JSON.stringify([...secondaryCities]));localStorage.setItem("ral-primary-scope",primaryScope);localStorage.setItem("ral-primary-sound",primarySound);localStorage.setItem("ral-secondary-sound",secondarySound)}
-function setPage(page){try{localStorage.setItem("ral-active-page",page)}catch{}$("hero").classList.toggle("hidden",page==="map");document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","settings","map"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page));$("settingsButton").classList.toggle("active",page==="settings");$("settingsButton").setAttribute("aria-label",page==="settings"?"סגירת הגדרות":"פתיחת הגדרות");if(page==="prelim")loadPrelimFromPublicFeed();if(page==="home")loadIranLaunchBriefs()}
+function setPage(page){try{localStorage.setItem("ral-active-page",page)}catch{}$("hero").classList.toggle("hidden",page==="map");document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","history","prelim","settings","map","arabic"].forEach(p=>$("page-"+p).classList.toggle("hidden",p!==page));$("settingsButton").classList.toggle("active",page==="settings");$("settingsButton").setAttribute("aria-label",page==="settings"?"סגירת הגדרות":"פתיחת הגדרות");if(page==="prelim")loadPrelimFromPublicFeed();if(page==="home")loadIranLaunchBriefs();if(page==="arabic")loadArabicChannels()}
 $("nav").addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)});
 $("settingsButton").addEventListener("click",()=>setPage($("page-settings").classList.contains("hidden")?"settings":"home"));
 function renderEvents(){
@@ -242,11 +243,11 @@ async function loadIranLaunchBriefs(){
   const response=await fetch("/api/iran-indicators?ts="+Date.now(),{cache:"no-store"});
   if(!response.ok)throw new Error("HTTP "+response.status);
   const data=await response.json(), all=[];
-  for(const group of (data.groups||[])) for(const article of (group.articles||[])){
+  for(const group of (data.groups||[])) { if(String(group.id||"").startsWith("arabic-")) continue; for(const article of (group.articles||[])){
    if(!article.url||!article.title)continue;
    const item={...article,groupLabel:group.label,groupId:group.id};
    if(iranLaunchMatch(item,group.id)&&!all.some(x=>x.url===item.url))all.push(item);
-  }
+  }}
   const now=Date.now();
   const fresh=all.filter(a=>{const t=Date.parse(a.date||"");return Number.isFinite(t)&&t<=now+5*60*1000&&now-t<=6*60*60*1000})
     .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,12);
@@ -296,9 +297,9 @@ async function loadPrelimFromPublicFeed(){
   const data=await response.json();
   if(!response.ok)throw new Error(data.error||"news source unavailable");
   let articles=[];
-  for(const group of (data.groups||[]))for(const article of (group.articles||[])){
+  for(const group of (data.groups||[])){if(String(group.id||"").startsWith("arabic-"))continue;for(const article of (group.articles||[])){
    if(article.url&&!articles.some(existing=>existing.url===article.url))articles.push({...article,groupLabel:group.label});
-  }
+  }}
   const now=Date.now();
   articles=articles.filter(a=>{const t=Date.parse(a.date);return Number.isFinite(t)&&t<=now+5*60*1000&&now-t<=6*60*60*1000});
   articles.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
@@ -341,11 +342,38 @@ async function loadPrelimFromPublicFeed(){
  }catch(error){box.innerHTML='<p class="muted">מקורות החדשות לא החזירו כרגע דיווחים עדכניים. ננסה שוב אוטומטית.</p>';delete box.dataset.cacheShown;if(sourceStatus)sourceStatus.textContent="מקורות החדשות אינם זמינים כרגע.";if(status)status.textContent="לא ניתן לעדכן כותרות כרגע."}
  finally{clearTimeout(timer);prelimRequestInFlight=false}
 }
+async function loadArabicChannels(){
+ const box=$("arabicChannelFeed"),status=$("arabicChannelStatus");
+ if(!box||window.__ralArabicLoading)return;
+ window.__ralArabicLoading=true;
+ try{
+  const response=await fetch("/api/arabic-channels?ts="+Date.now(),{cache:"no-store"});
+  if(!response.ok)throw new Error("HTTP "+response.status);
+  const data=await response.json(),seen=new Set(),articles=[];
+  for(const group of (data.groups||[]))for(const article of (group.articles||[])){
+   if(!article.url||!article.title||seen.has(article.url))continue;
+   seen.add(article.url);articles.push({...article,groupLabel:group.label,verification:group.verification});
+  }
+  articles.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+  const exceptional=articles.slice(0,30);
+  if(!exceptional.length){
+   box.innerHTML="<div class=\"empty\">אין כרגע דיווחים חריגים שתואמים לסינון. זה לא מעיד שאין אירוע; חלק מהערוצים או גשרי ה-RSS עשויים להיות לא זמינים.</div>";
+  }else{
+   box.innerHTML=exceptional.map((a,i)=>"<article class=\"item\"><div class=\"news-flags\"><span class=\"tag\">חריג · סינון אוטומטי</span><span class=\"tag\">לא מאומת</span></div><b id=\"arabic-channel-title-"+i+"\">"+esc(/[\\u0590-\\u05FF]/.test(a.title)?a.title:"מתרגם לעברית…")+"</b><p class=\"muted\">"+esc(a.groupLabel||"ערוץ ציבורי")+" · "+esc(a.source||"טלגרם")+"<br>"+esc(formatIranDate(a.date))+"</p><a class=\"map-link\" href=\""+esc(a.url)+"\" target=\"_blank\" rel=\"noopener noreferrer\">פתח את המקור ↗</a></article>").join("");
+   await Promise.all(exceptional.map(async(a,i)=>{const node=$("arabic-channel-title-"+i);if(node&&!/[\\u0590-\\u05FF]/.test(a.title)){const translated=await translateIranTitle(a.title);if(node.isConnected)node.textContent=translated||a.title;}}));
+  }
+  const working=(data.groups||[]).filter(g=>(g.articles||[]).length&&!g.unavailable).length;
+  const failed=(data.groups||[]).filter(g=>g.unavailable).length;
+  status.textContent="מקורות ציבוריים: "+(data.groups||[]).length+" · ערוצים שהחזירו דיווחים חריגים: "+working+" · ערוצים לא זמינים: "+failed+" · עודכן: "+(data.fetchedAt?new Date(data.fetchedAt).toLocaleTimeString("he-IL"):"ממתין לתוצאות")+(data.refreshing?" · האיסוף עדיין מתבצע":"");
+ }catch(error){status.textContent="לא ניתן כרגע לטעון את הערוצים: "+String(error.message||error);}
+ finally{window.__ralArabicLoading=false;}
+}
+
 $("refresh").onclick=poll;
 if($("demoToggle"))$("demoToggle").onchange=()=>{demo=$("demoToggle").checked;store();renderAll();$("settingsMsg").textContent=demo?"נתוני הדגמה מוצגים ומסומנים.":"מצב נתונים חיים נבחר; אם המקור לא זמין, לא יוצגו נתוני הדגמה."};
 
 if($("clearHistory"))$("clearHistory").onclick=()=>{history=[];store();renderHistory();$("settingsMsg").textContent="ההיסטוריה המקומית נוקתה."};
-renderAll();poll();setInterval(poll,window.RAL_POLL_MS||5000);loadPrelimFromPublicFeed();setInterval(loadPrelimFromPublicFeed,5000);try{const lastPage=localStorage.getItem("ral-active-page");if(["home","history","prelim","settings","map"].includes(lastPage))setPage(lastPage)}catch{}
+renderAll();poll();setInterval(poll,window.RAL_POLL_MS||5000);loadPrelimFromPublicFeed();setInterval(loadPrelimFromPublicFeed,5000);setInterval(()=>{if(!$("page-arabic").classList.contains("hidden"))loadArabicChannels()},30000);try{const lastPage=localStorage.getItem("ral-active-page");if(["home","history","prelim","settings","map","arabic"].includes(lastPage))setPage(lastPage)}catch{}
 let mapInteractionEnabled=true;
 if($("mapScrollToggle"))$("mapScrollToggle").addEventListener("click",()=>{
  const frame=$("externalMapFrame"),button=$("mapScrollToggle"),status=$("mapScrollStatus");
