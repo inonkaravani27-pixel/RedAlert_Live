@@ -212,7 +212,31 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-realtimesecurity", label: "חדשות בזמן אמת", telegram: "Realtimesecurity1", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-hazfon", label: "חדשות לפני כולם", telegram: "hazfon1", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-baznews", label: "רגע חדשות — צבא וביטחון", telegram: "baznews9", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
-  { id: "telegram-israel-yamin", label: "ישראל ימין — חדשות", telegram: "israel_yamin", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" }
+  { id: "telegram-israel-yamin", label: "ישראל ימין — חדשות", telegram: "israel_yamin", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
+  { id: "arabic-turkeynewskian", label: "Turkey News Kian · פרסית", telegram: "turkeynewskian", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-live-geopolitics", label: "Live Geopolitics", telegram: "Live_Geopolitics", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-defence-elite", label: "Defence Elite", telegram: "defence_elite", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-wars-news", label: "Wars News", telegram: "WARS_NEWS", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-radarnews98", label: "Radar News", telegram: "RadarNews98", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-voiceofbushehr", label: "Voice of Bushehr", telegram: "VoiceOfBushehr", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-tahavolatejahani", label: "Tahavolate Jahani", telegram: "tahavolatejahani", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-fighter-radar", label: "Fighter Radar", telegram: "fighter_radar", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-warmonitors", label: "War Monitors", telegram: "warmonitors", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-almayadeen", label: "Al Mayadeen", telegram: "almayadeen", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-iraninarabic", label: "Iran in Arabic", telegram: "IraninArabic", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-tasnimnews", label: "Tasnim News", telegram: "Tasnimnews", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-iranintltv", label: "Iran International", telegram: "IranintlTV", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-middle-east-spectator", label: "Middle East Spectator", telegram: "Middle_East_Spectator", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-thecradlemedia", label: "The Cradle", telegram: "thecradlemedia", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-almasiranet", label: "Al Masirah", telegram: "AlmasiraNet", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-alarabytelevision", label: "Al Araby Television", telegram: "AlarabyTelevision", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-rasedal3ado138e", label: "Rased Al Ado", telegram: "rasedal3ado138e", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-iran-military-capabilities", label: "Iran Military Capabilities", telegram: "iran_military_capabilities", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-sepah-news1", label: "Sepah News", telegram: "sepah_news1", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-sepah-pasdaran", label: "Sepah Pasdaran", telegram: "sepah_pasdaran", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-nezami-news-ir", label: "Nezami News", telegram: "NEZAMI_NEWS_IR", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-wattanagency", label: "Wattan Agency", telegram: "WattanAgency", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
+  { id: "arabic-almasirah2", label: "Al Masirah 2", telegram: "Almasirah2", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" }
 ];
 async function fetchTelegramChannelUncached(channel, limit = 15) {
   // Prefer an RSS bridge: Telegram's HTML preview is currently returning markup
@@ -500,6 +524,62 @@ function ensurePublicNewsRefresh() {
   }
   return publicNewsRefreshPromise || Promise.resolve(publicNewsCache);
 }
+const PUBLIC_ARABIC_CHANNELS = PUBLIC_NEWS_GROUPS.filter(group => group.category === "arabic");
+let arabicNewsCache = null;
+let arabicNewsRefreshPromise = null;
+let arabicNewsLastRefresh = 0;
+const ARABIC_NEWS_REFRESH_MS = 30000;
+
+function isExceptionalArabicReport(article) {
+  const text = [article.title, article.description, article.summary].filter(Boolean).join(" ");
+  const highSignal = /(?:missile\s+(?:launch|strike|barrage)|ballistic missile|mass(?:ive)?\s+(?:drone|missile)\s+(?:attack|launch|strike|swarm)|drone swarm|multiple reconnaissance drones|airspace (?:closed|closure)|emergency mobilization|major explosion|large-scale attack|IRGC.{0,45}(?:missile|drone|alert|mobiliz|deploy)|إطلاق صواريخ|هجوم صاروخي|هجوم واسع|ضربة واسعة|طائرات? مسيرة|مسيّرات استطلاع|إغلاق المجال الجوي|إغلاق الأجواء|انفجار كبير|تعبئة عامة|حالة استنفار|الحرس الثوري.{0,45}(?:صواريخ|مسيرات|استنفار|تحركات)|چندین پهپاد|پهپادهای شناسایی|شلیک موشک|پرتاب موشک|حمله موشکی|حمله گسترده|بستن حریم هوایی|آماده‌باش|انفجارهای شدید|تحرکات غیرعادی|سپاه.{0,45}(?:پهپاد|موشک|آماده‌باش|تحرکات))/i;
+  return highSignal.test(text);
+}
+async function refreshArabicNewsCache() {
+  if (arabicNewsRefreshPromise) return arabicNewsRefreshPromise;
+  arabicNewsRefreshPromise = (async () => {
+    const results = PUBLIC_ARABIC_CHANNELS.map(group => ({
+      id: group.id, label: group.label, verification: group.verification,
+      articles: [], unavailable: false, refreshing: true
+    }));
+    let nextIndex = 0;
+    const worker = async () => {
+      while (nextIndex < PUBLIC_ARABIC_CHANNELS.length) {
+        const i = nextIndex++;
+        const group = PUBLIC_ARABIC_CHANNELS[i];
+        try {
+          const articles = filterFreshPublicArticles(await fetchTelegramChannel(group.telegram, 12))
+            .filter(isExceptionalArabicReport);
+          results[i] = { id: group.id, label: group.label, verification: group.verification,
+            articles, unavailable: false, refreshing: false };
+        } catch (error) {
+          results[i] = { id: group.id, label: group.label, verification: group.verification,
+            articles: [], unavailable: true, error: msg(error), refreshing: false };
+        }
+        arabicNewsCache = { source: "Public Telegram channels", fetchedAt: new Date().toISOString(),
+          refreshing: true, note: "רק כותרות חריגות ממקורות ציבוריים; הדיווחים אינם מאומתים עצמאית.",
+          groups: [...results] };
+      }
+    };
+    await Promise.all(Array.from({ length: 4 }, () => worker()));
+    arabicNewsCache = { source: "Public Telegram channels", fetchedAt: new Date().toISOString(),
+      refreshing: false, note: "רק כותרות חריגות ממקורות ציבוריים; הדיווחים אינם מאומתים עצמאית.",
+      groups: [...results] };
+    arabicNewsLastRefresh = Date.now();
+    return arabicNewsCache;
+  })().finally(() => { arabicNewsRefreshPromise = null; });
+  return arabicNewsRefreshPromise;
+}
+function ensureArabicNewsRefresh() {
+  if (!arabicNewsRefreshPromise && Date.now() - arabicNewsLastRefresh >= ARABIC_NEWS_REFRESH_MS) {
+    return refreshArabicNewsCache().catch(error => {
+      console.error("Arabic public news refresh failed:", msg(error));
+      return arabicNewsCache;
+    });
+  }
+  return arabicNewsRefreshPromise || Promise.resolve(arabicNewsCache);
+}
+
 const norm = t => t.replace(/[^\u0590-\u05ffa-z0-9]/gi, "").toLowerCase();
 async function pollGroup(g) {
   for (const f of g.feeds.values()) {
@@ -650,6 +730,18 @@ const server = http.createServer((req, res) => {
     ensurePublicNewsRefresh();
     sendSnapshot();
     return;
+  }
+  if (p === "/api/arabic-channels") {
+    const snapshot = arabicNewsCache || {
+      source: "Public Telegram channels", fetchedAt: null, refreshing: true,
+      note: "רק כותרות חריגות ממקורות ציבוריים; הדיווחים אינם מאומתים עצמאית.",
+      groups: PUBLIC_ARABIC_CHANNELS.map(group => ({ id: group.id, label: group.label,
+        verification: group.verification, articles: [], refreshing: true }))
+    };
+    ensureArabicNewsRefresh();
+    res.writeHead(200, h);
+    return res.end(JSON.stringify({ ...snapshot, refreshing: Boolean(arabicNewsRefreshPromise),
+      refreshIntervalMs: ARABIC_NEWS_REFRESH_MS }));
   }
   if (p === "/api/osint") {
     const query = encodeURIComponent('(Iran OR Israel OR missile OR rocket OR drone OR interception)') ;
