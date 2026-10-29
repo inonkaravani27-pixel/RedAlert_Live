@@ -156,6 +156,10 @@ function normalizeNewsDate(value) {
 const PUBLIC_NEWS_GROUPS = [
   { id: "iran", label: "דיווחים על איראן — כלי תקשורת", query: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard" OR איראן OR טהרן)', rssQuery: '(Iran OR Iranian OR Tehran OR "Islamic Revolutionary Guard" OR איראן OR טהרן) when:6h', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
   { id: "launch", label: "שיגורים, יירוטים ותקיפות — דיווחים", query: '((Iran OR Iranian OR Israel OR איראן OR ישראל) (missile OR rocket OR drone OR strike OR attack OR interception OR launch OR טיל OR רקטה OR שיגור OR יירוט OR תקיפה))', rssQuery: '((Iran OR Iranian OR Israel OR איראן OR ישראל) (missile OR rocket OR drone OR strike OR attack OR interception OR launch OR טיל OR רקטה OR שיגור OR יירוט OR תקיפה) ) when:6h', verification: "דיווח תקשורתי — פתחו את הכתבה המקורית" },
+  { id: "osint-hormuz", label: "OSINT — איראן, משגרים והורמוז", query: '(Iran OR Iranian OR IRGC OR Iran\'s) ("missile launcher" OR "launcher movement" OR "anti-ship missile" OR "Strait of Hormuz" OR Hormuz OR Sirik OR tanker OR vessel OR "launch site")', rssQuery: '(Iran OR Iranian OR IRGC OR "missile launcher" OR "launcher movement" OR "anti-ship missile" OR "Strait of Hormuz" OR Hormuz OR Sirik OR tanker OR vessel) when:6h', verification: "OSINT/חדשות פתוחות — דיווח ראשוני בלבד; הצליבו מול מקור עצמאי" },
+  { id: "telegram-osint-amk", label: "OSINT — AMK Mapping", telegram: "AMK_Mapping", verification: "OSINT בטלגרם — דיווח לא מאומת עד להצלבה" },
+  { id: "telegram-osint-geopwatch", label: "OSINT — Geopolitics Watch", telegram: "GeoPWatch", verification: "OSINT בטלגרם — דיווח לא מאומת עד להצלבה" },
+  { id: "telegram-osint-rnintel", label: "OSINT — Rerum Novarum Intel", telegram: "rnintel", verification: "אגרגטור OSINT — יש להצליב; עלול לכלול פרשנות" },
   { id: "media-n12", label: "N12 / mako", query: 'domain:mako.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:mako.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
   { id: "media-kan", label: "כאן חדשות", query: 'domain:kan.org.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:kan.org.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
   { id: "media-13", label: "חדשות 13", query: 'domain:13tv.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה)', rssQuery: 'site:13tv.co.il (Iran OR Israel OR missile OR rocket OR drone OR strike OR attack OR איראן OR ישראל OR טיל OR שיגור OR יירוט OR תקיפה) when:6h' },
@@ -445,7 +449,7 @@ async function refreshPublicNewsCache() {
     source: "GDELT / Google News RSS / public Telegram channel previews",
     fetchedAt: previous && previous.fetchedAt || null,
     partial: true, refreshing: true,
-    note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
+    note: "Public media, OSINT reports and public Telegram previews. Posts are unverified until corroborated; no physical/satellite launcher tracking or launch-time prediction.",
     groups: results
   };
   publicNewsRefreshPromise = (async () => {
@@ -470,7 +474,7 @@ async function refreshPublicNewsCache() {
           fetchedAt: new Date().toISOString(),
           partial: results.some(g => g.unavailable || g.refreshing),
           refreshing: true,
-          note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
+          note: "Public media, OSINT reports and public Telegram previews. Posts are unverified until corroborated; no physical/satellite launcher tracking or launch-time prediction.",
           groups: [...results]
         };
       }
@@ -482,7 +486,7 @@ async function refreshPublicNewsCache() {
       fetchedAt: new Date().toISOString(),
       partial: results.some(g => g.unavailable),
       refreshing: false,
-      note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
+      note: "Public media, OSINT reports and public Telegram previews. Posts are unverified until corroborated; no physical/satellite launcher tracking or launch-time prediction.",
       groups: [...results]
     };
     publicNewsLastRefresh = Date.now();
@@ -634,7 +638,7 @@ const server = http.createServer((req, res) => {
       const snapshot = publicNewsCache || {
         source: "GDELT / Google News RSS / public Telegram channel previews",
         fetchedAt: null, partial: true, refreshing: true,
-        note: "Public media and Telegram posts only. Telegram posts are unverified; no launcher tracking or launch-time prediction.",
+        note: "Public media, OSINT reports and public Telegram previews. Posts are unverified until corroborated; no physical/satellite launcher tracking or launch-time prediction.",
         groups: PUBLIC_NEWS_GROUPS.map(group => ({ id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: [], refreshing: true }))
       };
       res.writeHead(200, h);
