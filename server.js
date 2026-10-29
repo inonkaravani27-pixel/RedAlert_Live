@@ -238,6 +238,9 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "arabic-wattanagency", label: "Wattan Agency", telegram: "WattanAgency", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
   { id: "arabic-almasirah2", label: "Al Masirah 2", telegram: "Almasirah2", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" }
 ];
+const PUBLIC_ARABIC_CHANNELS = PUBLIC_NEWS_GROUPS.filter(group => group.category === "arabic");
+const PUBLIC_STANDARD_NEWS_GROUPS = PUBLIC_NEWS_GROUPS.filter(group => group.category !== "arabic");
+
 async function fetchTelegramChannelUncached(channel, limit = 15) {
   // Prefer an RSS bridge: Telegram's HTML preview is currently returning markup
   // the in-process scraper cannot parse from the hosted Render instance.
@@ -462,7 +465,7 @@ async function refreshPublicNewsCache() {
   if (publicNewsRefreshPromise) return publicNewsRefreshPromise;
   const previous = publicNewsCache;
   const previousGroups = new Map((previous && previous.groups || []).map(g => [g.id, g]));
-  const results = PUBLIC_NEWS_GROUPS.map(group => {
+  const results = PUBLIC_STANDARD_NEWS_GROUPS.map(group => {
     const old = previousGroups.get(group.id);
     return old ? { ...old, articles: filterFreshPublicArticles(old.articles || []), refreshing: true } :
       { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: [], unavailable: false, refreshing: true };
@@ -479,9 +482,9 @@ async function refreshPublicNewsCache() {
   publicNewsRefreshPromise = (async () => {
     let nextIndex = 0;
     const worker = async () => {
-      while (nextIndex < PUBLIC_NEWS_GROUPS.length) {
+      while (nextIndex < PUBLIC_STANDARD_NEWS_GROUPS.length) {
         const index = nextIndex++;
-        const group = PUBLIC_NEWS_GROUPS[index];
+        const group = PUBLIC_STANDARD_NEWS_GROUPS[index];
         try {
           const articles = filterFreshPublicArticles(await fetchPublicNewsGroup(group, 20));
           results[index] = { id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles, unavailable: false, refreshing: false };
@@ -524,7 +527,6 @@ function ensurePublicNewsRefresh() {
   }
   return publicNewsRefreshPromise || Promise.resolve(publicNewsCache);
 }
-const PUBLIC_ARABIC_CHANNELS = PUBLIC_NEWS_GROUPS.filter(group => group.category === "arabic");
 let arabicNewsCache = null;
 let arabicNewsRefreshPromise = null;
 let arabicNewsLastRefresh = 0;
@@ -719,7 +721,7 @@ const server = http.createServer((req, res) => {
         source: "GDELT / Google News RSS / public Telegram channel previews",
         fetchedAt: null, partial: true, refreshing: true,
         note: "Public media, OSINT reports and public Telegram previews. Posts are unverified until corroborated; no physical/satellite launcher tracking or launch-time prediction.",
-        groups: PUBLIC_NEWS_GROUPS.map(group => ({ id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: [], refreshing: true }))
+        groups: PUBLIC_STANDARD_NEWS_GROUPS.map(group => ({ id: group.id, label: group.label, verification: group.verification || "דיווח תקשורתי — יש לפתוח את המקור", articles: [], refreshing: true }))
       };
       res.writeHead(200, h);
       const freshSnapshot = { ...snapshot, groups: (snapshot.groups || []).map(group => ({ ...group, articles: filterFreshPublicArticles(group.articles || []) })) };
@@ -774,7 +776,7 @@ const server = http.createServer((req, res) => {
 async function pollPushNews() {
   if (!PUSH_READY || pushSubscriptions.size === 0) return;
   try {
-    const results = await Promise.all(PUBLIC_NEWS_GROUPS.map(async group => {
+    const results = await Promise.all(PUBLIC_STANDARD_NEWS_GROUPS.map(async group => {
       try { return await fetchPublicNewsGroup(group, 15); }
       catch (error) { console.error("Push news source failed (" + group.id + "):", msg(error)); return []; }
     }));
