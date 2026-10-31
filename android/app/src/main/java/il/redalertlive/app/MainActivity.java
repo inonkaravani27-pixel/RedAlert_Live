@@ -134,6 +134,17 @@ public class MainActivity extends Activity {
         showSystemBarsOutsideAppContent();
         webView = new WebView(this);
         webView.setBackgroundColor(0xFF0E1013);
+        // Android 15 enforces edge-to-edge for targetSdk 35. Keep the web content
+        // below the status bar and above the navigation bar instead of drawing
+        // underneath the system UI.
+        webView.setOnApplyWindowInsetsListener((view, insets) -> {
+            int left = insets.getSystemWindowInsetLeft();
+            int top = insets.getSystemWindowInsetTop();
+            int right = insets.getSystemWindowInsetRight();
+            int bottom = insets.getSystemWindowInsetBottom();
+            view.setPadding(left, top, right, bottom);
+            return insets;
+        });
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setLoadsImagesAutomatically(true);
