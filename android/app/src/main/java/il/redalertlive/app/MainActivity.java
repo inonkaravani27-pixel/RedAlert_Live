@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.WindowManager;
 import android.view.View;
+import android.view.WindowInsets;
+import android.widget.FrameLayout;
 import android.graphics.Color;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -132,19 +134,35 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         showSystemBarsOutsideAppContent();
+        // Put the WebView inside a root container and apply system-bar insets
+        // to that container. Android 15 enforces edge-to-edge for targetSdk 35.
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(Color.rgb(14, 16, 19));
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            int left, top, right, bottom;
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                left = bars.left;
+                top = bars.top;
+                right = bars.right;
+                bottom = bars.bottom;
+            } else {
+                left = insets.getSystemWindowInsetLeft();
+                top = insets.getSystemWindowInsetTop();
+                right = insets.getSystemWindowInsetRight();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            view.setPadding(left, top, right, bottom);
+            if (android.os.Build.VERSION.SDK_INT >= 30) return WindowInsets.CONSUMED;
+            return insets.consumeSystemWindowInsets();
+        });
+
         webView = new WebView(this);
         webView.setBackgroundColor(0xFF0E1013);
-        // Android 15 enforces edge-to-edge for targetSdk 35. Keep the web content
-        // below the status bar and above the navigation bar instead of drawing
-        // underneath the system UI.
-        webView.setOnApplyWindowInsetsListener((view, insets) -> {
-            int left = insets.getSystemWindowInsetLeft();
-            int top = insets.getSystemWindowInsetTop();
-            int right = insets.getSystemWindowInsetRight();
-            int bottom = insets.getSystemWindowInsetBottom();
-            view.setPadding(left, top, right, bottom);
-            return insets;
-        });
+        root.addView(webView, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ));
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setLoadsImagesAutomatically(true);
@@ -167,7 +185,8 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
-        setContentView(webView);
+        setContentView(root);
+        root.requestApplyInsets();
         if (savedInstanceState == null) webView.loadUrl(HOME);
         else webView.restoreState(savedInstanceState);
     }
