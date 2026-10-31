@@ -55,11 +55,11 @@
 <div class="card"><h3 class="section-title">התראות כשהאפליקציה סגורה</h3><p class="muted">בחר בנפרד אילו התראות Push לקבל במכשיר הזה.</p><div class="alert-options"><label><input type="checkbox" id="pushRedEnabled" checked> התראות צבע אדום</label><label><input type="checkbox" id="pushNewsEnabled" checked> התראות דיווחים וחדשות</label></div><div id="pushPrefsStatus" class="muted" style="margin-top:8px">הבחירה נשמרת אוטומטית.</div></div>
 <div class="card"><h3 class="section-title">התרעות ראשיות</h3>
 <details class="city-picker"><summary>חיפוש יישובים לאזור הראשי</summary><div class="city-picker-body"><label>אזור ראשי<select id="primaryScope" class="field"><option value="all">כל הארץ</option><option value="selected">רק היישובים שאבחר כאזור ראשי</option></select></label><div class="muted">בחר "רק היישובים שאבחר כאזור ראשי" כדי לסנן לפי היישובים שסימנת.</div><input id="primarySearch" class="field" placeholder="חיפוש יישוב"><div id="primaryChoices"></div></div></details>
-<label>בחר צליל<select id="primarySound" class="field"><option value="pulse">פולסים מהירים</option><option value="pulse-soft">פולסים רכים</option><option value="pulse-low">פולסים עמוקים</option><option value="pulse-double">פולסים כפולים</option><option value="pulse-wave">פולסים מדורגים</option></select></label><button id="testPrimarySound">▶ השמע דוגמה</button>
+<label>בחר צליל<select id="primarySound" class="field"><option value="pulse">פולסים מהירים</option><option value="pulse-soft">פולסים רכים</option><option value="pulse-low">פולסים עמוקים</option><option value="pulse-double">פולסים כפולים</option><option value="pulse-wave">פולסים מדורגים</option></select></label><button id="testPrimarySound">▶ השמע דוגמה</button><div class="row" style="margin-top:8px"><button type="button" id="choosePrimarySystemSound">בחר צליל מהטלפון</button><button type="button" id="previewPrimarySystemSound">▶ השמע צליל מערכת</button></div><div id="primarySystemSoundStatus" class="muted" aria-live="polite">לא נבחר צליל מערכת.</div>
 <div class="alert-options"><label>עוצמת/דפוס רטט<select id="primaryVibrationMode" class="field"><option value="normal">רטט רגיל</option><option value="strong">רטט חזק</option></select></label><label><input type="checkbox" id="primaryBypassSilent"> עקוף מצב שקט באפליקציה</label><label>התנהגות בעקיפה<select id="primaryBypassMode" class="field"><option value="sound-vibrate">צליל + רטט</option><option value="vibrate-only">רטט בלבד</option><option value="sound-only">צליל בלבד (ללא רטט)</option></select></label></div></div>
 <div class="card"><h3 class="section-title">אזורים משניים — יישובים שאני נמצא בהם</h3><p class="muted">סמן יישובים כמו הבית והעבודה. אפשר להגדיר להם צליל נפרד.</p>
 <details class="city-picker"><summary>חיפוש יישובים לאזור משני</summary><div class="city-picker-body"><input id="secondarySearch" class="field" placeholder="חיפוש יישוב"><div id="secondaryChoices"></div></div></details>
-<label>בחר צליל<select id="secondarySound" class="field"><option value="pulse">פולסים מהירים</option><option value="pulse-soft">פולסים רכים</option><option value="pulse-low">פולסים עמוקים</option><option value="pulse-double">פולסים כפולים</option><option value="pulse-wave">פולסים מדורגים</option></select></label><button id="testSecondarySound">▶ השמע דוגמה</button>
+<label>בחר צליל<select id="secondarySound" class="field"><option value="pulse">פולסים מהירים</option><option value="pulse-soft">פולסים רכים</option><option value="pulse-low">פולסים עמוקים</option><option value="pulse-double">פולסים כפולים</option><option value="pulse-wave">פולסים מדורגים</option></select></label><button id="testSecondarySound">▶ השמע דוגמה</button><div class="row" style="margin-top:8px"><button type="button" id="chooseSecondarySystemSound">בחר צליל מהטלפון</button><button type="button" id="previewSecondarySystemSound">▶ השמע צליל מערכת</button></div><div id="secondarySystemSoundStatus" class="muted" aria-live="polite">לא נבחר צליל מערכת.</div>
 <div class="alert-options"><label>עוצמת/דפוס רטט<select id="secondaryVibrationMode" class="field"><option value="normal">רטט רגיל</option><option value="strong">רטט חזק</option></select></label><label><input type="checkbox" id="secondaryBypassSilent"> עקוף מצב שקט באפליקציה</label><label>התנהגות בעקיפה<select id="secondaryBypassMode" class="field"><option value="sound-vibrate">צליל + רטט</option><option value="vibrate-only">רטט בלבד</option><option value="sound-only">צליל בלבד (ללא רטט)</option></select></label></div><p class="muted">הגדרת עקיפה פועלת מול מצב השקט של האפליקציה בלבד. PWA לא יכולה לעקוף את מצב השקט או „נא לא להפריע” של Android. רטט תלוי בתמיכת המכשיר והדפדפן.</p></div><div class="card"><div id="settingsMsg" class="muted"></div></div></section>
 <footer class="foot">RedAlert Live — כלי משלים בלבד. הנתונים החיים תלויים בזמינות מקור חיצוני ואינם שירות התרעה מאושר.</footer>
 </main>
@@ -494,4 +494,44 @@ async function loadIranIndicators(){
   status.textContent="מקור: GDELT · "+total+" כתבות ציבוריות בחלון של 24 שעות · נבדק "+new Date(d.fetchedAt).toLocaleTimeString("he-IL")+(d.partial?" · חלק מהקטגוריות לא זמינות":"")+" · רענון כל דקה בזמן שהאתר פתוח.";
  }catch(e){status.textContent="מקור החדשות אינו זמין כרגע. אין להסיק מכך שאין פעילות. אפשר לנסות שוב.";feed.innerHTML=""}
 }
+
+/* Native Android system notification sound picker (APK only). */
+(function(){
+ const bridge=window.AndroidSystemSounds;
+ const slots=["primary","secondary"];
+ function setStatus(slot,title){
+  const node=$(slot+"SystemSoundStatus");
+  if(node)node.textContent=title?"צליל מערכת נבחר: "+title:"לא נבחר צליל מערכת.";
+ }
+ window.onNativeSystemSoundSelected=function(slot,uri,title){
+  if(!slots.includes(slot))return;
+  setStatus(slot,title);
+ };
+ if(!bridge){
+  slots.forEach(slot=>setStatus(slot,""));
+  return;
+ }
+ slots.forEach(slot=>{
+  try{
+   const saved=JSON.parse(bridge.getSelected(slot)||"{}");
+   setStatus(slot,saved.title||"");
+  }catch{setStatus(slot,"")}
+ });
+ $("choosePrimarySystemSound").onclick=()=>bridge.choose("primary");
+ $("chooseSecondarySystemSound").onclick=()=>bridge.choose("secondary");
+ $("previewPrimarySystemSound").onclick=()=>{
+  if(bridge.hasSelected("primary"))bridge.preview("primary");
+  else setStatus("primary","בחר תחילה צליל מערכת");
+ };
+ $("previewSecondarySystemSound").onclick=()=>{
+  if(bridge.hasSelected("secondary"))bridge.preview("secondary");
+  else setStatus("secondary","בחר תחילה צליל מערכת");
+ };
+ const originalPlayAlertSound=playAlertSound;
+ playAlertSound=function(which="pulse"){
+  if(bridge.hasSelected("primary")){bridge.playSelected("primary");return}
+  originalPlayAlertSound(which);
+ };
+})();
+
 </script></body></html>
