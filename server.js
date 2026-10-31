@@ -213,6 +213,7 @@ const PUBLIC_NEWS_GROUPS = [
   { id: "telegram-hazfon", label: "חדשות לפני כולם", telegram: "hazfon1", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-baznews", label: "רגע חדשות — צבא וביטחון", telegram: "baznews9", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
   { id: "telegram-israel-yamin", label: "ישראל ימין — חדשות", telegram: "israel_yamin", verification: "טלגרם — דיווחים לא מאומתים; יש להצליב לפני הפצה" },
+  { id: "arabic-genvnews", label: "GenVNews", telegram: "GenVNews", category: "arabic", verification: "ערוץ ציבורי בטלגרם — דיווח לא מאומת עד להצלבה" },
   { id: "arabic-turkeynewskian", label: "Turkey News Kian · פרסית", telegram: "turkeynewskian", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
   { id: "arabic-live-geopolitics", label: "Live Geopolitics", telegram: "Live_Geopolitics", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
   { id: "arabic-defence-elite", label: "Defence Elite", telegram: "defence_elite", category: "arabic", verification: "ערוץ ציבורי בערבית/פרסית — דיווח לא מאומת עד להצלבה" },
