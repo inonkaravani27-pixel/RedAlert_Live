@@ -508,22 +508,30 @@ async function loadIranIndicators(){
   setStatus(slot,title);
  };
  if(!bridge){
-  slots.forEach(slot=>setStatus(slot,""));
+  slots.forEach(slot=>{
+   setStatus(slot,"הגרסה המותקנת אינה כוללת תמיכה בבחירת צלילי מערכת. יש להתקין APK מעודכן.");
+   const choose=$(slot==="primary"?"choosePrimarySystemSound":"chooseSecondarySystemSound");
+   const preview=$(slot==="primary"?"previewPrimarySystemSound":"previewSecondarySystemSound");
+   if(choose)choose.onclick=()=>setStatus(slot,"יש להתקין את קובץ ה־APK המעודכן כדי לפתוח את בורר הצלילים.");
+   if(preview)preview.onclick=()=>setStatus(slot,"יש להתקין APK מעודכן ולבחור תחילה צליל מערכת.");
+  });
   return;
  }
  slots.forEach(slot=>{
   try{
    const saved=JSON.parse(bridge.getSelected(slot)||"{}");
    setStatus(slot,saved.title||"");
-  }catch{setStatus(slot,"")}
+  }catch{setStatus(slot,"לא ניתן לקרוא את הגדרות הצליל מהמכשיר")}
  });
- $("choosePrimarySystemSound").onclick=()=>bridge.choose("primary");
- $("chooseSecondarySystemSound").onclick=()=>bridge.choose("secondary");
- $("previewPrimarySystemSound").onclick=()=>{
+ const choosePrimary=$("choosePrimarySystemSound"),chooseSecondary=$("chooseSecondarySystemSound");
+ const previewPrimary=$("previewPrimarySystemSound"),previewSecondary=$("previewSecondarySystemSound");
+ if(choosePrimary)choosePrimary.onclick=()=>bridge.choose("primary");
+ if(chooseSecondary)chooseSecondary.onclick=()=>bridge.choose("secondary");
+ if(previewPrimary)previewPrimary.onclick=()=>{
   if(bridge.hasSelected("primary"))bridge.preview("primary");
   else setStatus("primary","בחר תחילה צליל מערכת");
  };
- $("previewSecondarySystemSound").onclick=()=>{
+ if(previewSecondary)previewSecondary.onclick=()=>{
   if(bridge.hasSelected("secondary"))bridge.preview("secondary");
   else setStatus("secondary","בחר תחילה צליל מערכת");
  };
