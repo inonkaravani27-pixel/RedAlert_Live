@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.WindowManager;
 import android.view.View;
-import android.view.WindowInsets;
 import android.widget.FrameLayout;
 import android.graphics.Color;
 import android.webkit.WebChromeClient;
@@ -134,28 +133,10 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         showSystemBarsOutsideAppContent();
-        // Put the WebView inside a root container and apply system-bar insets
-        // to that container. Android 15 enforces edge-to-edge for targetSdk 35.
+        // Use the platform's normal safe content area. targetSdk 34 below avoids
+        // Android 15's forced edge-to-edge layout for targetSdk 35 applications.
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(14, 16, 19));
-        root.setOnApplyWindowInsetsListener((view, insets) -> {
-            int left, top, right, bottom;
-            if (android.os.Build.VERSION.SDK_INT >= 30) {
-                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
-                left = bars.left;
-                top = bars.top;
-                right = bars.right;
-                bottom = bars.bottom;
-            } else {
-                left = insets.getSystemWindowInsetLeft();
-                top = insets.getSystemWindowInsetTop();
-                right = insets.getSystemWindowInsetRight();
-                bottom = insets.getSystemWindowInsetBottom();
-            }
-            view.setPadding(left, top, right, bottom);
-            if (android.os.Build.VERSION.SDK_INT >= 30) return WindowInsets.CONSUMED;
-            return insets.consumeSystemWindowInsets();
-        });
 
         webView = new WebView(this);
         webView.setBackgroundColor(0xFF0E1013);
