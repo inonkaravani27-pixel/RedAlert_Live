@@ -87,7 +87,8 @@ let primaryCities=new Set(JSON.parse(localStorage.getItem("ral-primary-cities")|
 let primaryScope=localStorage.getItem("ral-primary-scope")||"all";
 let alertPrefs={primary:{bypassSilent:false,bypassMode:"sound-vibrate",vibrationMode:"normal"},secondary:{bypassSilent:false,bypassMode:"sound-vibrate",vibrationMode:"normal"}};
 try{const saved=JSON.parse(localStorage.getItem("ral-alert-prefs")||"{}");alertPrefs.primary={...alertPrefs.primary,...(saved.primary||{})};alertPrefs.secondary={...alertPrefs.secondary,...(saved.secondary||{})}}catch{}
-function saveAlertPrefs(){try{localStorage.setItem("ral-alert-prefs",JSON.stringify(alertPrefs))}catch{}}
+function saveAlertPrefs(){try{localStorage.setItem("ral-alert-prefs",JSON.stringify(alertPrefs))}catch{}syncAlertPrefsToPush()}
+async function syncAlertPrefsToPush(){try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(!sub)return;await fetch("/api/push/preferences",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint,red:pushPrefs.red!==false,news:pushPrefs.news!==false,alertMode:alertPrefs.primary.bypassMode==="vibrate-only"?"vibrate-only":"sound-vibrate"})})}catch{}}
 function syncAlertPrefs(){for(const area of ["primary","secondary"]){for(const option of ["bypassSilent"]){const el=$(area+option[0].toUpperCase()+option.slice(1));if(el)el.checked=Boolean(alertPrefs[area][option])}const mode=$(area+"VibrationMode");if(mode)mode.value=alertPrefs[area].vibrationMode==="strong"?"strong":"normal";const bypassMode=$(area+"BypassMode");if(bypassMode){if(!["vibrate-only","sound-vibrate"].includes(alertPrefs[area].bypassMode))alertPrefs[area].bypassMode="sound-vibrate";bypassMode.value=alertPrefs[area].bypassMode}}}
 
 let history=JSON.parse(localStorage.getItem("ral-history")||"[]");
@@ -182,7 +183,7 @@ function triggerAlertUI({test=false,cities=[]}={}){
  const prefs=alertPrefs[area]||alertPrefs.primary;
  const vibrateOnly=prefs.bypassMode==="vibrate-only";
  // "Vibrate only" is an absolute mute: never invoke WebAudio or the native ringtone bridge.
- const shouldPlaySound=prefs.bypassMode==="sound-vibrate"&&(prefs.bypassSilent||audioUnlocked);
+ const shouldPlaySound=!vibrateOnly&&prefs.bypassMode==="sound-vibrate"&&prefs.bypassSilent;
  if(shouldPlaySound)playAlertSound("pulse");
  try{if(window.AndroidSystemSounds&&typeof window.AndroidSystemSounds.vibrate==="function")window.AndroidSystemSounds.vibrate(prefs.vibrationMode==="strong");else if(typeof navigator!=="undefined"&&typeof navigator.vibrate==="function")navigator.vibrate(prefs.vibrationMode==="strong"?[500,100,500,100,700,150,700]:[350,180,350,180,500])}catch{}
  showInAppAlert({test,cities});
@@ -413,7 +414,7 @@ let iranNotifyEnabled=false;
 let pushPrefs={red:true,news:true};
 try{pushPrefs={...pushPrefs,...JSON.parse(localStorage.getItem("ral-push-prefs")||"{}")}}catch{};
 function syncPushPrefs(){if($("pushRedEnabled"))$("pushRedEnabled").checked=pushPrefs.red!==false;if($("pushNewsEnabled"))$("pushNewsEnabled").checked=pushPrefs.news!==false}
-async function savePushPrefs(){pushPrefs={red:$("pushRedEnabled").checked,news:$("pushNewsEnabled").checked};try{localStorage.setItem("ral-push-prefs",JSON.stringify(pushPrefs))}catch{}const st=$("pushPrefsStatus");try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(!sub){st.textContent="הבחירה נשמרה במכשיר; הפעלת Push תסנכרן אותה לשרת.";return}const resp=await fetch("/api/push/preferences",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint,red:pushPrefs.red,news:pushPrefs.news})});if(!resp.ok)throw new Error("server");st.textContent="נשמר אוטומטית."}catch(e){st.textContent="הבחירה נשמרה במכשיר; אם השרת לא היה זמין, הפעל מחדש Push כדי לסנכרן."}}
+async function savePushPrefs(){pushPrefs={red:$("pushRedEnabled").checked,news:$("pushNewsEnabled").checked};try{localStorage.setItem("ral-push-prefs",JSON.stringify(pushPrefs))}catch{}const st=$("pushPrefsStatus");try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(!sub){st.textContent="הבחירה נשמרה במכשיר; הפעלת Push תסנכרן אותה לשרת.";return}const resp=await fetch("/api/push/preferences",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint,red:pushPrefs.red,news:pushPrefs.news,alertMode:alertPrefs.primary.bypassMode==="vibrate-only"?"vibrate-only":"sound-vibrate"})});if(!resp.ok)throw new Error("server");st.textContent="נשמר אוטומטית."}catch(e){st.textContent="הבחירה נשמרה במכשיר; אם השרת לא היה זמין, הפעל מחדש Push כדי לסנכרן."}}
 const iranNotifyButton=$("iranNotifyButton");
 function urlBase64ToUint8Array(value){
  const padding="=".repeat((4-(value.length%4))%4);
@@ -457,7 +458,7 @@ if(iranNotifyButton)iranNotifyButton.addEventListener("click",async()=>{
   const reg=await navigator.serviceWorker.ready;
   let subscription=await reg.pushManager.getSubscription();
   if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)});
-  const saved=await fetch("/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...subscription,notificationPrefs:pushPrefs})});
+  const saved=await fetch("/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...subscription,notificationPrefs:{...pushPrefs,alertMode:alertPrefs.primary.bypassMode==="vibrate-only"?"vibrate-only":"sound-vibrate"}})});
   const result=await saved.json().catch(()=>({}));
   if(!saved.ok)throw new Error(result.error||"שגיאת הרשמה לשרת");
   iranNotifyEnabled=true;localStorage.setItem("iranNotifyEnabled","1");
