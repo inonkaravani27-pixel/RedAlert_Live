@@ -3,10 +3,10 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Rounded-square app tile, inset inside the adaptive-icon safe zone. -->
-    <path android:fillColor="#F5222D" android:pathData="M28,6 H80 Q102,6 102,28 V80 Q102,102 80,102 H28 Q6,102 6,80 V28 Q6,6 28,6 Z"/>
-    <!-- Logo artwork centered inside the rounded-square tile. -->
-    <group android:scaleX="0.68" android:scaleY="0.68" android:pivotX="54" android:pivotY="54">
+    <!-- Squircle tile: transparent outside, with a standard soft rounded-rectangle silhouette. -->
+    <path android:fillColor="#F5222D" android:pathData="M29,4 H79 Q104,4 104,29 V79 Q104,104 79,104 H29 Q4,104 4,79 V29 Q4,4 29,4 Z"/>
+    <!-- Logo artwork kept safely inside the rounded app tile. -->
+    <group android:scaleX="0.64" android:scaleY="0.64" android:pivotX="54" android:pivotY="54">
     <path android:fillColor="#F5222D" android:pathData="M54,9 L87,22 L85,57 Q81,78 54,96 Q27,78 23,57 L21,22 Z"/>
     <path android:fillColor="#101217" android:pathData="M54,17 L79,27 L77,56 Q73,73 54,86 Q35,73 31,56 L29,27 Z"/>
     <path android:fillColor="#FF2633" android:pathData="M34,43 Q29,35 35,29 L39,26 L42,31 L38,35 Q36,37 39,41 Z"/>
