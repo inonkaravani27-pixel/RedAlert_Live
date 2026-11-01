@@ -18,6 +18,8 @@ import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.media.AudioAttributes;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
 import org.json.JSONObject;
 
 public class MainActivity extends Activity {
@@ -70,6 +72,11 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void vibrate(boolean strong) {
+            runOnUiThread(() -> vibrateDevice(strong));
+        }
+
+        @JavascriptInterface
         public void preview(String slot) {
             runOnUiThread(() -> playSelectedSystemSound(slot));
         }
@@ -96,6 +103,16 @@ public class MainActivity extends Activity {
         if (existing != null) intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, existing);
         try { startActivityForResult(intent, REQUEST_SYSTEM_SOUND); }
         catch (Exception e) { sendSoundToPage(pendingSoundSlot, "", "לא ניתן לפתוח את בורר הצלילים"); }
+    }
+
+    private void vibrateDevice(boolean strong) {
+        try {
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator == null || !vibrator.hasVibrator()) return;
+            long[] pattern = strong ? new long[]{0, 500, 100, 500, 100, 700, 150, 700} : new long[]{0, 350, 180, 350, 180, 500};
+            if (android.os.Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
+            else vibrator.vibrate(pattern, -1);
+        } catch (Exception ignored) {}
     }
 
     private void playSelectedSystemSound(String slot) {
