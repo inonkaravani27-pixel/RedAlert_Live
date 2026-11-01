@@ -4,7 +4,7 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <!-- Android adaptive-icon foreground: the launcher applies its native rounded/squircle mask to the full red background. -->
-    <group android:scaleX="0.64" android:scaleY="0.64" android:pivotX="54" android:pivotY="54">
+    <group android:scaleX="0.74" android:scaleY="0.74" android:pivotX="54" android:pivotY="54">
     <path android:fillColor="#F5222D" android:pathData="M54,9 L87,22 L85,57 Q81,78 54,96 Q27,78 23,57 L21,22 Z"/>
     <path android:fillColor="#101217" android:pathData="M54,17 L79,27 L77,56 Q73,73 54,86 Q35,73 31,56 L29,27 Z"/>
     <path android:fillColor="#FF2633" android:pathData="M34,43 Q29,35 35,29 L39,26 L42,31 L38,35 Q36,37 39,41 Z"/>
