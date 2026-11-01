@@ -742,16 +742,16 @@ const parseAreas = q => (q || "").split("|").map(s => s.trim()).filter(Boolean).
 const translationCache = new Map();
 function cleanTranslationText(value) {
   return String(value || "")
-    .replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/gi, "$1")
-    .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, " ")
-    .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style>/gi, " ")
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
     .replace(/&nbsp;|&#160;/gi, " ")
     .replace(/&amp;/gi, "&").replace(/&quot;/gi, '"')
     .replace(/&#39;|&apos;/gi, "'").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
-    .replace(/&#(\\d+);/g, (_, n) => { const code = Number(n); return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : " "; })
+    .replace(/&#(\d+);/g, (_, n) => { const code = Number(n); return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : " "; })
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => { const code = parseInt(n, 16); return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : " "; })
     .replace(/<[^>]*>/g, " ")
-    .replace(/\\s+/g, " ").trim().slice(0, 1000);
+    .replace(/\s+/g, " ").trim().slice(0, 1000);
 }
 async function translationFetch(url, timeoutMs = 7500) {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
