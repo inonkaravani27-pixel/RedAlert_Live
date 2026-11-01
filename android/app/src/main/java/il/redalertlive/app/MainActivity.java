@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
     private static final String HOME = "https://redalert-live.onrender.com/";
     private static final int REQUEST_SYSTEM_SOUND = 7104;
     private static final int REQUEST_NOTIFICATIONS = 7105;
-    private static final String VIBRATE_CHANNEL = "redalert_vibrate_only_v1";
+    private static final String VIBRATE_CHANNEL = "redalert_vibrate_only_v2";
     private String pendingSoundSlot = "primary";
     private Ringtone previewRingtone;
 
