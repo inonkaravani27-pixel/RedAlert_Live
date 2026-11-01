@@ -781,8 +781,8 @@ async function translateToHebrew(text) {
     }
     throw new Error("Google returned an empty translation");
   } catch (error) { lastError = error; }
-  const source = /[\\u067E\\u0686\\u0698\\u06AF\\u06A9\\u06CC]/.test(input) ? "fa" :
-    /[\\u0600-\\u06FF]/.test(input) ? "ar" : "";
+  const source = /[\u067E\u0686\u0698\u06AF\u06A9\u06CC]/u.test(input) ? "fa" :
+    /[\u0600-\u06FF]/u.test(input) ? "ar" : "";
   if (source) {
     try {
       const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input) + "&langpair=" + source + "%7Che";
