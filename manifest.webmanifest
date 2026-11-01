@@ -3,20 +3,20 @@
   "short_name": "RedAlert",
   "lang": "he",
   "dir": "rtl",
-  "start_url": "/?appicon=8",
+  "start_url": "/?appicon=9",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0e1013",
   "theme_color": "#0e1013",
   "icons": [
     {
-      "src": "/icon.svg?v=9",
+      "src": "/icon.svg?v=10",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-maskable.svg?v=9",
+      "src": "/icon-maskable.svg?v=10",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
