@@ -6,7 +6,7 @@
  <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#aeb6c2"/></linearGradient>
  <radialGradient id="glow"><stop stop-color="#ff2028" stop-opacity=".75"/><stop offset="1" stop-color="#ff2028" stop-opacity="0"/></radialGradient>
 </defs>
-<g>
+<g clip-path="url(#round)">
  <rect width="512" height="512" fill="url(#bg)"/>
  <path d="M0 70L112 0H0ZM512 0H370L512 150ZM0 430L170 512H0Z" fill="#202b3b" opacity=".7"/>
  <g stroke="#2d3a4b" stroke-width="3" opacity=".8"><path d="M350 0L512 162M390 0L512 122M430 0L512 82M512 205L205 512M512 260L260 512M512 320L320 512M512 380L380 512M512 440L440 512M280 0L512 232"/></g>
