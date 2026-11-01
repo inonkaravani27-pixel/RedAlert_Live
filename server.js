@@ -123,7 +123,7 @@ async function pollOref() {
     tag: "ral-oref-" + crypto.createHash("sha1").update(key).digest("hex").slice(0, 20)
   });
   await Promise.allSettled([...pushSubscriptions.entries()].filter(([, subscription]) => !subscription.notificationPrefs || subscription.notificationPrefs.red !== false).map(async ([endpoint, subscription]) => {
-    try { await webpush.sendNotification(subscription, payload, { TTL: 60, urgency: "high" }); }
+    try { const alertPayload = { ...JSON.parse(payload), silent: subscription.notificationPrefs && subscription.notificationPrefs.alertMode === "vibrate-only" }; await webpush.sendNotification(subscription, JSON.stringify(alertPayload), { TTL: 60, urgency: "high" }); }
     catch (error) {
       const status = error && (error.statusCode || error.status);
       if (status === 404 || status === 410) { pushSubscriptions.delete(endpoint); savePushSubscriptions(); }
@@ -778,7 +778,7 @@ const server = http.createServer((req, res) => {
       if (!data || typeof data.endpoint !== "string" || !data.endpoint.startsWith("https://")) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "invalid endpoint" })); }
       const sub = pushSubscriptions.get(data.endpoint);
       if (!sub) { res.writeHead(404, h); return res.end(JSON.stringify({ error: "subscription not found" })); }
-      sub.notificationPrefs = { red: data.red !== false, news: data.news !== false };
+      sub.notificationPrefs = { red: data.red !== false, news: data.news !== false, alertMode: data.alertMode === "vibrate-only" ? "vibrate-only" : "sound-vibrate" };
       pushSubscriptions.set(data.endpoint, sub); savePushSubscriptions();
       res.writeHead(200, h); return res.end(JSON.stringify({ ok: true }));
     }).catch(error => { if (!res.headersSent) { res.writeHead(400, h); res.end(JSON.stringify({ error: msg(error) })); } });
