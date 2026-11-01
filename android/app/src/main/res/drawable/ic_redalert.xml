@@ -3,8 +3,6 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Squircle tile: transparent outside, with a standard soft rounded-rectangle silhouette. -->
-    <path android:fillColor="#F5222D" android:pathData="M29,4 H79 Q104,4 104,29 V79 Q104,104 79,104 H29 Q4,104 4,79 V29 Q4,4 29,4 Z"/>
     <!-- Logo artwork kept safely inside the rounded app tile. -->
     <group android:scaleX="0.64" android:scaleY="0.64" android:pivotX="54" android:pivotY="54">
     <path android:fillColor="#F5222D" android:pathData="M54,9 L87,22 L85,57 Q81,78 54,96 Q27,78 23,57 L21,22 Z"/>
