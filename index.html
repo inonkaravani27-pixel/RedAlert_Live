@@ -181,7 +181,8 @@ function triggerAlertUI({test=false,cities=[]}={}){
  const area=cities.some(city=>secondaryCities.has(city))&&!cities.some(city=>primaryCities.has(city))?"secondary":"primary";
  const prefs=alertPrefs[area]||alertPrefs.primary;
  const vibrateOnly=prefs.bypassMode==="vibrate-only";
- const shouldPlaySound=!vibrateOnly&&(prefs.bypassSilent?prefs.bypassMode==="sound-vibrate":audioUnlocked);
+ // "Vibrate only" is an absolute mute: never invoke WebAudio or the native ringtone bridge.
+ const shouldPlaySound=prefs.bypassMode==="sound-vibrate"&&(prefs.bypassSilent||audioUnlocked);
  if(shouldPlaySound)playAlertSound("pulse");
  try{if(window.AndroidSystemSounds&&typeof window.AndroidSystemSounds.vibrate==="function")window.AndroidSystemSounds.vibrate(prefs.vibrationMode==="strong");else if(typeof navigator!=="undefined"&&typeof navigator.vibrate==="function")navigator.vibrate(prefs.vibrationMode==="strong"?[500,100,500,100,700,150,700]:[350,180,350,180,500])}catch{}
  showInAppAlert({test,cities});
