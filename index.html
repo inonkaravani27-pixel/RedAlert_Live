@@ -469,6 +469,7 @@ if(iranNotifyButton)iranNotifyButton.addEventListener("click",async()=>{
 });
 updateIranNotifyButton();
 syncPushPrefs();
+syncAlertPrefsToPush();
 for(const id of ["pushRedEnabled","pushNewsEnabled"]){const el=$(id);if(el)el.addEventListener("change",savePushPrefs)}
 async function loadIranIndicators(){
  const status=$("indicatorStatus"),feed=$("indicatorFeed");
