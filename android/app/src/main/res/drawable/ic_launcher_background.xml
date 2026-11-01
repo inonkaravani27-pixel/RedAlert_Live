@@ -1,4 +1,4 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <!-- Full-bleed adaptive icon background. Android launcher applies the device's native squircle mask. -->
     <solid android:color="#F5222D" />
-    <corners android:radius="28dp" />
 </shape>
