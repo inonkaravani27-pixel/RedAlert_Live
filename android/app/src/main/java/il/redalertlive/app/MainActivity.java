@@ -1,6 +1,9 @@
 package il.redalertlive.app;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.os.Bundle;
 import android.view.WindowManager;
 import android.view.View;
@@ -14,6 +17,7 @@ import android.webkit.JavascriptInterface;
 import android.content.Intent;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -26,6 +30,8 @@ public class MainActivity extends Activity {
     private WebView webView;
     private static final String HOME = "https://redalert-live.onrender.com/";
     private static final int REQUEST_SYSTEM_SOUND = 7104;
+    private static final int REQUEST_NOTIFICATIONS = 7105;
+    private static final String VIBRATE_CHANNEL = "redalert_vibrate_only_v1";
     private String pendingSoundSlot = "primary";
     private Ringtone previewRingtone;
 
@@ -77,6 +83,11 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void vibrateOnlyAlert(String title, String body, boolean strong) {
+            runOnUiThread(() -> showVibrateOnlyAlert(title, body, strong));
+        }
+
+        @JavascriptInterface
         public void preview(String slot) {
             runOnUiThread(() -> {
                 playSelectedSystemSound(slot);
@@ -123,6 +134,40 @@ public class MainActivity extends Activity {
             } else {
                 vibrator.vibrate(pattern, -1);
             }
+        } catch (Exception ignored) {}
+    }
+
+
+    private void showVibrateOnlyAlert(String title, String body, boolean strong) {
+        // The native vibrator is independent of WebAudio and cannot play a ringtone.
+        vibrateDevice(strong);
+        try {
+            NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (manager == null) return;
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                NotificationChannel channel = manager.getNotificationChannel(VIBRATE_CHANNEL);
+                if (channel == null) {
+                    channel = new NotificationChannel(VIBRATE_CHANNEL, "התרעות — רטט בלבד", NotificationManager.IMPORTANCE_HIGH);
+                    channel.setDescription("התרעות צבע אדום ללא צליל, עם רטט");
+                    channel.setSound(null, null);
+                    channel.enableVibration(false); // vibration is triggered directly above
+                    manager.createNotificationChannel(channel);
+                }
+            }
+            if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, REQUEST_NOTIFICATIONS);
+                return;
+            }
+            Notification.Builder builder = android.os.Build.VERSION.SDK_INT >= 26
+                ? new Notification.Builder(this, VIBRATE_CHANNEL)
+                : new Notification.Builder(this).setSound(null).setVibrate(new long[]{0});
+            builder.setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle(title == null ? "צבע אדום" : title)
+                .setContentText(body == null ? "התקבלה התרעה" : body)
+                .setAutoCancel(true)
+                .setPriority(Notification.PRIORITY_HIGH);
+            manager.notify((int) (System.currentTimeMillis() & 0x7fffffff), builder.build());
         } catch (Exception ignored) {}
     }
 
