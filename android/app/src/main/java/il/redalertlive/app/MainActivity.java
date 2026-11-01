@@ -114,8 +114,15 @@ public class MainActivity extends Activity {
             Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             if (vibrator == null || !vibrator.hasVibrator()) return;
             long[] pattern = strong ? new long[]{0, 500, 100, 500, 100, 700, 150, 700} : new long[]{0, 350, 180, 350, 180, 500};
-            if (android.os.Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
-            else vibrator.vibrate(pattern, -1);
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                AudioAttributes attributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1), attributes);
+            } else {
+                vibrator.vibrate(pattern, -1);
+            }
         } catch (Exception ignored) {}
     }
 
