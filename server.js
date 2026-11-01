@@ -740,24 +740,63 @@ const orefOut = areas => {
 };
 const parseAreas = q => (q || "").split("|").map(s => s.trim()).filter(Boolean).slice(0, 200);
 const translationCache = new Map();
+function cleanTranslationText(value) {
+  return String(value || "")
+    .replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/gi, "$1")
+    .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, " ")
+    .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style>/gi, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&").replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
+    .replace(/&#(\\d+);/g, (_, n) => { const code = Number(n); return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : " "; })
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => { const code = parseInt(n, 16); return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : " "; })
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\\s+/g, " ").trim().slice(0, 1000);
+}
+async function translationFetch(url, timeoutMs = 7500) {
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; RedAlertLive/1.0)",
+      "Accept": "application/json,text/plain,*/*",
+      "Accept-Language": "he-IL,he;q=0.9,en;q=0.8"
+    } });
+    if (!response.ok) throw new Error("translation HTTP " + response.status);
+    return await response.json();
+  } finally { clearTimeout(timer); }
+}
 async function translateToHebrew(text) {
-  const input = String(text || "").trim().slice(0, 1200);
+  const input = cleanTranslationText(text);
   if (!input) return "";
   if (translationCache.has(input)) return translationCache.get(input);
-  const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
-  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
-  let responseText;
+  let lastError;
   try {
-    const response = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; RedAlertLive/1.0)", "Accept": "application/json,text/plain,*/*", "Accept-Language": "he-IL,he;q=0.9,en;q=0.8" } });
-    if (!response.ok) throw new Error("translation HTTP " + response.status);
-    responseText = await response.text();
-  } finally { clearTimeout(timer); }
-  const parsed = JSON.parse(responseText);
-  const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("") : "";
-  if (!translated) throw new Error("translation unavailable");
-  translationCache.set(input, translated);
-  if (translationCache.size > 500) translationCache.delete(translationCache.keys().next().value);
-  return translated;
+    const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
+    const parsed = await translationFetch(url);
+    const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("").trim() : "";
+    if (translated) {
+      translationCache.set(input, translated);
+      if (translationCache.size > 500) translationCache.delete(translationCache.keys().next().value);
+      return translated;
+    }
+    throw new Error("Google returned an empty translation");
+  } catch (error) { lastError = error; }
+  const source = /[\\u067E\\u0686\\u0698\\u06AF\\u06A9\\u06CC]/.test(input) ? "fa" :
+    /[\\u0600-\\u06FF]/.test(input) ? "ar" : "";
+  if (source) {
+    try {
+      const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input) + "&langpair=" + source + "%7Che";
+      const data = await translationFetch(url);
+      const translated = String(data?.responseData?.translatedText || "").trim();
+      if (data?.responseStatus === 200 && translated && !/^PLEASE SELECT|NO QUERY SPECIFIED/i.test(translated)) {
+        translationCache.set(input, translated);
+        if (translationCache.size > 500) translationCache.delete(translationCache.keys().next().value);
+        return translated;
+      }
+      throw new Error("MyMemory returned an empty translation");
+    } catch (error) { lastError = error; }
+  }
+  throw lastError || new Error("translation unavailable");
 }
 const state = areas => ({ now: Date.now(), oref: orefOut(areas), prelim: grp(G.prelim), military: grp(G.military) });
 const FILES = { "/manifest.webmanifest": ["manifest.webmanifest", "application/manifest+json"], "/sw.js": ["sw.js", "text/javascript"], "/icon.svg": ["icon.svg", "image/svg+xml"] };
