@@ -78,7 +78,11 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void preview(String slot) {
-            runOnUiThread(() -> playSelectedSystemSound(slot));
+            runOnUiThread(() -> {
+                playSelectedSystemSound(slot);
+                // A preview is a full sound + vibration test, not sound-only.
+                vibrateDevice(false);
+            });
         }
 
         @JavascriptInterface
