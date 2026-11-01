@@ -217,7 +217,10 @@ async function poll(){try{
    const newlyActive=hadBaseline && key!==previousAlertKey && active.some(x=>!previousAlertKey.split("|").includes(x.id));
    if(newlyActive){
      processNewAlertEvent({key:"live:"+active.filter(x=>!previousAlertKey.split("|").includes(x.id)).map(x=>x.id).sort().join("|"),cities:active.map(x=>x.city),test:false});
-     if("Notification"in window && Notification.permission==="granted"){
+     // In "vibrate only" mode, suppress the browser notification: Android may play its default notification sound.
+     const secondaryOnly=active.some(x=>secondaryCities.has(x.city))&&!active.some(x=>primaryCities.has(x.city));
+     const activePrefs=alertPrefs[secondaryOnly?"secondary":"primary"]||alertPrefs.primary;
+     if(activePrefs.bypassMode!=="vibrate-only" && "Notification"in window && Notification.permission==="granted"){
        try{new Notification("RedAlert Live — התרעה מדווחת",{body:active.map(x=>x.city).slice(0,8).join(", "),tag:"redalert-live-active",renotify:false})}catch{}
      }
    }
