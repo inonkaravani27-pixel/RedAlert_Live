@@ -14,7 +14,7 @@ self.addEventListener("push", event => {
     tag: String(payload.tag || "redalert-live"),
     renotify: true,
     // Explicit best-effort request for an alerting notification. Android may still override this via its notification channel or system silent/DND settings.
-    silent: false,
+    silent: payload.silent === true,
     vibrate: [500, 150, 500, 150, 700, 200, 700],
     data: { url: payload.url || "/" }
   };
