@@ -155,10 +155,7 @@ public class MainActivity extends Activity {
                 }
             }
             if (android.os.Build.VERSION.SDK_INT >= 33 &&
-                checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, REQUEST_NOTIFICATIONS);
-                return;
-            }
+                checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) return;
             Notification.Builder builder = android.os.Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(this, VIBRATE_CHANNEL)
                 : new Notification.Builder(this).setSound(null).setVibrate(new long[]{0});
@@ -240,6 +237,10 @@ public class MainActivity extends Activity {
             }
         });
         setContentView(root);
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, REQUEST_NOTIFICATIONS);
+        }
         root.requestApplyInsets();
         if (savedInstanceState == null) webView.loadUrl(HOME);
         else webView.restoreState(savedInstanceState);
