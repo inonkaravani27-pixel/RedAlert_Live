@@ -856,6 +856,9 @@ const ACCESS_REQUIRED = E.ACCESS_REQUIRED === "true";
 const SUPABASE_URL = String(E.SUPABASE_URL || "").replace(/\/+$/, "");
 const SUPABASE_SECRET_KEY = E.SUPABASE_SECRET_KEY || "";
 const ACCESS_ADMIN_PASSWORD = E.ACCESS_ADMIN_PASSWORD || "";
+const RESEND_API_KEY = E.RESEND_API_KEY || "";
+const RESEND_FROM_EMAIL = E.RESEND_FROM_EMAIL || "";
+const ACCESS_NOTIFY_EMAIL = "inonkaravani27@gmail.com";
 const accessSessionCache = new Map();
 const adminSessions = new Map();
 function accessConfigured() {
@@ -893,6 +896,33 @@ async function supabaseAccess(pathname, options = {}) {
   const body = await response.text();
   if (!response.ok) throw new Error("Supabase access request failed: " + response.status);
   return body ? JSON.parse(body) : null;
+}
+async function sendAccessRequestNotification(fullName) {
+  if (!RESEND_API_KEY || !RESEND_FROM_EMAIL) {
+    console.warn("[access] Email notification skipped: RESEND_API_KEY or RESEND_FROM_EMAIL is not configured");
+    return;
+  }
+  const safeName = String(fullName).replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[ch]);
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + RESEND_API_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: RESEND_FROM_EMAIL,
+      to: [ACCESS_NOTIFY_EMAIL],
+      subject: "בקשת גישה חדשה ל־RedAlert Live",
+      html: "<div dir=\"rtl\" style=\"font-family:Arial,sans-serif\"><h2>בקשת גישה חדשה</h2><p>המשתמש <strong>" + safeName + "</strong> ביקש גישה לאתר RedAlert Live.</p><p><a href=\"https://redalert-live.onrender.com/admin\">כניסה לעמוד הניהול לאישור או דחייה</a></p></div>",
+      text: "בקשת גישה חדשה ל־RedAlert Live\nשם: " + String(fullName) + "\nלאישור או דחייה: https://redalert-live.onrender.com/admin"
+    })
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error("Resend email failed: " + response.status + " " + detail.slice(0, 300));
+  }
 }
 async function getAccessRequestByHash(hash) {
   const query = "?access_token_hash=eq." + encodeURIComponent(hash) +
@@ -988,7 +1018,12 @@ const server = http.createServer(async (req, res) => {
         body: { full_name: fullName, status: "pending", access_token_hash: hash }
       });
       accessSessionCache.delete(hash);
-      res.writeHead(201, { ...h, "Set-Cookie": cookieHeader("ral_access", token, 60 * 60 * 24 * 30) });
+      try {
+        await sendAccessRequestNotification(fullName);
+      } catch (emailError) {
+        console.error("[access] Failed to send request notification:", emailError.message);
+      }
+      res.writeHead(201, { ...h, "Set-Cookie": cookieHeader("ral_access", token, 60 * 60 * 24 * 365) });
       return res.end(JSON.stringify({ ok: true, status: "pending" }));
     } catch (_) {
       res.writeHead(503, h); return res.end(JSON.stringify({ error: "לא ניתן לשמור את הבקשה כרגע. נסה שוב מאוחר יותר." }));
