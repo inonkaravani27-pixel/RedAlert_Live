@@ -26,7 +26,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: javascript-typescript
+          languages: javascript-typescript, java-kotlin
           queries: security-extended
 
       - name: Perform CodeQL Analysis
