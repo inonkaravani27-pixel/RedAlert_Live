@@ -954,13 +954,14 @@ async function isApprovedAccess(req) {
   if (!ACCESS_REQUIRED) return true;
   const session = verifyAccessSession(parseCookies(req).ral_access);
   if (!session) return false;
+  const currentSessionHash = accessHash(parseCookies(req).ral_access);
   const cached = deviceAuthCache.get(session.deviceId);
-  if (cached && cached.until > Date.now()) return cached.allowed;
+  if (cached && cached.until > Date.now() && cached.sessionHash === currentSessionHash) return cached.allowed;
   try {
     const rows = await supabaseDevices("?device_id=eq." + encodeURIComponent(session.deviceId) + "&select=device_id,session_hash,blocked&limit=1");
     const row = Array.isArray(rows) ? rows[0] : null;
-    const allowed = Boolean(row && row.blocked !== true && row.session_hash === accessHash(parseCookies(req).ral_access));
-    deviceAuthCache.set(session.deviceId, { allowed, until: Date.now() + 10000 });
+    const allowed = Boolean(row && row.blocked !== true && row.session_hash === currentSessionHash);
+    deviceAuthCache.set(session.deviceId, { allowed, sessionHash: currentSessionHash, until: Date.now() + 10000 });
     if (allowed && Date.now() - (deviceLastSeenWrites.get(session.deviceId) || 0) > 5 * 60 * 1000) {
       deviceLastSeenWrites.set(session.deviceId, Date.now());
       supabaseDevices("?device_id=eq." + encodeURIComponent(session.deviceId), {
