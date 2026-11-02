@@ -26,6 +26,8 @@ async function loadDevices(){
   const row=el("div","device");const main=el("div","device-main");
   const title=el("strong","",item.label||item.device_type||"מכשיר");main.append(title);
   if(!item.label){const optional=el("span","tag","ללא כינוי");main.append(" ",optional)}
+  const online=Boolean(item.last_seen_at && Date.now()-new Date(item.last_seen_at).getTime()<90000);
+  main.append(" ",el("span",online?"tag good":"tag",online?"מחובר עכשיו":"לא מחובר כרגע"));
   main.append(el("div","muted",(item.os||"")+" · "+(item.browser||"")));
   main.append(el("div","muted","IP: "+(item.ip_address||"לא זמין")));
   main.append(el("div","muted","נראה לאחרונה: "+(item.last_seen_at?new Date(item.last_seen_at).toLocaleString("he-IL"):"לא ידוע")));
@@ -36,8 +38,9 @@ async function loadDevices(){
   const revoke=el("button","neutral","ביטול התחברות");revoke.addEventListener("click",async()=>{if(!confirm("לבטל את ההתחברות הנוכחית של המכשיר? הוא יצטרך להזין שוב את הסיסמה."))return;try{await api("/api/access/admin/device",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"revoke",device_id:item.device_id})});loadDevices()}catch(e){$("devicesStatus").textContent=e.message}});
   actions.append(rename,block,revoke);row.append(main,actions);list.append(row);
  }
- const active=d.devices.filter(x=>!x.blocked).length;const blocked=d.devices.length-active;
- $("devicesStatus").textContent="סה״כ מכשירים: "+d.devices.length+" · לא חסומים: "+active+" · חסומים: "+blocked;
+ const online=d.devices.filter(x=>!x.blocked && x.last_seen_at && Date.now()-new Date(x.last_seen_at).getTime()<90000).length;
+ const allowed=d.devices.filter(x=>!x.blocked).length;const blocked=d.devices.length-allowed;
+ $("devicesStatus").textContent="סה״כ מכשירים: "+d.devices.length+" · מחוברים עכשיו: "+online+" · מורשים: "+allowed+" · חסומים: "+blocked;
  }catch(e){$("devicesStatus").textContent=e.message}
 }
 async function loadRequests(){
