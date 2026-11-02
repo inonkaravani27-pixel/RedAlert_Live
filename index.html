@@ -36,7 +36,11 @@
     <p style="color:#b8c4d6;line-height:1.6;margin:0 0 18px">להמשך, הזן את סיסמת הגישה. לאחר הכניסה הראשונה המכשיר יישאר מחובר למשך שנה.</p>
     <form id="accessPasswordForm">
       <label for="accessPassword" style="display:block;margin-bottom:7px">סיסמת גישה</label>
-      <input id="accessPassword" name="password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;padding:13px;border-radius:10px;border:1px solid #53647d;background:#0b1220;color:#fff;font-size:16px;margin-bottom:12px">
+      <input id="accessPassword" name="password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;padding:13px;border-radius:10px;border:1px solid #53647d;background:#0b1220;color:#fff;font-size:16px;margin-bottom:8px">
+      <label for="rememberAccessPassword" style="display:flex;align-items:center;gap:9px;margin:4px 0 14px;color:#d5deeb;font-size:14px;cursor:pointer">
+        <input id="rememberAccessPassword" type="checkbox" checked style="width:18px;height:18px;accent-color:#2563eb">
+        זכור סיסמה במכשיר הזה
+      </label>
       <button id="accessPasswordButton" type="submit" style="width:100%;padding:13px;border:0;border-radius:10px;background:#2563eb;color:white;font-size:16px;font-weight:700">כניסה</button>
     </form>
     <p id="accessGateStatus" aria-live="polite" style="color:#c4d0e0;line-height:1.6;margin:14px 0 0"></p>
@@ -590,7 +594,7 @@ async function loadIranIndicators(){
  form.addEventListener("submit",async function(event){
   event.preventDefault();button.disabled=true;status.textContent="בודק סיסמה…";
   try{
-   const response=await fetch("/api/access/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:document.getElementById("accessPassword").value})});
+   const response=await fetch("/api/access/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:document.getElementById("accessPassword").value,remember:document.getElementById("rememberAccessPassword").checked})});
    const data=await response.json();if(!response.ok)throw new Error(data.error||"לא ניתן להתחבר");
    status.textContent="התחברת בהצלחה. טוען את RedAlert Live…";location.reload();
   }catch(error){status.textContent=error.message||"הכניסה נכשלה."}
