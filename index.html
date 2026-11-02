@@ -30,7 +30,7 @@
 </style></head>
 <body>
 
-<div id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessGateTitle" style="position:fixed;inset:0;z-index:100000;background:rgba(4,8,15,.97);display:flex;align-items:center;justify-content:center;padding:20px">
+<div id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessGateTitle" style="position:fixed;inset:0;z-index:100000;background:rgba(4,8,15,.97);display:none;align-items:center;justify-content:center;padding:20px">
   <section style="width:min(100%,440px);background:#111a29;border:1px solid #33445e;border-radius:18px;padding:24px;color:#f3f6fb;text-align:right;box-shadow:0 20px 70px #0009">
     <h2 id="accessGateTitle" style="margin:0 0 10px;font-size:23px">בקשת גישה ל־RedAlert Live</h2>
     <p style="color:#b8c4d6;line-height:1.6;margin:0 0 18px">כדי להשתמש באתר, יש לשלוח בקשת הצטרפות ולהמתין לאישור מנהל האתר.</p>
@@ -608,19 +608,17 @@ async function loadIranIndicators(){
  async function check(){
   try{
    const response=await fetch("/api/access/status",{cache:"no-store"});
-   if(response.status===503){status.textContent="מערכת האישור עדיין בהגדרה. נסה לרענן בעוד כמה דקות.";form.hidden=true;return}
+   if(response.status===503){overlay.style.display="flex";status.textContent="מערכת האישור עדיין בהגדרה. נסה לרענן בעוד כמה דקות.";form.hidden=true;return}
    const data=await response.json();
    if(!data.enabled){overlay.style.display="none";return}
-   if(data.status==="approved"){
-    if(!sessionStorage.getItem("ral-access-reloaded")){sessionStorage.setItem("ral-access-reloaded","1");location.reload();return}
-    sessionStorage.removeItem("ral-access-reloaded");overlay.style.display="none";return;
-   }
+   if(data.status==="approved"){overlay.style.display="none";waiting=false;return}
+   overlay.style.display="flex";
    if(data.status==="pending"){
     waiting=true;form.hidden=true;status.textContent="הבקשה התקבלה וממתינה לאישור מנהל האתר. הבדיקה מתעדכנת אוטומטית.";return;
    }
    waiting=false;form.hidden=false;
    status.textContent=data.status==="rejected"?"הבקשה הקודמת נדחתה. ניתן לשלוח בקשה חדשה.":"יש להזין שם מלא ולשלוח בקשת הצטרפות.";
-  }catch(_){status.textContent="לא ניתן להתחבר כרגע לשירות האישור. נסה שוב בעוד רגע."}
+  }catch(_){overlay.style.display="flex";status.textContent="לא ניתן להתחבר כרגע לשירות האישור. נסה שוב בעוד רגע."}
  }
  form.addEventListener("submit",async function(event){
   event.preventDefault();button.disabled=true;status.textContent="שולח בקשה…";
