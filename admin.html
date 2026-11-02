@@ -52,7 +52,30 @@ async function loadRequests(){
  $("requestsStatus").textContent="בקשות ממתינות: "+d.requests.length;
  }catch(e){$("requestsStatus").textContent=e.message}
 }
-$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginStatus").textContent="מתחבר…";try{await api("/api/access/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("password").value})});$("loginPanel").hidden=true;$("adminArea").hidden=false;$("password").value="";loadDevices();loadRequests()}catch(error){$("loginStatus").textContent=error.message}});
+function showAdminArea(){
+ $("loginPanel").hidden=true;$("adminArea").hidden=false;$("password").value="";
+ loadDevices();loadRequests();
+}
+function showAdminLogin(){
+ $("adminArea").hidden=true;$("loginPanel").hidden=false;
+}
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginStatus").textContent="מתחבר…";try{await api("/api/access/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("password").value})});showAdminArea()}catch(error){$("loginStatus").textContent=error.message}});
 $("refreshDevices").addEventListener("click",loadDevices);$("refreshRequests").addEventListener("click",loadRequests);
-$("logoutButton").addEventListener("click",async()=>{await fetch("/api/access/admin/logout",{method:"POST"});$("adminArea").hidden=true;$("loginPanel").hidden=false});
+$("logoutButton").addEventListener("click",async()=>{await fetch("/api/access/admin/logout",{method:"POST"});showAdminLogin()});
+async function restoreAdminSession(){
+ try{const d=await api("/api/access/admin/status");if(d.authenticated)showAdminArea()}
+ catch(_){showAdminLogin()}
+}
+let lastAdminActivityPing=0;
+async function keepAdminSessionAlive(){
+ if($("adminArea").hidden)return;
+ const now=Date.now();if(now-lastAdminActivityPing<60000)return;
+ lastAdminActivityPing=now;
+ try{const d=await api("/api/access/admin/status");if(!d.authenticated)showAdminLogin()}
+ catch(_){showAdminLogin()}
+}
+["pointerdown","keydown","touchstart","scroll"].forEach(eventName=>{
+ document.addEventListener(eventName,keepAdminSessionAlive,{passive:true});
+});
+restoreAdminSession();
 </script></body></html>
