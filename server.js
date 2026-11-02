@@ -867,23 +867,24 @@ function accessConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_SECRET_KEY && ACCESS_ADMIN_PASSWORD);
 }
 function passwordAccessConfigured() { return Boolean(ACCESS_PASSWORD); }
-function createAccessSession() {
+function createAccessSession(deviceId) {
   const expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000;
   const nonce = crypto.randomBytes(24).toString("base64url");
-  const payload = expiresAt + "." + nonce;
+  const payload = expiresAt + "." + nonce + "." + deviceId;
   const signature = crypto.createHmac("sha256", ACCESS_PASSWORD).update(payload).digest("base64url");
   return payload + "." + signature;
 }
 function verifyAccessSession(token) {
-  if (!passwordAccessConfigured() || typeof token !== "string" || token.length > 256) return false;
+  if (!passwordAccessConfigured() || typeof token !== "string" || token.length > 256) return null;
   const parts = token.split(".");
-  if (parts.length !== 3) return false;
-  const [expiryText, nonce, signature] = parts;
+  if (parts.length !== 4) return null;
+  const [expiryText, nonce, deviceId, signature] = parts;
   const expiresAt = Number(expiryText);
-  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now() || expiresAt > Date.now() + 366 * 24 * 60 * 60 * 1000 || !/^[A-Za-z0-9_-]{20,64}$/.test(nonce)) return false;
-  const payload = expiryText + "." + nonce;
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now() || expiresAt > Date.now() + 366 * 24 * 60 * 60 * 1000 ||
+      !/^[A-Za-z0-9_-]{20,64}$/.test(nonce) || !/^[A-Za-z0-9_-]{20,64}$/.test(deviceId)) return null;
+  const payload = expiryText + "." + nonce + "." + deviceId;
   const expected = crypto.createHmac("sha256", ACCESS_PASSWORD).update(payload).digest("base64url");
-  return constantTimeEqual(signature, expected);
+  return constantTimeEqual(signature, expected) ? { deviceId, expiresAt } : null;
 }
 function parseCookies(req) {
   const out = {};
@@ -917,6 +918,50 @@ async function supabaseAccess(pathname, options = {}) {
   const body = await response.text();
   if (!response.ok) throw new Error("Supabase access request failed: " + response.status);
   return body ? JSON.parse(body) : null;
+}
+const deviceAuthCache = new Map();
+async function supabaseDevices(query, options = {}) {
+  if (!accessConfigured()) throw new Error("access service is not configured");
+  const response = await fetch(SUPABASE_URL + "/rest/v1/access_devices" + query, {
+    method: options.method || "GET",
+    headers: {
+      "apikey": SUPABASE_SECRET_KEY,
+      "Content-Type": "application/json",
+      ...(options.prefer ? { "Prefer": options.prefer } : {})
+    },
+    ...(options.body ? { body: JSON.stringify(options.body) } : {})
+  });
+  const body = await response.text();
+  if (!response.ok) throw new Error("Supabase device request failed: " + response.status);
+  return body ? JSON.parse(body) : null;
+}
+function deviceDescription(req) {
+  const ua = String(req.headers["user-agent"] || "").slice(0, 500);
+  let device = "מכשיר לא מזוהה", os = "מערכת לא מזוהה", browser = "דפדפן לא מזוהה";
+  if (/Android/i.test(ua)) { os = "Android"; device = (/;s*([^;)]+)s*Build\//i.exec(ua) || [])[1] || "מכשיר Android"; }
+  else if (/iPhone|iPad|iPod/i.test(ua)) { os = "iOS"; device = /iPad/i.test(ua) ? "iPad" : "iPhone"; }
+  else if (/Windows/i.test(ua)) { os = "Windows"; device = "מחשב Windows"; }
+  else if (/Mac OS X/i.test(ua)) { os = "macOS"; device = "Mac"; }
+  else if (/Linux/i.test(ua)) { os = "Linux"; device = "מחשב Linux"; }
+  if (/Edg\//i.test(ua)) browser = "Edge";
+  else if (/Firefox\//i.test(ua)) browser = "Firefox";
+  else if (/Chrome\//i.test(ua) && !/Edg\//i.test(ua)) browser = "Chrome";
+  else if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) browser = "Safari";
+  return { user_agent: ua, device_type: device.slice(0,100), os: os.slice(0,60), browser: browser.slice(0,60) };
+}
+async function isApprovedAccess(req) {
+  if (!ACCESS_REQUIRED) return true;
+  const session = verifyAccessSession(parseCookies(req).ral_access);
+  if (!session) return false;
+  const cached = deviceAuthCache.get(session.deviceId);
+  if (cached && cached.until > Date.now()) return cached.allowed;
+  try {
+    const rows = await supabaseDevices("?device_id=eq." + encodeURIComponent(session.deviceId) + "&select=device_id,session_hash,blocked&limit=1");
+    const row = Array.isArray(rows) ? rows[0] : null;
+    const allowed = Boolean(row && row.blocked !== true && row.session_hash === accessHash(parseCookies(req).ral_access));
+    deviceAuthCache.set(session.deviceId, { allowed, until: Date.now() + 10000 });
+    return allowed;
+  } catch (_) { return false; }
 }
 async function sendAccessRequestNotification(fullName) {
   if (!RESEND_API_KEY || !RESEND_FROM_EMAIL) {
@@ -952,10 +997,6 @@ async function getAccessRequestByHash(hash) {
     "&select=id,status,full_name,created_at&limit=1";
   const rows = await supabaseAccess(query);
   return Array.isArray(rows) ? rows[0] || null : null;
-}
-async function isApprovedAccess(req) {
-  if (!ACCESS_REQUIRED) return true;
-  return verifyAccessSession(parseCookies(req).ral_access);
 }
 function isAdminRequest(req) {
   const token = parseCookies(req).ral_admin;
@@ -1012,10 +1053,26 @@ const server = http.createServer(async (req, res) => {
       if (!constantTimeEqual(data.password || "", ACCESS_PASSWORD)) {
         res.writeHead(401, h); return res.end(JSON.stringify({ error: "סיסמה שגויה. נסה שוב." }));
       }
-      const session = createAccessSession();
+      if (!accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "ניהול המכשירים עדיין לא הוגדר במסד הנתונים." })); }
+      const cookies = parseCookies(req);
+      const deviceId = /^[A-Za-z0-9_-]{20,64}$/.test(cookies.ral_device || "") ? cookies.ral_device : crypto.randomBytes(24).toString("base64url");
+      const session = createAccessSession(deviceId);
       const remember = data.remember === true;
       const cookieAge = remember ? 60 * 60 * 24 * 365 : undefined;
-      res.writeHead(200, { ...h, "Set-Cookie": cookieHeader("ral_access", session, cookieAge) });
+      const details = deviceDescription(req);
+      const now = new Date().toISOString();
+      await supabaseDevices("?on_conflict=device_id", {
+        method: "POST", prefer: "resolution=merge-duplicates,return=minimal",
+        body: { device_id: deviceId, session_hash: accessHash(session), blocked: false,
+          device_type: details.device_type, os: details.os, browser: details.browser,
+          user_agent: details.user_agent, ip_address: clientAddress(req),
+          last_seen_at: now, updated_at: now }
+      });
+      deviceAuthCache.delete(deviceId);
+      res.writeHead(200, { ...h, "Set-Cookie": [
+        cookieHeader("ral_access", session, cookieAge),
+        cookieHeader("ral_device", deviceId, 60 * 60 * 24 * 365)
+      ] });
       return res.end(JSON.stringify({ ok: true, status: "approved" }));
     } catch (_) {
       res.writeHead(400, h); return res.end(JSON.stringify({ error: "לא ניתן לבדוק את הסיסמה. נסה שוב." }));
@@ -1075,6 +1132,34 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (p === "/api/access/admin/devices" && req.method === "GET") {
+    if (!isAdminRequest(req)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
+    try {
+      const rows = await supabaseDevices("?select=device_id,label,device_type,os,browser,ip_address,created_at,last_seen_at,blocked&order=last_seen_at.desc&limit=200");
+      res.writeHead(200, h); return res.end(JSON.stringify({ devices: rows || [] }));
+    } catch (_) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "לא ניתן לטעון מכשירים. יש לוודא שהטבלה access_devices נוצרה ב-Supabase." })); }
+  }
+  if (p === "/api/access/admin/device" && req.method === "POST") {
+    if (!sameOriginRequest(req) || !req.headers.origin) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
+    if (!isAdminRequest(req)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
+    try {
+      const data = await readJsonBody(req, 4096);
+      const id = String(data.device_id || "");
+      if (!/^[A-Za-z0-9_-]{20,64}$/.test(id)) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "מזהה מכשיר לא תקין." })); }
+      if (data.action === "rename") {
+        const label = String(data.label || "").trim();
+        if (label.length > 60) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "הכינוי ארוך מדי." })); }
+        await supabaseDevices("?device_id=eq." + encodeURIComponent(id), { method: "PATCH", prefer: "return=minimal", body: { label: label || null, updated_at: new Date().toISOString() } });
+      } else if (data.action === "block" || data.action === "unblock") {
+        await supabaseDevices("?device_id=eq." + encodeURIComponent(id), { method: "PATCH", prefer: "return=minimal", body: { blocked: data.action === "block", updated_at: new Date().toISOString() } });
+        deviceAuthCache.delete(id);
+      } else if (data.action === "revoke") {
+        await supabaseDevices("?device_id=eq." + encodeURIComponent(id), { method: "PATCH", prefer: "return=minimal", body: { session_hash: null, blocked: true, updated_at: new Date().toISOString() } });
+        deviceAuthCache.delete(id);
+      } else { res.writeHead(400, h); return res.end(JSON.stringify({ error: "פעולה לא מוכרת." })); }
+      res.writeHead(200, h); return res.end(JSON.stringify({ ok: true }));
+    } catch (_) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "לא ניתן לעדכן את המכשיר." })); }
+  }
   if (p === "/api/push/public-key" && req.method === "GET") {
     res.writeHead(200, h);
     return res.end(JSON.stringify({ enabled: PUSH_READY, publicKey: PUSH_PUBLIC, subscribers: pushSubscriptions.size }));
