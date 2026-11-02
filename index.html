@@ -32,19 +32,13 @@
 
 <div id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessGateTitle" style="position:fixed;inset:0;z-index:100000;background:rgba(4,8,15,.97);display:none;align-items:center;justify-content:center;padding:20px">
   <section style="width:min(100%,440px);background:#111a29;border:1px solid #33445e;border-radius:18px;padding:24px;color:#f3f6fb;text-align:right;box-shadow:0 20px 70px #0009">
-    <h2 id="accessGateTitle" style="margin:0 0 10px;font-size:23px">בקשת גישה ל־RedAlert Live</h2>
-    <p style="color:#b8c4d6;line-height:1.6;margin:0 0 18px">כדי להשתמש באתר, יש לשלוח בקשת הצטרפות ולהמתין לאישור מנהל האתר.</p>
-    <form id="accessRequestForm">
-      <label for="accessFullName" style="display:block;margin-bottom:7px">שם מלא</label>
-      <input id="accessFullName" name="fullName" autocomplete="name" required minlength="2" maxlength="100" style="width:100%;box-sizing:border-box;padding:13px;border-radius:10px;border:1px solid #53647d;background:#0b1220;color:#fff;font-size:16px;margin-bottom:12px">
-      <button id="accessRequestButton" type="submit" style="width:100%;padding:13px;border:0;border-radius:10px;background:#2563eb;color:white;font-size:16px;font-weight:700">שליחת בקשת הצטרפות</button>
+    <h2 id="accessGateTitle" style="margin:0 0 10px;font-size:23px">כניסה ל־RedAlert Live</h2>
+    <p style="color:#b8c4d6;line-height:1.6;margin:0 0 18px">להמשך, הזן את סיסמת הגישה. לאחר הכניסה הראשונה המכשיר יישאר מחובר למשך שנה.</p>
+    <form id="accessPasswordForm">
+      <label for="accessPassword" style="display:block;margin-bottom:7px">סיסמת גישה</label>
+      <input id="accessPassword" name="password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;padding:13px;border-radius:10px;border:1px solid #53647d;background:#0b1220;color:#fff;font-size:16px;margin-bottom:12px">
+      <button id="accessPasswordButton" type="submit" style="width:100%;padding:13px;border:0;border-radius:10px;background:#2563eb;color:white;font-size:16px;font-weight:700">כניסה</button>
     </form>
-    <div style="border-top:1px solid #33445e;margin-top:18px;padding-top:14px">
-      <p style="margin:0 0 8px;color:#b8c4d6">כבר אושר לך מכשיר אחר? אפשר לקשר את המכשיר הזה בלי בקשת אישור חדשה.</p>
-      <label for="accessPairCode" style="display:block;margin-bottom:7px">קוד קישור חד־פעמי</label>
-      <input id="accessPairCode" inputmode="text" autocomplete="one-time-code" maxlength="8" placeholder="8 תווים" style="width:100%;box-sizing:border-box;padding:13px;border-radius:10px;border:1px solid #53647d;background:#0b1220;color:#fff;font-size:18px;letter-spacing:3px;text-transform:uppercase;margin-bottom:9px">
-      <button id="redeemAccessPairCode" type="button" style="width:100%;padding:12px;border:1px solid #53647d;border-radius:10px;background:#1c2a40;color:white;font-size:15px;font-weight:700">קישור למכשיר המאושר</button>
-    </div>
     <p id="accessGateStatus" aria-live="polite" style="color:#c4d0e0;line-height:1.6;margin:14px 0 0"></p>
   </section>
 </div>
@@ -581,57 +575,28 @@ async function loadIranIndicators(){
 </script>
 <script>
 (function(){
- const overlay=document.getElementById("accessGate"),form=document.getElementById("accessRequestForm"),status=document.getElementById("accessGateStatus"),button=document.getElementById("accessRequestButton");
+ const overlay=document.getElementById("accessGate"),form=document.getElementById("accessPasswordForm");
+ const status=document.getElementById("accessGateStatus"),button=document.getElementById("accessPasswordButton");
  if(!overlay||!form)return;
- const pairInput=document.getElementById("accessPairCode"),pairButton=document.getElementById("redeemAccessPairCode");
- const createPairButton=document.getElementById("createAccessPairCode"),pairResult=document.getElementById("accessPairCodeResult");
- if(pairButton)pairButton.addEventListener("click",async()=>{
-  const code=(pairInput?.value||"").trim().toUpperCase();pairButton.disabled=true;status.textContent="מקשר את המכשיר…";
-  try{
-   const response=await fetch("/api/access/pair/redeem",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code})});
-   const data=await response.json();if(!response.ok)throw new Error(data.error||"לא ניתן לקשר את המכשיר");
-   status.textContent="המכשיר קושר בהצלחה. טוען את RedAlert Live…";location.reload();
-  }catch(error){status.textContent=error.message||"קישור המכשיר נכשל."}
-  finally{pairButton.disabled=false}
- });
- if(pairInput)pairInput.addEventListener("input",()=>{pairInput.value=pairInput.value.replace(/[^a-f0-9]/gi,"").slice(0,8).toUpperCase()});
- if(createPairButton)createPairButton.addEventListener("click",async()=>{
-  createPairButton.disabled=true;if(pairResult)pairResult.textContent="יוצר קוד קישור…";
-  try{
-   const response=await fetch("/api/access/pair/create",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
-   const data=await response.json();if(!response.ok)throw new Error(data.error||"לא ניתן ליצור קוד");
-   if(pairResult)pairResult.innerHTML="קוד הקישור שלך: <strong style='font-size:24px;letter-spacing:4px;color:#fff'>"+data.code+"</strong><br>הקוד חד־פעמי ויפוג בעוד 5 דקות. הזן אותו במכשיר השני.";
-  }catch(error){if(pairResult)pairResult.textContent=error.message||"יצירת הקוד נכשלה."}
-  finally{createPairButton.disabled=false}
- });
- let waiting=false,timer=null;
  async function check(){
   try{
    const response=await fetch("/api/access/status",{cache:"no-store"});
-   if(response.status===503){overlay.style.display="flex";status.textContent="מערכת האישור עדיין בהגדרה. נסה לרענן בעוד כמה דקות.";form.hidden=true;return}
+   if(response.status===503){overlay.style.display="flex";status.textContent="סיסמת הגישה עדיין לא הוגדרה בשרת. יש להשלים את ההגדרה ב־Render.";return}
    const data=await response.json();
-   if(!data.enabled){overlay.style.display="none";return}
-   if(data.status==="approved"){overlay.style.display="none";waiting=false;return}
+   if(!data.enabled||data.status==="approved"){overlay.style.display="none";return}
    overlay.style.display="flex";
-   if(data.status==="pending"){
-    waiting=true;form.hidden=true;status.textContent="הבקשה התקבלה וממתינה לאישור מנהל האתר. הבדיקה מתעדכנת אוטומטית.";return;
-   }
-   waiting=false;form.hidden=false;
-   status.textContent=data.status==="rejected"?"הבקשה הקודמת נדחתה. ניתן לשלוח בקשה חדשה.":"יש להזין שם מלא ולשלוח בקשת הצטרפות.";
-  }catch(_){overlay.style.display="flex";status.textContent="לא ניתן להתחבר כרגע לשירות האישור. נסה שוב בעוד רגע."}
+  }catch(_){overlay.style.display="flex";status.textContent="לא ניתן לבדוק את ההתחברות כרגע. נסה לרענן."}
  }
  form.addEventListener("submit",async function(event){
-  event.preventDefault();button.disabled=true;status.textContent="שולח בקשה…";
+  event.preventDefault();button.disabled=true;status.textContent="בודק סיסמה…";
   try{
-   const response=await fetch("/api/access/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName:document.getElementById("accessFullName").value})});
-   const data=await response.json();
-   if(!response.ok)throw new Error(data.error||"לא ניתן לשלוח את הבקשה");
-   waiting=true;form.hidden=true;status.textContent="הבקשה נשלחה בהצלחה. ממתינים לאישור מנהל האתר.";
-   await check();
-  }catch(error){status.textContent=error.message||"שליחת הבקשה נכשלה."}
+   const response=await fetch("/api/access/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:document.getElementById("accessPassword").value})});
+   const data=await response.json();if(!response.ok)throw new Error(data.error||"לא ניתן להתחבר");
+   status.textContent="התחברת בהצלחה. טוען את RedAlert Live…";location.reload();
+  }catch(error){status.textContent=error.message||"הכניסה נכשלה."}
   finally{button.disabled=false}
  });
- check();timer=setInterval(()=>{if(waiting)check()},10000);
+ check();
 })();
 </script>
 
