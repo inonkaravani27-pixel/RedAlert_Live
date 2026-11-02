@@ -7,8 +7,21 @@ const PUSH_READY = Boolean(PUSH_PUBLIC && E.VAPID_PRIVATE_KEY);
 if (PUSH_READY) webpush.setVapidDetails(E.VAPID_SUBJECT || "https://redalert-live.onrender.com", PUSH_PUBLIC, E.VAPID_PRIVATE_KEY);
 const PUSH_STORE = path.join(__dirname, "push-subscriptions.json");
 const pushSubscriptions = new Map();
-try { for (const s of JSON.parse(fs.readFileSync(PUSH_STORE, "utf8"))) if (s && s.endpoint && s.keys) pushSubscriptions.set(s.endpoint, s); } catch (_) {}
+try { for (const s of JSON.parse(fs.readFileSync(PUSH_STORE, "utf8"))) if (s && isAllowedPushEndpoint(s.endpoint) && s.keys && typeof s.keys.p256dh === "string" && typeof s.keys.auth === "string") pushSubscriptions.set(s.endpoint, s); } catch (_) {}
 function savePushSubscriptions() { try { fs.writeFileSync(PUSH_STORE, JSON.stringify([...pushSubscriptions.values()])); } catch (e) { console.error("Could not persist push subscriptions:", msg(e)); } }
+function isAllowedPushEndpoint(endpoint) {
+  if (typeof endpoint !== "string" || endpoint.length > 2048) return false;
+  try {
+    const url = new URL(endpoint);
+    const allowedHosts = new Set([
+      "fcm.googleapis.com",
+      "updates.push.services.mozilla.com",
+      "web.push.apple.com"
+    ]);
+    return url.protocol === "https:" && allowedHosts.has(url.hostname.toLowerCase()) &&
+      !url.username && !url.password && !url.port && !url.hash;
+  } catch (_) { return false; }
+}
 function readJsonBody(req, limit = 16384) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -17,6 +30,45 @@ function readJsonBody(req, limit = 16384) {
     req.on("end", () => { try { resolve(JSON.parse(body || "{}")); } catch (_) { reject(new Error("invalid JSON")); } });
     req.on("error", reject);
   });
+}
+const requestWindows = new Map();
+function clientAddress(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    const chain = forwarded.split(",").map(value => value.trim()).filter(Boolean);
+    if (chain.length) return chain[chain.length - 1].slice(0, 80);
+  }
+  return String(req.socket && req.socket.remoteAddress || "unknown").slice(0, 80);
+}
+function applyRateLimit(req, res, route, limit, windowMs, headers) {
+  const now = Date.now();
+  const key = clientAddress(req) + ":" + route;
+  let bucket = requestWindows.get(key);
+  if (!bucket || now - bucket.startedAt >= windowMs) {
+    bucket = { startedAt: now, count: 0 };
+    requestWindows.set(key, bucket);
+  }
+  bucket.count++;
+  if (requestWindows.size > 10000) {
+    for (const [entryKey, entry] of requestWindows) {
+      if (now - entry.startedAt > 30 * 60 * 1000) requestWindows.delete(entryKey);
+      if (requestWindows.size <= 8000) break;
+    }
+  }
+  if (bucket.count <= limit) return true;
+  const retryAfter = Math.max(1, Math.ceil((windowMs - (now - bucket.startedAt)) / 1000));
+  res.writeHead(429, { ...headers, "Retry-After": String(retryAfter) });
+  res.end(JSON.stringify({ error: "too many requests", retryAfter }));
+  return false;
+}
+function sameOriginRequest(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true; // Native clients may not send Origin.
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === "https:" &&
+      parsed.host.toLowerCase() === String(req.headers.host || "").toLowerCase();
+  } catch (_) { return false; }
 }
 let pushNewsInitialized = false;
 const knownPushArticleUrls = new Set();
@@ -804,17 +856,31 @@ const FILES = { "/manifest.webmanifest": ["manifest.webmanifest", "application/m
 const PUB = fs.existsSync(path.join(__dirname, "public", "index.html")) ? path.join(__dirname, "public") : __dirname;
 const INDEX = path.join(PUB, "index.html");
 const server = http.createServer((req, res) => {
-  const h = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
+  const h = {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "X-Frame-Options": "DENY",
+    "X-Permitted-Cross-Domain-Policies": "none"
+  };
+  if (req.headers["x-forwarded-proto"] === "https" || req.socket.encrypted) {
+    h["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+  }
   if (ORIGIN) { h["Access-Control-Allow-Origin"] = ORIGIN; h["Vary"] = "Origin"; }
   const u = new URL(req.url, "http://x"), p = u.pathname;
+  if (p.startsWith("/api/") && req.method !== "OPTIONS" &&
+      !applyRateLimit(req, res, "api", 300, 60 * 1000, h)) return;
   if (req.method === "OPTIONS") { res.writeHead(204, { ...h, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" }); return res.end(); }
   if (p === "/api/push/public-key" && req.method === "GET") {
     res.writeHead(200, h);
     return res.end(JSON.stringify({ enabled: PUSH_READY, publicKey: PUSH_PUBLIC, subscribers: pushSubscriptions.size }));
   }
   if (p === "/api/push/preferences" && req.method === "POST") {
+    if (!sameOriginRequest(req)) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
+    if (!applyRateLimit(req, res, "push-preferences", 60, 15 * 60 * 1000, h)) return;
     readJsonBody(req).then(data => {
-      if (!data || typeof data.endpoint !== "string" || !data.endpoint.startsWith("https://")) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "invalid endpoint" })); }
+      if (!data || !isAllowedPushEndpoint(data.endpoint)) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "invalid push endpoint" })); }
       const sub = pushSubscriptions.get(data.endpoint);
       if (!sub) { res.writeHead(404, h); return res.end(JSON.stringify({ error: "subscription not found" })); }
       sub.notificationPrefs = { red: data.red !== false, news: data.news !== false, alertMode: data.alertMode === "vibrate-only" ? "vibrate-only" : "sound-vibrate" };
@@ -825,14 +891,12 @@ const server = http.createServer((req, res) => {
   }
   if (p === "/api/push/subscribe" && req.method === "POST") {
     if (!PUSH_READY) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "push server keys are not configured" })); }
-    const origin = req.headers.origin;
-    if (origin) {
-      try { if (new URL(origin).host !== req.headers.host) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); } }
-      catch (_) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
-    }
+    if (!sameOriginRequest(req)) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
+    if (!applyRateLimit(req, res, "push-subscribe", 10, 15 * 60 * 1000, h)) return;
     readJsonBody(req).then(subscription => {
-      if (!subscription || typeof subscription.endpoint !== "string" || !subscription.endpoint.startsWith("https://") ||
-          !subscription.keys || typeof subscription.keys.p256dh !== "string" || typeof subscription.keys.auth !== "string") {
+      if (!subscription || !isAllowedPushEndpoint(subscription.endpoint) ||
+          !subscription.keys || typeof subscription.keys.p256dh !== "string" || subscription.keys.p256dh.length > 256 ||
+          typeof subscription.keys.auth !== "string" || subscription.keys.auth.length > 256) {
         res.writeHead(400, h); return res.end(JSON.stringify({ error: "invalid push subscription" }));
       }
       const existing = pushSubscriptions.get(subscription.endpoint);
@@ -915,6 +979,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (p === "/api/translate") {
+    if (!applyRateLimit(req, res, "translate", 120, 60 * 1000, h)) return;
     const text = u.searchParams.get("text") || "";
     if (!text.trim() || text.length > 1200) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "text must be 1-1200 characters" })); }
     translateToHebrew(text).then(translated => {
