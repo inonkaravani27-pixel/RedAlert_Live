@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.graphics.Color;
 import android.webkit.WebChromeClient;
+import android.webkit.CookieManager;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -216,6 +217,9 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
         ));
+        // Keep the approval cookie across app restarts so this APK installation is remembered.
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(false);
@@ -233,6 +237,13 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new SystemSoundBridge(), "AndroidSystemSounds");
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Persist first-party HTTPS cookies (including the access approval token).
+                CookieManager.getInstance().flush();
+            }
+
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
                 // Never allow the app to continue through an invalid TLS certificate.
