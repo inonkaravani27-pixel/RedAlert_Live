@@ -925,6 +925,8 @@ async function sendAccessRequestNotification(fullName) {
     const detail = await response.text().catch(() => "");
     throw new Error("Resend email failed: " + response.status + " " + detail.slice(0, 300));
   }
+  const result = await response.json().catch(() => ({}));
+  console.log("[access] Email notification accepted by Resend:", result.id || "accepted");
 }
 async function getAccessRequestByHash(hash) {
   const query = "?access_token_hash=eq." + encodeURIComponent(hash) +
