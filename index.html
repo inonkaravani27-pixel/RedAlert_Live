@@ -28,7 +28,21 @@
 .news-scroll .item iframe{display:none!important}
 @media(max-width:600px){.news-toolbar{padding:11px 12px;margin-top:12px}.news-scroll .item{padding:12px;margin:9px 0;border-radius:13px}.news-scroll .item b{font-size:15px}}
 </style></head>
-<body><main class="wrap">
+<body>
+
+<div id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessGateTitle" style="position:fixed;inset:0;z-index:100000;background:rgba(4,8,15,.97);display:flex;align-items:center;justify-content:center;padding:20px">
+  <section style="width:min(100%,440px);background:#111a29;border:1px solid #33445e;border-radius:18px;padding:24px;color:#f3f6fb;text-align:right;box-shadow:0 20px 70px #0009">
+    <h2 id="accessGateTitle" style="margin:0 0 10px;font-size:23px">בקשת גישה ל־RedAlert Live</h2>
+    <p style="color:#b8c4d6;line-height:1.6;margin:0 0 18px">כדי להשתמש באתר, יש לשלוח בקשת הצטרפות ולהמתין לאישור מנהל האתר.</p>
+    <form id="accessRequestForm">
+      <label for="accessFullName" style="display:block;margin-bottom:7px">שם מלא</label>
+      <input id="accessFullName" name="fullName" autocomplete="name" required minlength="2" maxlength="100" style="width:100%;box-sizing:border-box;padding:13px;border-radius:10px;border:1px solid #53647d;background:#0b1220;color:#fff;font-size:16px;margin-bottom:12px">
+      <button id="accessRequestButton" type="submit" style="width:100%;padding:13px;border:0;border-radius:10px;background:#2563eb;color:white;font-size:16px;font-weight:700">שליחת בקשת הצטרפות</button>
+    </form>
+    <p id="accessGateStatus" aria-live="polite" style="color:#c4d0e0;line-height:1.6;margin:14px 0 0"></p>
+  </section>
+</div>
+<main class="wrap">
 <header class="top"><h1>RedAlert <span>Live</span></h1><button id="settingsButton" class="settings-icon" aria-label="פתיחת הגדרות" title="הגדרות">⚙</button></header>
 <div class="banner">כלי משלים בלבד — אינו שירות רשמי ואינו תחליף ליישומון פיקוד העורף. אין להסתמך עליו להצלת חיים.</div>
 <nav class="nav" id="nav">
@@ -557,4 +571,42 @@ async function loadIranIndicators(){
  };
 })();
 
-</script></body></html>
+</script>
+<script>
+(function(){
+ const overlay=document.getElementById("accessGate"),form=document.getElementById("accessRequestForm"),status=document.getElementById("accessGateStatus"),button=document.getElementById("accessRequestButton");
+ if(!overlay||!form)return;
+ let waiting=false,timer=null;
+ async function check(){
+  try{
+   const response=await fetch("/api/access/status",{cache:"no-store"});
+   if(response.status===503){status.textContent="מערכת האישור עדיין בהגדרה. נסה לרענן בעוד כמה דקות.";form.hidden=true;return}
+   const data=await response.json();
+   if(!data.enabled){overlay.style.display="none";return}
+   if(data.status==="approved"){
+    if(!sessionStorage.getItem("ral-access-reloaded")){sessionStorage.setItem("ral-access-reloaded","1");location.reload();return}
+    sessionStorage.removeItem("ral-access-reloaded");overlay.style.display="none";return;
+   }
+   if(data.status==="pending"){
+    waiting=true;form.hidden=true;status.textContent="הבקשה התקבלה וממתינה לאישור מנהל האתר. הבדיקה מתעדכנת אוטומטית.";return;
+   }
+   waiting=false;form.hidden=false;
+   status.textContent=data.status==="rejected"?"הבקשה הקודמת נדחתה. ניתן לשלוח בקשה חדשה.":"יש להזין שם מלא ולשלוח בקשת הצטרפות.";
+  }catch(_){status.textContent="לא ניתן להתחבר כרגע לשירות האישור. נסה שוב בעוד רגע."}
+ }
+ form.addEventListener("submit",async function(event){
+  event.preventDefault();button.disabled=true;status.textContent="שולח בקשה…";
+  try{
+   const response=await fetch("/api/access/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName:document.getElementById("accessFullName").value})});
+   const data=await response.json();
+   if(!response.ok)throw new Error(data.error||"לא ניתן לשלוח את הבקשה");
+   waiting=true;form.hidden=true;status.textContent="הבקשה נשלחה בהצלחה. ממתינים לאישור מנהל האתר.";
+   await check();
+  }catch(error){status.textContent=error.message||"שליחת הבקשה נכשלה."}
+  finally{button.disabled=false}
+ });
+ check();timer=setInterval(()=>{if(waiting)check()},10000);
+})();
+</script>
+
+</body></html>

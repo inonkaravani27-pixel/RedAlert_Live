@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ניהול בקשות — RedAlert Live</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:22px;background:#080e19;color:#eef3fa;font-family:Arial,sans-serif}
+main{max-width:760px;margin:32px auto}.panel{background:#121c2c;border:1px solid #2d3d54;border-radius:16px;padding:22px;margin:14px 0}
+h1{font-size:25px;margin:0 0 8px}p{color:#b7c4d5;line-height:1.6}input{width:100%;padding:13px;border:1px solid #465873;background:#0b1422;color:white;border-radius:9px;font-size:16px;margin:8px 0 12px}
+button{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer;margin:4px}button:disabled{opacity:.5;cursor:wait}.primary{background:#2563eb;color:white}.approve{background:#16794a;color:white}.reject{background:#a83232;color:white}
+.request{border-top:1px solid #2b3b50;padding:14px 0}.muted{color:#aab8cb;font-size:13px}.error{color:#ff9a9a}
+</style></head>
+<body><main>
+<section class="panel"><h1>ניהול בקשות גישה</h1><p>RedAlert Live — אישור או דחייה של בקשות הצטרפות.</p></section>
+<section class="panel" id="loginPanel"><h2>כניסת מנהל</h2><form id="loginForm"><label for="password">סיסמת מנהל</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">התחברות</button></form><p id="loginStatus" class="muted"></p></section>
+<section class="panel" id="requestsPanel" hidden><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>בקשות ממתינות</h2><div><button id="refreshButton">רענון</button><button id="logoutButton">יציאה</button></div></div><div id="requestsList"></div><p id="requestsStatus" class="muted"></p></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+async function loadRequests(){
+ $("requestsStatus").textContent="טוען בקשות…";
+ try{
+  const r=await fetch("/api/access/admin/requests",{cache:"no-store"});
+  if(r.status===401){$("requestsPanel").hidden=true;$("loginPanel").hidden=false;throw new Error("פג תוקף החיבור. התחבר שוב.")}
+  const d=await r.json();if(!r.ok)throw new Error(d.error||"שגיאה");
+  const list=$("requestsList");list.replaceChildren();
+  if(!d.requests.length){$("requestsStatus").textContent="אין בקשות שממתינות לאישור.";return}
+  for(const item of d.requests){
+   const article=document.createElement("article");article.className="request";
+   const name=document.createElement("strong");name.textContent=item.full_name;
+   const date=document.createElement("div");date.className="muted";date.textContent=new Date(item.created_at).toLocaleString("he-IL");
+   const approve=document.createElement("button");approve.className="approve";approve.textContent="אישור";
+   const reject=document.createElement("button");reject.className="reject";reject.textContent="דחייה";
+   const act=async status=>{approve.disabled=true;reject.disabled=true;try{const response=await fetch("/api/access/admin/review",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:item.id,status})});const result=await response.json();if(!response.ok)throw new Error(result.error||"לא ניתן לעדכן");await loadRequests()}catch(e){$("requestsStatus").textContent=e.message;approve.disabled=false;reject.disabled=false}};
+   approve.addEventListener("click",()=>act("approved"));reject.addEventListener("click",()=>act("rejected"));
+   article.append(name,date,approve,reject);list.append(article);
+  }
+  $("requestsStatus").textContent="בקשות ממתינות: "+d.requests.length;
+ }catch(e){$("requestsStatus").textContent=e.message||"לא ניתן לטעון בקשות."}
+}
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginStatus").textContent="מתחבר…";try{const r=await fetch("/api/access/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("password").value})});const d=await r.json();if(!r.ok)throw new Error(d.error||"התחברות נכשלה");$("loginPanel").hidden=true;$("requestsPanel").hidden=false;$("password").value="";loadRequests()}catch(error){$("loginStatus").textContent=error.message}});
+$("refreshButton").addEventListener("click",loadRequests);
+$("logoutButton").addEventListener("click",async()=>{await fetch("/api/access/admin/logout",{method:"POST"});$("requestsPanel").hidden=true;$("loginPanel").hidden=false});
+</script></body></html>

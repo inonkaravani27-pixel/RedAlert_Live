@@ -851,11 +851,93 @@ async function translateToHebrew(text) {
   throw lastError || new Error("translation unavailable");
 }
 const state = areas => ({ now: Date.now(), oref: orefOut(areas), prelim: grp(G.prelim), military: grp(G.military) });
+
+const ACCESS_REQUIRED = E.ACCESS_REQUIRED === "true";
+const SUPABASE_URL = String(E.SUPABASE_URL || "").replace(/\/+$/, "");
+const SUPABASE_SECRET_KEY = E.SUPABASE_SECRET_KEY || "";
+const ACCESS_ADMIN_PASSWORD = E.ACCESS_ADMIN_PASSWORD || "";
+const accessSessionCache = new Map();
+const adminSessions = new Map();
+function accessConfigured() {
+  return Boolean(SUPABASE_URL && SUPABASE_SECRET_KEY && ACCESS_ADMIN_PASSWORD);
+}
+function parseCookies(req) {
+  const out = {};
+  for (const part of String(req.headers.cookie || "").split(";")) {
+    const i = part.indexOf("=");
+    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return out;
+}
+function cookieHeader(name, value, maxAge, sameSite = "Lax", cookiePath = "/") {
+  return name + "=" + encodeURIComponent(value) + "; Path=" + cookiePath +
+    "; Max-Age=" + maxAge + "; HttpOnly; Secure; SameSite=" + sameSite;
+}
+function clearCookieHeader(name, cookiePath = "/") {
+  return name + "=; Path=" + cookiePath + "; Max-Age=0; HttpOnly; Secure; SameSite=Strict";
+}
+function accessHash(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+async function supabaseAccess(pathname, options = {}) {
+  if (!accessConfigured()) throw new Error("access service is not configured");
+  const response = await fetch(SUPABASE_URL + "/rest/v1/access_requests" + pathname, {
+    method: options.method || "GET",
+    headers: {
+      "apikey": SUPABASE_SECRET_KEY,
+      "Content-Type": "application/json",
+      ...(options.prefer ? { "Prefer": options.prefer } : {})
+    },
+    ...(options.body ? { body: JSON.stringify(options.body) } : {})
+  });
+  const body = await response.text();
+  if (!response.ok) throw new Error("Supabase access request failed: " + response.status);
+  return body ? JSON.parse(body) : null;
+}
+async function getAccessRequestByHash(hash) {
+  const query = "?access_token_hash=eq." + encodeURIComponent(hash) +
+    "&select=id,status,full_name,created_at&limit=1";
+  const rows = await supabaseAccess(query);
+  return Array.isArray(rows) ? rows[0] || null : null;
+}
+async function isApprovedAccess(req) {
+  if (!ACCESS_REQUIRED) return true;
+  if (!accessConfigured()) return false;
+  const token = parseCookies(req).ral_access;
+  if (!token || token.length < 40 || token.length > 100) return false;
+  const hash = accessHash(token), cached = accessSessionCache.get(hash), now = Date.now();
+  if (cached && cached.expiresAt > now) return cached.status === "approved";
+  const row = await getAccessRequestByHash(hash);
+  const status = row ? row.status : "none";
+  accessSessionCache.set(hash, { status, expiresAt: now + (status === "approved" ? 15000 : 5000) });
+  if (accessSessionCache.size > 5000) {
+    for (const [key, value] of accessSessionCache) {
+      if (value.expiresAt <= now) accessSessionCache.delete(key);
+      if (accessSessionCache.size <= 4000) break;
+    }
+  }
+  return status === "approved";
+}
+function isAdminRequest(req) {
+  const token = parseCookies(req).ral_admin;
+  if (!token) return false;
+  const expiresAt = adminSessions.get(token);
+  if (!expiresAt || expiresAt <= Date.now()) {
+    adminSessions.delete(token);
+    return false;
+  }
+  return true;
+}
+function constantTimeEqual(a, b) {
+  const aa = Buffer.from(String(a)), bb = Buffer.from(String(b));
+  return aa.length === bb.length && crypto.timingSafeEqual(aa, bb);
+}
+
 const FILES = { "/manifest.webmanifest": ["manifest.webmanifest", "application/manifest+json"], "/sw.js": ["sw.js", "text/javascript"], "/icon.svg": ["icon.svg", "image/svg+xml"] };
 
 const PUB = fs.existsSync(path.join(__dirname, "public", "index.html")) ? path.join(__dirname, "public") : __dirname;
 const INDEX = path.join(PUB, "index.html");
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   const h = {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
@@ -874,6 +956,98 @@ const server = http.createServer((req, res) => {
   if ((p === "/api/prelim" || p === "/api/osint") && req.method === "GET" &&
       !applyRateLimit(req, res, "external-news", 20, 60 * 1000, h)) return;
   if (req.method === "OPTIONS") { res.writeHead(204, { ...h, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" }); return res.end(); }
+
+  if (p === "/api/access/status" && req.method === "GET") {
+    if (!ACCESS_REQUIRED) { res.writeHead(200, h); return res.end(JSON.stringify({ enabled: false })); }
+    if (!accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service is not configured" })); }
+    try {
+      const token = parseCookies(req).ral_access;
+      if (!token) { res.writeHead(200, h); return res.end(JSON.stringify({ enabled: true, status: "none" })); }
+      const row = await getAccessRequestByHash(accessHash(token));
+      res.writeHead(200, h);
+      return res.end(JSON.stringify({ enabled: true, status: row ? row.status : "none" }));
+    } catch (_) {
+      res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service unavailable" }));
+    }
+  }
+  if (p === "/api/access/request" && req.method === "POST") {
+    if (!sameOriginRequest(req) || !req.headers.origin) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
+    if (!ACCESS_REQUIRED || !accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service is not configured" })); }
+    if (!applyRateLimit(req, res, "access-request", 3, 15 * 60 * 1000, h)) return;
+    try {
+      const data = await readJsonBody(req, 4096);
+      const fullName = String(data.fullName || "").trim().replace(/\s+/g, " ");
+      if (fullName.length < 2 || fullName.length > 100 || !/^[\p{L}\p{M}][\p{L}\p{M}\s.'’\-]{1,99}$/u.test(fullName)) {
+        res.writeHead(400, h); return res.end(JSON.stringify({ error: "נא להזין שם מלא תקין (2–100 תווים)." }));
+      }
+      const token = crypto.randomBytes(32).toString("base64url");
+      const hash = accessHash(token);
+      await supabaseAccess("", {
+        method: "POST",
+        prefer: "return=minimal",
+        body: { full_name: fullName, status: "pending", access_token_hash: hash }
+      });
+      accessSessionCache.delete(hash);
+      res.writeHead(201, { ...h, "Set-Cookie": cookieHeader("ral_access", token, 60 * 60 * 24 * 30) });
+      return res.end(JSON.stringify({ ok: true, status: "pending" }));
+    } catch (_) {
+      res.writeHead(503, h); return res.end(JSON.stringify({ error: "לא ניתן לשמור את הבקשה כרגע. נסה שוב מאוחר יותר." }));
+    }
+  }
+  if (p === "/api/access/admin/login" && req.method === "POST") {
+    if (!sameOriginRequest(req) || !req.headers.origin) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
+    if (!ACCESS_REQUIRED || !accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service is not configured" })); }
+    if (!applyRateLimit(req, res, "access-admin-login", 5, 15 * 60 * 1000, h)) return;
+    try {
+      const data = await readJsonBody(req, 4096);
+      if (!constantTimeEqual(data.password || "", ACCESS_ADMIN_PASSWORD)) {
+        res.writeHead(401, h); return res.end(JSON.stringify({ error: "סיסמה שגויה." }));
+      }
+      const token = crypto.randomBytes(32).toString("base64url");
+      adminSessions.set(token, Date.now() + 8 * 60 * 60 * 1000);
+      res.writeHead(200, { ...h, "Set-Cookie": cookieHeader("ral_admin", token, 8 * 60 * 60, "Strict", "/api/access/admin") });
+      return res.end(JSON.stringify({ ok: true }));
+    } catch (_) {
+      res.writeHead(400, h); return res.end(JSON.stringify({ error: "בקשת התחברות לא תקינה." }));
+    }
+  }
+  if (p === "/api/access/admin/logout" && req.method === "POST") {
+    const token = parseCookies(req).ral_admin;
+    if (token) adminSessions.delete(token);
+    res.writeHead(200, { ...h, "Set-Cookie": clearCookieHeader("ral_admin", "/api/access/admin") });
+    return res.end(JSON.stringify({ ok: true }));
+  }
+  if (p === "/api/access/admin/requests" && req.method === "GET") {
+    if (!isAdminRequest(req)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
+    try {
+      const rows = await supabaseAccess("?status=eq.pending&select=id,full_name,status,created_at&order=created_at.desc&limit=100");
+      res.writeHead(200, h); return res.end(JSON.stringify({ requests: rows || [] }));
+    } catch (_) {
+      res.writeHead(503, h); return res.end(JSON.stringify({ error: "לא ניתן לטעון בקשות כרגע." }));
+    }
+  }
+  if (p === "/api/access/admin/review" && req.method === "POST") {
+    if (!sameOriginRequest(req) || !req.headers.origin) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
+    if (!isAdminRequest(req)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
+    try {
+      const data = await readJsonBody(req, 4096);
+      const id = String(data.id || "");
+      const status = String(data.status || "");
+      if (!/^[0-9a-f-]{36}$/i.test(id) || !["approved", "rejected"].includes(status)) {
+        res.writeHead(400, h); return res.end(JSON.stringify({ error: "בקשה לא תקינה." }));
+      }
+      await supabaseAccess("?id=eq." + encodeURIComponent(id), {
+        method: "PATCH",
+        prefer: "return=minimal",
+        body: { status, reviewed_at: new Date().toISOString() }
+      });
+      accessSessionCache.clear();
+      res.writeHead(200, h); return res.end(JSON.stringify({ ok: true }));
+    } catch (_) {
+      res.writeHead(503, h); return res.end(JSON.stringify({ error: "לא ניתן לעדכן את הבקשה כרגע." }));
+    }
+  }
+
   if (p === "/api/push/public-key" && req.method === "GET") {
     res.writeHead(200, h);
     return res.end(JSON.stringify({ enabled: PUSH_READY, publicKey: PUSH_PUBLIC, subscribers: pushSubscriptions.size }));
@@ -910,6 +1084,15 @@ const server = http.createServer((req, res) => {
       if (!res.headersSent) { res.writeHead(400, h); res.end(JSON.stringify({ error: msg(error) })); }
     });
     return;
+  }
+
+  if (ACCESS_REQUIRED && p.startsWith("/api/") && !p.startsWith("/api/access/")) {
+    if (!accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service is not configured" })); }
+    try {
+      if (!(await isApprovedAccess(req))) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "access approval required" })); }
+    } catch (_) {
+      res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service unavailable" }));
+    }
   }
   if (req.method !== "GET") { res.writeHead(405, h); return res.end("{}"); }
   if (p === "/healthz") { res.writeHead(200, h); return res.end(JSON.stringify({ ok: true, uptime: Math.round(process.uptime()) })); }
@@ -992,6 +1175,14 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (FILES[p]) { const f = path.join(PUB, FILES[p][0]); if (fs.existsSync(f)) { res.writeHead(200, { ...h, "Content-Type": FILES[p][1] }); return res.end(fs.readFileSync(f)); } }
+
+  if (p === "/admin" && req.method === "GET") {
+    const adminFile = path.join(PUB, "admin.html");
+    if (fs.existsSync(adminFile)) {
+      res.writeHead(200, { ...h, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'", "X-Frame-Options": "DENY" });
+      return res.end(fs.readFileSync(adminFile));
+    }
+  }
   if ((p === "/" || p === "/index.html") && fs.existsSync(INDEX)) {
     const html = fs.readFileSync(INDEX, "utf8").replace("<head>", "<head><script>window.RAL_SAME_ORIGIN=true;window.RAL_POLL_MS=" + POLL + "</script>");
     res.writeHead(200, { ...h, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' https:; frame-src 'self' https://iwm.diskin.net https://t.me https://*.t.me; img-src 'self' data: blob: https:; font-src 'self' data: https://unpkg.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'", "X-Frame-Options": "DENY" }); return res.end(html);
