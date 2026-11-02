@@ -920,6 +920,7 @@ async function supabaseAccess(pathname, options = {}) {
   return body ? JSON.parse(body) : null;
 }
 const deviceAuthCache = new Map();
+const deviceLastSeenWrites = new Map();
 async function supabaseDevices(query, options = {}) {
   if (!accessConfigured()) throw new Error("access service is not configured");
   const response = await fetch(SUPABASE_URL + "/rest/v1/access_devices" + query, {
@@ -960,6 +961,13 @@ async function isApprovedAccess(req) {
     const row = Array.isArray(rows) ? rows[0] : null;
     const allowed = Boolean(row && row.blocked !== true && row.session_hash === accessHash(parseCookies(req).ral_access));
     deviceAuthCache.set(session.deviceId, { allowed, until: Date.now() + 10000 });
+    if (allowed && Date.now() - (deviceLastSeenWrites.get(session.deviceId) || 0) > 5 * 60 * 1000) {
+      deviceLastSeenWrites.set(session.deviceId, Date.now());
+      supabaseDevices("?device_id=eq." + encodeURIComponent(session.deviceId), {
+        method: "PATCH", prefer: "return=minimal",
+        body: { last_seen_at: new Date().toISOString(), ip_address: clientAddress(req) }
+      }).catch(() => {});
+    }
     return allowed;
   } catch (_) { return false; }
 }
@@ -1040,7 +1048,7 @@ const server = http.createServer(async (req, res) => {
   if (p === "/api/access/status" && req.method === "GET") {
     if (!ACCESS_REQUIRED) { res.writeHead(200, h); return res.end(JSON.stringify({ enabled: false })); }
     if (!passwordAccessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "ACCESS_PASSWORD is not configured" })); }
-    const approved = verifyAccessSession(parseCookies(req).ral_access);
+    const approved = await isApprovedAccess(req);
     res.writeHead(200, h);
     return res.end(JSON.stringify({ enabled: true, status: approved ? "approved" : "none" }));
   }
@@ -1055,7 +1063,14 @@ const server = http.createServer(async (req, res) => {
       }
       if (!accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "ניהול המכשירים עדיין לא הוגדר במסד הנתונים." })); }
       const cookies = parseCookies(req);
-      const deviceId = /^[A-Za-z0-9_-]{20,64}$/.test(cookies.ral_device || "") ? cookies.ral_device : crypto.randomBytes(24).toString("base64url");
+      const existingDeviceId = /^[A-Za-z0-9_-]{20,64}$/.test(cookies.ral_device || "") ? cookies.ral_device : "";
+      if (existingDeviceId) {
+        const existingRows = await supabaseDevices("?device_id=eq." + encodeURIComponent(existingDeviceId) + "&select=blocked&limit=1");
+        if (Array.isArray(existingRows) && existingRows[0] && existingRows[0].blocked === true) {
+          res.writeHead(403, h); return res.end(JSON.stringify({ error: "המכשיר הזה נחסם. יש לפנות למנהל האתר." }));
+        }
+      }
+      const deviceId = existingDeviceId || crypto.randomBytes(24).toString("base64url");
       const session = createAccessSession(deviceId);
       const remember = data.remember === true;
       const cookieAge = remember ? 60 * 60 * 24 * 365 : undefined;
