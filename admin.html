@@ -2,43 +2,54 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ניהול בקשות — RedAlert Live</title>
+<title>ניהול RedAlert Live</title>
 <style>
-*{box-sizing:border-box}body{margin:0;padding:22px;background:#080e19;color:#eef3fa;font-family:Arial,sans-serif}
-main{max-width:760px;margin:32px auto}.panel{background:#121c2c;border:1px solid #2d3d54;border-radius:16px;padding:22px;margin:14px 0}
-h1{font-size:25px;margin:0 0 8px}p{color:#b7c4d5;line-height:1.6}input{width:100%;padding:13px;border:1px solid #465873;background:#0b1422;color:white;border-radius:9px;font-size:16px;margin:8px 0 12px}
-button{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer;margin:4px}button:disabled{opacity:.5;cursor:wait}.primary{background:#2563eb;color:white}.approve{background:#16794a;color:white}.reject{background:#a83232;color:white}
-.request{border-top:1px solid #2b3b50;padding:14px 0}.muted{color:#aab8cb;font-size:13px}.error{color:#ff9a9a}
+*{box-sizing:border-box}body{margin:0;padding:20px;background:#080e19;color:#eef3fa;font-family:Arial,sans-serif}main{max-width:900px;margin:28px auto}.panel{background:#121c2c;border:1px solid #2d3d54;border-radius:16px;padding:20px;margin:14px 0}h1{font-size:25px;margin:0 0 8px}h2{font-size:19px;margin:0}p{color:#b7c4d5;line-height:1.6}input{width:100%;padding:12px;border:1px solid #465873;background:#0b1422;color:white;border-radius:9px;font-size:16px;margin:8px 0 12px}button{border:0;border-radius:9px;padding:10px 13px;font-weight:700;cursor:pointer;margin:3px}button:disabled{opacity:.5;cursor:wait}.primary{background:#2563eb;color:white}.approve{background:#16794a;color:white}.danger{background:#a83232;color:white}.neutral{background:#33445d;color:white}.muted{color:#aab8cb;font-size:13px}.error{color:#ff9a9a}.device{border-top:1px solid #2b3b50;padding:15px 0;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}.device-main{flex:1;min-width:190px}.device-actions{display:flex;gap:4px;flex-wrap:wrap}.tag{display:inline-block;border-radius:20px;padding:4px 9px;font-size:12px;background:#203149;color:#c9d8eb}.tag.good{background:#12432f;color:#a6f0c8}.tag.bad{background:#542626;color:#ffc0c0}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.request{border-top:1px solid #2b3b50;padding:14px 0}
 </style></head>
 <body><main>
-<section class="panel"><h1>ניהול בקשות גישה</h1><p>RedAlert Live — אישור או דחייה של בקשות הצטרפות.</p></section>
+<section class="panel"><h1>מרכז ניהול — RedAlert Live</h1><p>ניהול מכשירים, הרשאות ובקשות גישה.</p></section>
 <section class="panel" id="loginPanel"><h2>כניסת מנהל</h2><form id="loginForm"><label for="password">סיסמת מנהל</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">התחברות</button></form><p id="loginStatus" class="muted"></p></section>
-<section class="panel" id="requestsPanel" hidden><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>בקשות ממתינות</h2><div><button id="refreshButton">רענון</button><button id="logoutButton">יציאה</button></div></div><div id="requestsList"></div><p id="requestsStatus" class="muted"></p></section>
+<div id="adminArea" hidden>
+<section class="panel"><div class="top"><div><h2>מכשירים והרשאות</h2><p class="muted">כל דפדפן/התקנה מקבלים מזהה נפרד. כינוי אישי הוא אופציונלי.</p></div><div><button id="refreshDevices" class="primary">רענון</button><button id="logoutButton" class="neutral">יציאה</button></div></div><div id="devicesList"></div><p id="devicesStatus" class="muted"></p></section>
+<section class="panel"><div class="top"><h2>בקשות גישה ממתינות</h2><button id="refreshRequests" class="neutral">רענון</button></div><div id="requestsList"></div><p id="requestsStatus" class="muted"></p></section>
+</div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
+async function api(url,options={}){const r=await fetch(url,{cache:"no-store",...options});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"שגיאה");return d}
+function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n}
+async function loadDevices(){
+ $("devicesStatus").textContent="טוען מכשירים…";
+ try{const d=await api("/api/access/admin/devices");const list=$("devicesList");list.replaceChildren();
+ if(!d.devices.length){$("devicesStatus").textContent="עדיין לא נרשמו מכשירים חדשים. מכשירים יופיעו לאחר התחברות מחדש עם הסיסמה.";return}
+ for(const item of d.devices){
+  const row=el("div","device");const main=el("div","device-main");
+  const title=el("strong","",item.label||item.device_type||"מכשיר");main.append(title);
+  if(!item.label){const optional=el("span","tag","ללא כינוי");main.append(" ",optional)}
+  main.append(el("div","muted",(item.os||"")+" · "+(item.browser||"")));
+  main.append(el("div","muted","IP: "+(item.ip_address||"לא זמין")));
+  main.append(el("div","muted","נראה לאחרונה: "+(item.last_seen_at?new Date(item.last_seen_at).toLocaleString("he-IL"):"לא ידוע")));
+  main.append(el("div","muted","נרשם: "+(item.created_at?new Date(item.created_at).toLocaleString("he-IL"):"לא ידוע")));
+  const actions=el("div","device-actions");
+  const rename=el("button","neutral","הגדרת כינוי");rename.addEventListener("click",async()=>{const value=prompt("כינוי למכשיר (אופציונלי):",item.label||"");if(value===null)return;try{await api("/api/access/admin/device",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"rename",device_id:item.device_id,label:value})});loadDevices()}catch(e){$("devicesStatus").textContent=e.message}});
+  const block=el("button",item.blocked?"approve":"danger",item.blocked?"ביטול חסימה":"חסום מכשיר");block.addEventListener("click",async()=>{if(!confirm(item.blocked?"לבטל את חסימת המכשיר?":"לחסום את המכשיר הזה?"))return;try{await api("/api/access/admin/device",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:item.blocked?"unblock":"block",device_id:item.device_id})});loadDevices()}catch(e){$("devicesStatus").textContent=e.message}});
+  const revoke=el("button","neutral","ביטול התחברות");revoke.addEventListener("click",async()=>{if(!confirm("לבטל את ההתחברות הנוכחית של המכשיר? הוא יצטרך להזין שוב את הסיסמה."))return;try{await api("/api/access/admin/device",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"revoke",device_id:item.device_id})});loadDevices()}catch(e){$("devicesStatus").textContent=e.message}});
+  actions.append(rename,block,revoke);row.append(main,actions);list.append(row);
+ }
+ const active=d.devices.filter(x=>!x.blocked).length;const blocked=d.devices.length-active;
+ $("devicesStatus").textContent="סה״כ מכשירים: "+d.devices.length+" · לא חסומים: "+active+" · חסומים: "+blocked;
+ }catch(e){$("devicesStatus").textContent=e.message}
+}
 async function loadRequests(){
  $("requestsStatus").textContent="טוען בקשות…";
- try{
-  const r=await fetch("/api/access/admin/requests",{cache:"no-store"});
-  if(r.status===401){$("requestsPanel").hidden=true;$("loginPanel").hidden=false;throw new Error("פג תוקף החיבור. התחבר שוב.")}
-  const d=await r.json();if(!r.ok)throw new Error(d.error||"שגיאה");
-  const list=$("requestsList");list.replaceChildren();
-  if(!d.requests.length){$("requestsStatus").textContent="אין בקשות שממתינות לאישור.";return}
-  for(const item of d.requests){
-   const article=document.createElement("article");article.className="request";
-   const name=document.createElement("strong");name.textContent=item.full_name;
-   const date=document.createElement("div");date.className="muted";date.textContent=new Date(item.created_at).toLocaleString("he-IL");
-   const approve=document.createElement("button");approve.className="approve";approve.textContent="אישור";
-   const reject=document.createElement("button");reject.className="reject";reject.textContent="דחייה";
-   const act=async status=>{approve.disabled=true;reject.disabled=true;try{const response=await fetch("/api/access/admin/review",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:item.id,status})});const result=await response.json();if(!response.ok)throw new Error(result.error||"לא ניתן לעדכן");await loadRequests()}catch(e){$("requestsStatus").textContent=e.message;approve.disabled=false;reject.disabled=false}};
-   approve.addEventListener("click",()=>act("approved"));reject.addEventListener("click",()=>act("rejected"));
-   article.append(name,date,approve,reject);list.append(article);
-  }
-  $("requestsStatus").textContent="בקשות ממתינות: "+d.requests.length;
- }catch(e){$("requestsStatus").textContent=e.message||"לא ניתן לטעון בקשות."}
+ try{const d=await api("/api/access/admin/requests");const list=$("requestsList");list.replaceChildren();
+ if(!d.requests.length){$("requestsStatus").textContent="אין בקשות שממתינות לאישור.";return}
+ for(const item of d.requests){const row=el("div","request");row.append(el("strong","",item.full_name),el("div","muted",new Date(item.created_at).toLocaleString("he-IL")));
+  for(const [status,label,cls] of [["approved","אישור","approve"],["rejected","דחייה","danger"]]){const b=el("button",cls,label);b.addEventListener("click",async()=>{try{await api("/api/access/admin/review",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:item.id,status})});loadRequests()}catch(e){$("requestsStatus").textContent=e.message}});row.append(b)}list.append(row)}
+ $("requestsStatus").textContent="בקשות ממתינות: "+d.requests.length;
+ }catch(e){$("requestsStatus").textContent=e.message}
 }
-$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginStatus").textContent="מתחבר…";try{const r=await fetch("/api/access/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("password").value})});const d=await r.json();if(!r.ok)throw new Error(d.error||"התחברות נכשלה");$("loginPanel").hidden=true;$("requestsPanel").hidden=false;$("password").value="";loadRequests()}catch(error){$("loginStatus").textContent=error.message}});
-$("refreshButton").addEventListener("click",loadRequests);
-$("logoutButton").addEventListener("click",async()=>{await fetch("/api/access/admin/logout",{method:"POST"});$("requestsPanel").hidden=true;$("loginPanel").hidden=false});
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginStatus").textContent="מתחבר…";try{await api("/api/access/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("password").value})});$("loginPanel").hidden=true;$("adminArea").hidden=false;$("password").value="";loadDevices();loadRequests()}catch(error){$("loginStatus").textContent=error.message}});
+$("refreshDevices").addEventListener("click",loadDevices);$("refreshRequests").addEventListener("click",loadRequests);
+$("logoutButton").addEventListener("click",async()=>{await fetch("/api/access/admin/logout",{method:"POST"});$("adminArea").hidden=true;$("loginPanel").hidden=false});
 </script></body></html>
