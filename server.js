@@ -1222,6 +1222,17 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service unavailable" }));
     }
   }
+  if (p === "/api/access/heartbeat" && req.method === "GET") {
+    try {
+      const session = verifyAccessSession(parseCookies(req).ral_access);
+      if (!session) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
+      await supabaseDevices("?device_id=eq." + encodeURIComponent(session.deviceId), {
+        method: "PATCH", prefer: "return=minimal",
+        body: { last_seen_at: new Date().toISOString(), ip_address: clientAddress(req) }
+      });
+      res.writeHead(200, h); return res.end(JSON.stringify({ ok: true }));
+    } catch (_) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "heartbeat unavailable" })); }
+  }
   if (req.method !== "GET") { res.writeHead(405, h); return res.end("{}"); }
   if (p === "/healthz") { res.writeHead(200, h); return res.end(JSON.stringify({ ok: true, uptime: Math.round(process.uptime()) })); }
   if (p === "/api/state") { res.writeHead(200, h); return res.end(JSON.stringify(state(parseAreas(u.searchParams.get("areas"))))); }
@@ -1312,7 +1323,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
   if ((p === "/" || p === "/index.html") && fs.existsSync(INDEX)) {
-    const html = fs.readFileSync(INDEX, "utf8").replace("<head>", "<head><script>window.RAL_SAME_ORIGIN=true;window.RAL_POLL_MS=" + POLL + "</script>");
+    const html = fs.readFileSync(INDEX, "utf8").replace("<head>", "<head><script>window.RAL_SAME_ORIGIN=true;window.RAL_POLL_MS=" + POLL + ";setTimeout(()=>fetch('/api/access/heartbeat',{cache:'no-store'}).catch(()=>{}),1500);setInterval(()=>fetch('/api/access/heartbeat',{cache:'no-store'}).catch(()=>{}),30000)</script>");
     res.writeHead(200, { ...h, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' https:; frame-src 'self' https://iwm.diskin.net https://t.me https://*.t.me; img-src 'self' data: blob: https:; font-src 'self' data: https://unpkg.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'", "X-Frame-Options": "DENY" }); return res.end(html);
   }
   res.writeHead(404, h); res.end("{}");
