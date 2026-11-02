@@ -895,7 +895,7 @@ function parseCookies(req) {
 }
 function cookieHeader(name, value, maxAge, sameSite = "Lax", cookiePath = "/") {
   return name + "=" + encodeURIComponent(value) + "; Path=" + cookiePath +
-    "; Max-Age=" + maxAge + "; HttpOnly; Secure; SameSite=" + sameSite;
+    (Number.isFinite(maxAge) ? "; Max-Age=" + maxAge : "") + "; HttpOnly; Secure; SameSite=" + sameSite;
 }
 function clearCookieHeader(name, cookiePath = "/") {
   return name + "=; Path=" + cookiePath + "; Max-Age=0; HttpOnly; Secure; SameSite=Strict";
@@ -1013,7 +1013,9 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(401, h); return res.end(JSON.stringify({ error: "סיסמה שגויה. נסה שוב." }));
       }
       const session = createAccessSession();
-      res.writeHead(200, { ...h, "Set-Cookie": cookieHeader("ral_access", session, 60 * 60 * 24 * 365) });
+      const remember = body.remember === true;
+      const cookieAge = remember ? 60 * 60 * 24 * 365 : undefined;
+      res.writeHead(200, { ...h, "Set-Cookie": cookieHeader("ral_access", session, cookieAge) });
       return res.end(JSON.stringify({ ok: true, status: "approved" }));
     } catch (_) {
       res.writeHead(400, h); return res.end(JSON.stringify({ error: "לא ניתן לבדוק את הסיסמה. נסה שוב." }));
