@@ -1007,13 +1007,18 @@ async function getAccessRequestByHash(hash) {
   const rows = await supabaseAccess(query);
   return Array.isArray(rows) ? rows[0] || null : null;
 }
-function isAdminRequest(req) {
+function isAdminRequest(req, res) {
   const token = parseCookies(req).ral_admin;
   if (!token) return false;
   const expiresAt = adminSessions.get(token);
   if (!expiresAt || expiresAt <= Date.now()) {
     adminSessions.delete(token);
     return false;
+  }
+  const renewedExpiry = Date.now() + 30 * 60 * 1000;
+  adminSessions.set(token, renewedExpiry);
+  if (res && !res.headersSent) {
+    res.setHeader("Set-Cookie", cookieHeader("ral_admin", token, 30 * 60, "Strict", "/api/access/admin"));
   }
   return true;
 }
@@ -1074,7 +1079,7 @@ const server = http.createServer(async (req, res) => {
       const deviceId = existingDeviceId || crypto.randomBytes(24).toString("base64url");
       const session = createAccessSession(deviceId);
       const remember = data.remember === true;
-      const cookieAge = remember ? 60 * 60 * 24 * 365 : undefined;
+      const cookieAge = 60 * 60 * 24 * 365;
       const details = deviceDescription(req);
       const now = new Date().toISOString();
       await supabaseDevices("?on_conflict=device_id", {
@@ -1104,12 +1109,17 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(401, h); return res.end(JSON.stringify({ error: "סיסמה שגויה." }));
       }
       const token = crypto.randomBytes(32).toString("base64url");
-      adminSessions.set(token, Date.now() + 8 * 60 * 60 * 1000);
-      res.writeHead(200, { ...h, "Set-Cookie": cookieHeader("ral_admin", token, 8 * 60 * 60, "Strict", "/api/access/admin") });
+      adminSessions.set(token, Date.now() + 30 * 60 * 1000);
+      res.writeHead(200, { ...h, "Set-Cookie": cookieHeader("ral_admin", token, 30 * 60, "Strict", "/api/access/admin") });
       return res.end(JSON.stringify({ ok: true }));
     } catch (_) {
       res.writeHead(400, h); return res.end(JSON.stringify({ error: "בקשת התחברות לא תקינה." }));
     }
+  }
+  if (p === "/api/access/admin/status" && req.method === "GET") {
+    const authenticated = isAdminRequest(req, res);
+    res.writeHead(authenticated ? 200 : 401, h);
+    return res.end(JSON.stringify({ authenticated }));
   }
   if (p === "/api/access/admin/logout" && req.method === "POST") {
     const token = parseCookies(req).ral_admin;
@@ -1118,7 +1128,7 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify({ ok: true }));
   }
   if (p === "/api/access/admin/requests" && req.method === "GET") {
-    if (!isAdminRequest(req)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
+    if (!isAdminRequest(req, res)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
     try {
       const rows = await supabaseAccess("?status=eq.pending&select=id,full_name,status,created_at&order=created_at.desc&limit=100");
       res.writeHead(200, h); return res.end(JSON.stringify({ requests: rows || [] }));
@@ -1128,7 +1138,7 @@ const server = http.createServer(async (req, res) => {
   }
   if (p === "/api/access/admin/review" && req.method === "POST") {
     if (!sameOriginRequest(req) || !req.headers.origin) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
-    if (!isAdminRequest(req)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
+    if (!isAdminRequest(req, res)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
     try {
       const data = await readJsonBody(req, 4096);
       const id = String(data.id || "");
@@ -1149,7 +1159,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (p === "/api/access/admin/devices" && req.method === "GET") {
-    if (!isAdminRequest(req)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
+    if (!isAdminRequest(req, res)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
     try {
       const rows = await supabaseDevices("?select=device_id,label,device_type,os,browser,ip_address,created_at,last_seen_at,blocked&order=last_seen_at.desc&limit=200");
       res.writeHead(200, h); return res.end(JSON.stringify({ devices: rows || [] }));
@@ -1157,7 +1167,7 @@ const server = http.createServer(async (req, res) => {
   }
   if (p === "/api/access/admin/device" && req.method === "POST") {
     if (!sameOriginRequest(req) || !req.headers.origin) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
-    if (!isAdminRequest(req)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
+    if (!isAdminRequest(req, res)) { res.writeHead(401, h); return res.end(JSON.stringify({ error: "unauthorized" })); }
     try {
       const data = await readJsonBody(req, 4096);
       const id = String(data.device_id || "");
