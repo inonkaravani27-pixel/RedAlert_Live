@@ -856,15 +856,34 @@ const ACCESS_REQUIRED = E.ACCESS_REQUIRED === "true";
 const SUPABASE_URL = String(E.SUPABASE_URL || "").replace(/\/+$/, "");
 const SUPABASE_SECRET_KEY = E.SUPABASE_SECRET_KEY || "";
 const ACCESS_ADMIN_PASSWORD = E.ACCESS_ADMIN_PASSWORD || "";
+const ACCESS_PASSWORD = E.ACCESS_PASSWORD || "";
 const RESEND_API_KEY = E.RESEND_API_KEY || "";
 const RESEND_FROM_EMAIL = E.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 const ACCESS_NOTIFY_EMAIL = "inonkaravani27@gmail.com";
 const accessSessionCache = new Map();
 const adminSessions = new Map();
-const accessPairingCodes = new Map(); // one-time, five-minute device-link codes
 
 function accessConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_SECRET_KEY && ACCESS_ADMIN_PASSWORD);
+}
+function passwordAccessConfigured() { return Boolean(ACCESS_PASSWORD); }
+function createAccessSession() {
+  const expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000;
+  const nonce = crypto.randomBytes(24).toString("base64url");
+  const payload = expiresAt + "." + nonce;
+  const signature = crypto.createHmac("sha256", ACCESS_PASSWORD).update(payload).digest("base64url");
+  return payload + "." + signature;
+}
+function verifyAccessSession(token) {
+  if (!passwordAccessConfigured() || typeof token !== "string" || token.length > 256) return false;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  const [expiryText, nonce, signature] = parts;
+  const expiresAt = Number(expiryText);
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now() || expiresAt > Date.now() + 366 * 24 * 60 * 60 * 1000 || !/^[A-Za-z0-9_-]{20,64}$/.test(nonce)) return false;
+  const payload = expiryText + "." + nonce;
+  const expected = crypto.createHmac("sha256", ACCESS_PASSWORD).update(payload).digest("base64url");
+  return constantTimeEqual(signature, expected);
 }
 function parseCookies(req) {
   const out = {};
@@ -936,21 +955,7 @@ async function getAccessRequestByHash(hash) {
 }
 async function isApprovedAccess(req) {
   if (!ACCESS_REQUIRED) return true;
-  if (!accessConfigured()) return false;
-  const token = parseCookies(req).ral_access;
-  if (!token || token.length < 40 || token.length > 100) return false;
-  const hash = accessHash(token), cached = accessSessionCache.get(hash), now = Date.now();
-  if (cached && cached.expiresAt > now) return cached.status === "approved";
-  const row = await getAccessRequestByHash(hash);
-  const status = row ? row.status : "none";
-  accessSessionCache.set(hash, { status, expiresAt: now + (status === "approved" ? 15000 : 5000) });
-  if (accessSessionCache.size > 5000) {
-    for (const [key, value] of accessSessionCache) {
-      if (value.expiresAt <= now) accessSessionCache.delete(key);
-      if (accessSessionCache.size <= 4000) break;
-    }
-  }
-  return status === "approved";
+  return verifyAccessSession(parseCookies(req).ral_access);
 }
 function isAdminRequest(req) {
   const token = parseCookies(req).ral_admin;
@@ -993,80 +998,25 @@ const server = http.createServer(async (req, res) => {
 
   if (p === "/api/access/status" && req.method === "GET") {
     if (!ACCESS_REQUIRED) { res.writeHead(200, h); return res.end(JSON.stringify({ enabled: false })); }
-    if (!accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service is not configured" })); }
-    try {
-      const token = parseCookies(req).ral_access;
-      if (!token) { res.writeHead(200, h); return res.end(JSON.stringify({ enabled: true, status: "none" })); }
-      const row = await getAccessRequestByHash(accessHash(token));
-      res.writeHead(200, h);
-      return res.end(JSON.stringify({ enabled: true, status: row ? row.status : "none" }));
-    } catch (_) {
-      res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service unavailable" }));
-    }
+    if (!passwordAccessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "ACCESS_PASSWORD is not configured" })); }
+    const approved = verifyAccessSession(parseCookies(req).ral_access);
+    res.writeHead(200, h);
+    return res.end(JSON.stringify({ enabled: true, status: approved ? "approved" : "none" }));
   }
-  if (p === "/api/access/pair/create" && req.method === "POST") {
+  if (p === "/api/access/login" && req.method === "POST") {
     if (!sameOriginRequest(req) || !req.headers.origin) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
-    if (!ACCESS_REQUIRED || !accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service is not configured" })); }
-    if (!applyRateLimit(req, res, "access-pair-create", 5, 15 * 60 * 1000, h)) return;
-    try {
-      if (!(await isApprovedAccess(req))) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "נדרש מכשיר שכבר אושר כדי ליצור קוד קישור." })); }
-      const token = parseCookies(req).ral_access, now = Date.now();
-      for (const [oldCode, entry] of accessPairingCodes) if (entry.expiresAt <= now) accessPairingCodes.delete(oldCode);
-      let code;
-      do { code = crypto.randomBytes(4).toString("hex").toUpperCase(); } while (accessPairingCodes.has(code));
-      accessPairingCodes.set(code, { token, expiresAt: now + 5 * 60 * 1000 });
-      res.writeHead(200, h); return res.end(JSON.stringify({ ok: true, code, expiresInSeconds: 300 }));
-    } catch (_) {
-      res.writeHead(503, h); return res.end(JSON.stringify({ error: "לא ניתן ליצור קוד קישור כרגע." }));
-    }
-  }
-  if (p === "/api/access/pair/redeem" && req.method === "POST") {
-    if (!sameOriginRequest(req) || !req.headers.origin) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
-    if (!ACCESS_REQUIRED || !accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service is not configured" })); }
-    if (!applyRateLimit(req, res, "access-pair-redeem", 10, 15 * 60 * 1000, h)) return;
-    try {
-      const data = await readJsonBody(req, 4096), code = String(data.code || "").trim().toUpperCase();
-      if (!/^[A-F0-9]{8}$/.test(code)) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "יש להזין קוד קישור בן 8 תווים." })); }
-      const entry = accessPairingCodes.get(code);
-      accessPairingCodes.delete(code);
-      if (!entry || entry.expiresAt <= Date.now()) { res.writeHead(400, h); return res.end(JSON.stringify({ error: "הקוד אינו תקף או שפג תוקפו. צור קוד חדש מהמכשיר המאושר." })); }
-      const approvedRow = await getAccessRequestByHash(accessHash(entry.token));
-      if (!approvedRow || approvedRow.status !== "approved") { res.writeHead(403, h); return res.end(JSON.stringify({ error: "האישור במכשיר המקשר אינו פעיל." })); }
-      accessSessionCache.set(accessHash(entry.token), { status: "approved", expiresAt: Date.now() + 15000 });
-      res.writeHead(200, { ...h, "Set-Cookie": cookieHeader("ral_access", entry.token, 60 * 60 * 24 * 365) });
-      return res.end(JSON.stringify({ ok: true, status: "approved" }));
-    } catch (_) {
-      res.writeHead(503, h); return res.end(JSON.stringify({ error: "לא ניתן לקשר את המכשיר כרגע." }));
-    }
-  }
-
-  if (p === "/api/access/request" && req.method === "POST") {
-    if (!sameOriginRequest(req) || !req.headers.origin) { res.writeHead(403, h); return res.end(JSON.stringify({ error: "origin not allowed" })); }
-    if (!ACCESS_REQUIRED || !accessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "access service is not configured" })); }
-    if (!applyRateLimit(req, res, "access-request", 3, 15 * 60 * 1000, h)) return;
+    if (!ACCESS_REQUIRED || !passwordAccessConfigured()) { res.writeHead(503, h); return res.end(JSON.stringify({ error: "סיסמת הגישה עדיין לא הוגדרה בשרת." })); }
+    if (!applyRateLimit(req, res, "access-password-login", 5, 15 * 60 * 1000, h)) return;
     try {
       const data = await readJsonBody(req, 4096);
-      const fullName = String(data.fullName || "").trim().replace(/\s+/g, " ");
-      if (fullName.length < 2 || fullName.length > 100 || !/^[\p{L}\p{M}][\p{L}\p{M}\s.'’\-]{1,99}$/u.test(fullName)) {
-        res.writeHead(400, h); return res.end(JSON.stringify({ error: "נא להזין שם מלא תקין (2–100 תווים)." }));
+      if (!constantTimeEqual(data.password || "", ACCESS_PASSWORD)) {
+        res.writeHead(401, h); return res.end(JSON.stringify({ error: "סיסמה שגויה. נסה שוב." }));
       }
-      const token = crypto.randomBytes(32).toString("base64url");
-      const hash = accessHash(token);
-      await supabaseAccess("", {
-        method: "POST",
-        prefer: "return=minimal",
-        body: { full_name: fullName, status: "pending", access_token_hash: hash }
-      });
-      accessSessionCache.delete(hash);
-      try {
-        await sendAccessRequestNotification(fullName);
-      } catch (emailError) {
-        console.error("[access] Failed to send request notification:", emailError.message);
-      }
-      res.writeHead(201, { ...h, "Set-Cookie": cookieHeader("ral_access", token, 60 * 60 * 24 * 365) });
-      return res.end(JSON.stringify({ ok: true, status: "pending" }));
+      const session = createAccessSession();
+      res.writeHead(200, { ...h, "Set-Cookie": cookieHeader("ral_access", session, 60 * 60 * 24 * 365) });
+      return res.end(JSON.stringify({ ok: true, status: "approved" }));
     } catch (_) {
-      res.writeHead(503, h); return res.end(JSON.stringify({ error: "לא ניתן לשמור את הבקשה כרגע. נסה שוב מאוחר יותר." }));
+      res.writeHead(400, h); return res.end(JSON.stringify({ error: "לא ניתן לבדוק את הסיסמה. נסה שוב." }));
     }
   }
   if (p === "/api/access/admin/login" && req.method === "POST") {
