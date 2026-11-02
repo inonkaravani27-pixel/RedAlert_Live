@@ -1013,7 +1013,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(401, h); return res.end(JSON.stringify({ error: "סיסמה שגויה. נסה שוב." }));
       }
       const session = createAccessSession();
-      const remember = body.remember === true;
+      const remember = data.remember === true;
       const cookieAge = remember ? 60 * 60 * 24 * 365 : undefined;
       res.writeHead(200, { ...h, "Set-Cookie": cookieHeader("ral_access", session, cookieAge) });
       return res.end(JSON.stringify({ ok: true, status: "approved" }));
