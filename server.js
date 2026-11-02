@@ -1170,7 +1170,7 @@ const server = http.createServer(async (req, res) => {
         await supabaseDevices("?device_id=eq." + encodeURIComponent(id), { method: "PATCH", prefer: "return=minimal", body: { blocked: data.action === "block", updated_at: new Date().toISOString() } });
         deviceAuthCache.delete(id);
       } else if (data.action === "revoke") {
-        await supabaseDevices("?device_id=eq." + encodeURIComponent(id), { method: "PATCH", prefer: "return=minimal", body: { session_hash: null, blocked: true, updated_at: new Date().toISOString() } });
+        await supabaseDevices("?device_id=eq." + encodeURIComponent(id), { method: "PATCH", prefer: "return=minimal", body: { session_hash: null, updated_at: new Date().toISOString() } });
         deviceAuthCache.delete(id);
       } else { res.writeHead(400, h); return res.end(JSON.stringify({ error: "פעולה לא מוכרת." })); }
       res.writeHead(200, h); return res.end(JSON.stringify({ ok: true }));
