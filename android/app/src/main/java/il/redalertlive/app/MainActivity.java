@@ -13,6 +13,8 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.SslErrorHandler;
+import android.net.http.SslError;
 import android.webkit.JavascriptInterface;
 import android.content.Intent;
 import android.content.Context;
@@ -216,6 +218,13 @@ public class MainActivity extends Activity {
         ));
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
+        webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(false);
+        webView.getSettings().setSupportMultipleWindows(false);
+        webView.getSettings().setAllowFileAccessFromFileURLs(false);
+        webView.getSettings().setAllowUniversalAccessFromFileURLs(false);
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            webView.getSettings().setSafeBrowsingEnabled(true);
+        }
         webView.getSettings().setLoadsImagesAutomatically(true);
         webView.getSettings().setSupportZoom(false);
         webView.getSettings().setAllowFileAccess(false);
@@ -224,6 +233,19 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new SystemSoundBridge(), "AndroidSystemSounds");
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                // Never allow the app to continue through an invalid TLS certificate.
+                handler.cancel();
+            }
+
+            @Override
+            public void onSafeBrowsingHit(WebView view, WebResourceRequest request,
+                    android.webkit.SafeBrowsingResponse response, int threatType) {
+                if (android.os.Build.VERSION.SDK_INT >= 27) response.backToSafety(true);
+                else super.onSafeBrowsingHit(view, request, response, threatType);
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
