@@ -871,6 +871,8 @@ const server = http.createServer((req, res) => {
   const u = new URL(req.url, "http://x"), p = u.pathname;
   if (p.startsWith("/api/") && req.method !== "OPTIONS" &&
       !applyRateLimit(req, res, "api", 300, 60 * 1000, h)) return;
+  if ((p === "/api/prelim" || p === "/api/osint") && req.method === "GET" &&
+      !applyRateLimit(req, res, "external-news", 20, 60 * 1000, h)) return;
   if (req.method === "OPTIONS") { res.writeHead(204, { ...h, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" }); return res.end(); }
   if (p === "/api/push/public-key" && req.method === "GET") {
     res.writeHead(200, h);
