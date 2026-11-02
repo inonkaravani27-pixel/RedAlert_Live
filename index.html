@@ -39,6 +39,12 @@
       <input id="accessFullName" name="fullName" autocomplete="name" required minlength="2" maxlength="100" style="width:100%;box-sizing:border-box;padding:13px;border-radius:10px;border:1px solid #53647d;background:#0b1220;color:#fff;font-size:16px;margin-bottom:12px">
       <button id="accessRequestButton" type="submit" style="width:100%;padding:13px;border:0;border-radius:10px;background:#2563eb;color:white;font-size:16px;font-weight:700">שליחת בקשת הצטרפות</button>
     </form>
+    <div style="border-top:1px solid #33445e;margin-top:18px;padding-top:14px">
+      <p style="margin:0 0 8px;color:#b8c4d6">כבר אושר לך מכשיר אחר? אפשר לקשר את המכשיר הזה בלי בקשת אישור חדשה.</p>
+      <label for="accessPairCode" style="display:block;margin-bottom:7px">קוד קישור חד־פעמי</label>
+      <input id="accessPairCode" inputmode="text" autocomplete="one-time-code" maxlength="8" placeholder="8 תווים" style="width:100%;box-sizing:border-box;padding:13px;border-radius:10px;border:1px solid #53647d;background:#0b1220;color:#fff;font-size:18px;letter-spacing:3px;text-transform:uppercase;margin-bottom:9px">
+      <button id="redeemAccessPairCode" type="button" style="width:100%;padding:12px;border:1px solid #53647d;border-radius:10px;background:#1c2a40;color:white;font-size:15px;font-weight:700">קישור למכשיר המאושר</button>
+    </div>
     <p id="accessGateStatus" aria-live="polite" style="color:#c4d0e0;line-height:1.6;margin:14px 0 0"></p>
   </section>
 </div>
@@ -66,6 +72,7 @@
 <section id="page-arabic" class="card hidden" aria-label="דיווחים ערביים"><h2 class="section-title">דיווחים ערביים</h2><p class="muted">איסוף ממבחר ערוצי טלגרם ציבוריים בערבית ובפרסית. יוצגו רק כותרות שמזוהות כחריגות במיוחד — למשל דיווח על שיגור טילים, מתקפה רחבה, פעילות חריגה של כטב״מים או סגירת מרחב אווירי. אלה דיווחים לא מאומתים; אין כאן מעקב מבצעי או אימות עצמאי.</p><div id="arabicChannelStatus" class="muted" aria-live="polite">מתחבר לערוצים הציבוריים…</div><div id="arabicChannelFeed"></div></section>
 <section id="page-settings" class="card hidden">
 <h2 class="section-title">הגדרות התרעות</h2>
+<div class="card"><h3 class="section-title">קישור מכשיר נוסף</h3><p class="muted">במכשיר שכבר אושר, צור קוד חד־פעמי והזן אותו באתר או ב־APK במכשיר השני. הקוד תקף ל־5 דקות.</p><button id="createAccessPairCode" type="button" class="primary">יצירת קוד קישור</button><div id="accessPairCodeResult" class="muted" aria-live="polite" style="margin-top:10px"></div></div>
 <div class="card"><h3 class="section-title">התראות כשהאפליקציה סגורה</h3><p class="muted">בחר בנפרד אילו התראות Push לקבל במכשיר הזה.</p><div class="alert-options"><label><input type="checkbox" id="pushRedEnabled" checked> התראות צבע אדום</label><label><input type="checkbox" id="pushNewsEnabled" checked> התראות דיווחים וחדשות</label></div><div id="pushPrefsStatus" class="muted" style="margin-top:8px">הבחירה נשמרת אוטומטית.</div></div>
 <div class="card"><h3 class="section-title">התרעות ראשיות</h3>
 <details class="city-picker"><summary>חיפוש יישובים לאזור הראשי</summary><div class="city-picker-body"><label>אזור ראשי<select id="primaryScope" class="field"><option value="all">כל הארץ</option><option value="selected">רק היישובים שאבחר כאזור ראשי</option></select></label><div class="muted">בחר "רק היישובים שאבחר כאזור ראשי" כדי לסנן לפי היישובים שסימנת.</div><input id="primarySearch" class="field" placeholder="חיפוש יישוב"><div id="primaryChoices"></div></div></details>
@@ -576,6 +583,27 @@ async function loadIranIndicators(){
 (function(){
  const overlay=document.getElementById("accessGate"),form=document.getElementById("accessRequestForm"),status=document.getElementById("accessGateStatus"),button=document.getElementById("accessRequestButton");
  if(!overlay||!form)return;
+ const pairInput=document.getElementById("accessPairCode"),pairButton=document.getElementById("redeemAccessPairCode");
+ const createPairButton=document.getElementById("createAccessPairCode"),pairResult=document.getElementById("accessPairCodeResult");
+ if(pairButton)pairButton.addEventListener("click",async()=>{
+  const code=(pairInput?.value||"").trim().toUpperCase();pairButton.disabled=true;status.textContent="מקשר את המכשיר…";
+  try{
+   const response=await fetch("/api/access/pair/redeem",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code})});
+   const data=await response.json();if(!response.ok)throw new Error(data.error||"לא ניתן לקשר את המכשיר");
+   status.textContent="המכשיר קושר בהצלחה. טוען את RedAlert Live…";location.reload();
+  }catch(error){status.textContent=error.message||"קישור המכשיר נכשל."}
+  finally{pairButton.disabled=false}
+ });
+ if(pairInput)pairInput.addEventListener("input",()=>{pairInput.value=pairInput.value.replace(/[^a-f0-9]/gi,"").slice(0,8).toUpperCase()});
+ if(createPairButton)createPairButton.addEventListener("click",async()=>{
+  createPairButton.disabled=true;if(pairResult)pairResult.textContent="יוצר קוד קישור…";
+  try{
+   const response=await fetch("/api/access/pair/create",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+   const data=await response.json();if(!response.ok)throw new Error(data.error||"לא ניתן ליצור קוד");
+   if(pairResult)pairResult.innerHTML="קוד הקישור שלך: <strong style='font-size:24px;letter-spacing:4px;color:#fff'>"+data.code+"</strong><br>הקוד חד־פעמי ויפוג בעוד 5 דקות. הזן אותו במכשיר השני.";
+  }catch(error){if(pairResult)pairResult.textContent=error.message||"יצירת הקוד נכשלה."}
+  finally{createPairButton.disabled=false}
+ });
  let waiting=false,timer=null;
  async function check(){
   try{
