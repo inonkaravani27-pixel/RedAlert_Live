@@ -241,9 +241,9 @@ public class MainActivity extends Activity {
 
             @Override
             public void onSafeBrowsingHit(WebView view, WebResourceRequest request,
-                    android.webkit.SafeBrowsingResponse response, int threatType) {
+                    int threatType, android.webkit.SafeBrowsingResponse response) {
                 if (android.os.Build.VERSION.SDK_INT >= 27) response.backToSafety(true);
-                else super.onSafeBrowsingHit(view, request, response, threatType);
+                else super.onSafeBrowsingHit(view, request, threatType, response);
             }
 
             @Override
