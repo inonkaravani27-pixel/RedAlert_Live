@@ -939,7 +939,7 @@ async function supabaseDevices(query, options = {}) {
 function deviceDescription(req) {
   const ua = String(req.headers["user-agent"] || "").slice(0, 500);
   let device = "מכשיר לא מזוהה", os = "מערכת לא מזוהה", browser = "דפדפן לא מזוהה";
-  if (/Android/i.test(ua)) { os = "Android"; device = (/;s*([^;)]+)s*Build\//i.exec(ua) || [])[1] || "מכשיר Android"; }
+  if (/Android/i.test(ua)) { os = "Android"; device = (/;\s*([^;)]+)\s*Build\//i.exec(ua) || [])[1] || "מכשיר Android"; }
   else if (/iPhone|iPad|iPod/i.test(ua)) { os = "iOS"; device = /iPad/i.test(ua) ? "iPad" : "iPhone"; }
   else if (/Windows/i.test(ua)) { os = "Windows"; device = "מחשב Windows"; }
   else if (/Mac OS X/i.test(ua)) { os = "macOS"; device = "Mac"; }
