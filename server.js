@@ -632,7 +632,39 @@ async function fetchPublicNewsGroupUncached(group, limit = 15) {
         if (articles.length) return articles.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, limit);
         throw new Error("Bing News RSS returned no recent relevant articles");
       } catch (bingError) {
-        throw new Error("GDELT/Google/Bing News unavailable (" + lastError + "; " + googleError + "; " + msg(bingError) + ")");
+        // Last-resort publisher feeds: BBC Middle East, Al Jazeera English and
+        // The Guardian World. Keep only recent Iran-related headlines matching
+        // this group's topic; never turn broad world headlines into Iran alerts.
+        const publisherFeeds = [
+          { name: "BBC News — Middle East", url: "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml" },
+          { name: "Al Jazeera English", url: "https://www.aljazeera.com/xml/rss/all.xml" },
+          { name: "The Guardian — World", url: "https://www.theguardian.com/world/rss" }
+        ];
+        const feedResults = await Promise.allSettled(publisherFeeds.map(async feed => {
+          const xml = await get(feed.url, { "Accept": "application/rss+xml, application/xml, text/xml, */*" }, 9000);
+          return parseFeed(xml).map(item => ({
+            title: String(item.title || "").trim(),
+            url: String(item.link || "").trim(),
+            source: feed.name,
+            date: Number.isFinite(item.pub) ? new Date(item.pub).toISOString() : "",
+            mediaUrl: item.mediaUrl || "",
+            mediaType: item.mediaType || ""
+          }));
+        }));
+        const articles = feedResults.flatMap(result => result.status === "fulfilled" ? result.value : [])
+          .filter(article => {
+            const age = Date.parse(article.date);
+            const title = article.title;
+            const hasIran = /iran|iranian|tehran|irgc|islamic republic/i.test(title);
+            const relevant = group.id === "launch"
+              ? /missile|rocket|launch|fired|ballistic|strike|attack|drone|qeshm|hormuz/i.test(title)
+              : /missile|rocket|drone|strike|attack|military|security|nuclear|sanction/i.test(title);
+            return title.length >= 12 && (article.url.startsWith("https://") || article.url.startsWith("http://")) &&
+              hasIran && relevant && Number.isFinite(age) &&
+              Date.now() - age <= 6 * 60 * 60 * 1000 && age <= Date.now() + 5 * 60 * 1000;
+          });
+        if (articles.length) return articles.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, limit);
+        throw new Error("GDELT/Google/Bing/publisher RSS unavailable (" + lastError + "; " + googleError + "; " + msg(bingError) + ")");
       }
     }
     throw new Error("GDELT/Google News unavailable (" + lastError + "; " + googleError + ")");
