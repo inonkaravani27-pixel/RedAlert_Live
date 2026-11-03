@@ -531,11 +531,11 @@ async function fetchTelegramChannel(channel, limit = 15) {
   const request = (async () => {
     try {
       const items = await fetchTelegramChannelUncached(channel, limit);
-      telegramFetchCache.set(key, { items, until: Date.now() + 60_000 });
+      telegramFetchCache.set(key, { items, until: Date.now() + 45_000 });
       return items;
     } catch (error) {
       const message = msg(error);
-      telegramFetchCache.set(key, { error: message, until: Date.now() + 120_000 });
+      telegramFetchCache.set(key, { error: message, until: Date.now() + 30_000 });
       throw error;
     } finally {
       telegramFetchInFlight.delete(key);
@@ -613,11 +613,11 @@ async function fetchPublicNewsGroup(group, limit = 15) {
   const request = (async () => {
     try {
       const articles = await fetchPublicNewsGroupUncached(group, limit);
-      publicNewsGroupCache.set(key, { articles, until: Date.now() + 60_000 });
+      publicNewsGroupCache.set(key, { articles, until: Date.now() + 45_000 });
       return articles;
     } catch (error) {
       const message = msg(error);
-      publicNewsGroupCache.set(key, { error: message, until: Date.now() + 120_000 });
+      publicNewsGroupCache.set(key, { error: message, until: Date.now() + 30_000 });
       throw error;
     } finally {
       publicNewsGroupInFlight.delete(key);
@@ -630,7 +630,7 @@ async function fetchPublicNewsGroup(group, limit = 15) {
 let publicNewsCache = null;
 let publicNewsRefreshPromise = null;
 let publicNewsLastRefresh = 0;
-const PUBLIC_NEWS_REFRESH_MS = 20000;
+const PUBLIC_NEWS_REFRESH_MS = 30000;
 const PUBLIC_NEWS_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 function filterFreshPublicArticles(articles) {
   const now = Date.now();
@@ -708,7 +708,7 @@ function ensurePublicNewsRefresh() {
 let arabicNewsCache = null;
 let arabicNewsRefreshPromise = null;
 let arabicNewsLastRefresh = 0;
-const ARABIC_NEWS_REFRESH_MS = 30000;
+const ARABIC_NEWS_REFRESH_MS = 45000;
 
 function isExceptionalArabicReport(article) {
   const text = [article.title, article.description, article.summary].filter(Boolean).join(" ");
