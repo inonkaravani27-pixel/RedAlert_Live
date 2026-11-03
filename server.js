@@ -582,7 +582,7 @@ async function fetchPublicNewsGroupUncached(group, limit = 15) {
     const seen = new Set();
     const articles = parseFeed(xml).map(item => {
       const title = item.title || "";
-      const match = title.match(/\s+-\s+([^\-]+)$/);
+      const match = title.match(/\s+-\s+([^-]+)$/);
       return { title, url: item.link || "", source: match ? match[1].trim() : "Google News",
         date: Number.isFinite(item.pub) ? new Date(item.pub).toISOString() : "", mediaUrl: item.mediaUrl || "", mediaType: item.mediaType || "" };
     }).filter(a => {
@@ -626,7 +626,7 @@ async function fetchPublicNewsGroupUncached(group, limit = 15) {
           const relevant = group.id === "launch"
             ? /missile|rocket|launch|fired|ballistic|strike|attack|platform/i.test(article.title)
             : /missile|rocket|drone|strike|attack|military|security/i.test(article.title);
-          return article.title.length >= 12 && /^https?:\\/\\//i.test(article.url) && hasIran && relevant &&
+          return article.title.length >= 12 && /^https?:\/\//i.test(article.url) && hasIran && relevant &&
             Number.isFinite(age) && Date.now() - age <= 6 * 60 * 60 * 1000 && age <= Date.now() + 5 * 60 * 1000;
         });
         if (articles.length) return articles.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, limit);
