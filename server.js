@@ -418,9 +418,12 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
   let rssValid = false;
   // Prefer Telegram's own logged-out public channel preview. It avoids third-party
   // RSS bridges that frequently rate-limit or return HTTP 503.
+  const telegramPreview = "https://t.me/s/" + encodeURIComponent(channel);
   const previewUrls = [
-    "https://t.me/s/" + encodeURIComponent(channel),
-    "https://telegram.me/s/" + encodeURIComponent(channel)
+    telegramPreview,
+    "https://telegram.me/s/" + encodeURIComponent(channel),
+    "https://cors.tools/proxy?url=" + encodeURIComponent(telegramPreview),
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent(telegramPreview)
   ];
   for (const url of previewUrls) {
     try {
@@ -968,6 +971,15 @@ async function translateToHebrew(text) {
       const translated = result ? dec(result[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim() : "";
       if (translated) return cacheTranslation(input, translated);
       throw new Error("Google mobile page returned no translation");
+    } catch (error) { lastError = error; }
+
+    // If Render's outbound route to Google is gateway-blocked, retry through a public GET proxy.
+    try {
+      const googleUrl = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
+      const parsed = await translationFetch("https://cors.tools/proxy?url=" + encodeURIComponent(googleUrl), 8000);
+      const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("").trim() : "";
+      if (translated) return cacheTranslation(input, translated);
+      throw new Error("Google proxy returned an empty translation");
     } catch (error) { lastError = error; }
 
     // MyMemory direct translation, then a two-step route through English if needed.
