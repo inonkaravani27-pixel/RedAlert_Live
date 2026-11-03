@@ -789,7 +789,7 @@ const ARABIC_NEWS_REFRESH_MS = 45000;
 
 function isExceptionalArabicReport(article) {
   const text = [article.title, article.description, article.summary].filter(Boolean).join(" ");
-  const highSignal = /(?:missile\s+(?:launch|strike|barrage)|ballistic missile|mass(?:ive)?\s+(?:drone|missile)\s+(?:attack|launch|strike|swarm)|drone swarm|multiple reconnaissance drones|airspace (?:closed|closure)|emergency mobilization|major explosion|large-scale attack|IRGC.{0,45}(?:missile|drone|alert|mobiliz|deploy)|إطلاق صواريخ|هجوم صاروخي|هجوم واسع|ضربة واسعة|طائرات? مسيرة|مسيّرات استطلاع|إغلاق المجال الجوي|إغلاق الأجواء|انفجار كبير|تعبئة عامة|حالة استنفار|الحرس الثوري.{0,45}(?:صواريخ|مسيرات|استنفار|تحركات)|چندین پهپاد|پهپادهای شناسایی|شلیک موشک|پرتاب موشک|حمله موشکی|حمله گسترده|بستن حریم هوایی|آماده‌باش|انفجارهای شدید|تحرکات غیرعادی|سپاه.{0,45}(?:پهپاد|موشک|آماده‌باش|تحرکات))/i;
+  const highSignal = /(?:missile\s+(?:launch|strike|barrage)|ballistic missile|mass(?:ive)?\s+(?:drone|missile)\s+(?:attack|launch|strike|swarm)|drone swarm|multiple reconnaissance drones|airspace (?:closed|closure)|emergency mobilization|major explosion|large-scale attack|IRGC.{0,45}(?:missile|drone|alert|mobiliz|deploy)|إطلاق\s+(?:صواريخ|الصواريخ)|اطلاق\s+(?:صواريخ|الصواريخ)|أطلقت.{0,35}صواريخ|اطلقت.{0,35}صواريخ|صواريخ.{0,35}(?:أطلقت|اطلقت|إطلاق|اطلاق)|هجوم صاروخي|هجوم واسع|ضربة واسعة|طائرات? مسيرة|مسيّرات استطلاع|إغلاق المجال الجوي|إغلاق الأجواء|انفجار كبير|تعبئة عامة|حالة استنفار|الحرس الثوري.{0,45}(?:صواريخ|مسيرات|استنفار|تحركات)|چندین پهپاد|پهپادهای شناسایی|(?:شلیک|پرتاب)\s+(?:موشک|موشک‌ها)|موشک.{0,35}(?:شلیک|پرتاب)|شلیک کرد.{0,25}موشک|موشک.{0,25}شلیک کرد|حمله موشکی|حمله گسترده|بستن حریم هوایی|آماده‌باش|انفجارهای شدید|تحرکات غیرعادی|سپاه.{0,45}(?:پهپاد|موشک|آماده‌باش|تحرکات)|سامانه.{0,35}پرتاب.{0,20}موشک|پرتاب.{0,20}موشک.{0,35}ایران)/i;
   return highSignal.test(text);
 }
 async function refreshArabicNewsCache() {
@@ -825,7 +825,7 @@ async function refreshArabicNewsCache() {
           groups: [...results] };
       }
     };
-    await Promise.all(Array.from({ length: 8 }, () => worker()));
+    await Promise.all(Array.from({ length: 2 }, () => worker()));
     arabicNewsCache = { source: "Public Telegram channels", fetchedAt: new Date().toISOString(),
       refreshing: false, note: "רק כותרות חריגות ממקורות ציבוריים; הדיווחים אינם מאומתים עצמאית.",
       groups: [...results] };
