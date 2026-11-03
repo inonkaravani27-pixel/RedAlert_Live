@@ -414,6 +414,8 @@ const PUBLIC_STANDARD_NEWS_GROUPS = PUBLIC_NEWS_GROUPS.filter(group => group.cat
 
 async function fetchTelegramChannelUncached(channel, limit = 15) {
   let telegramError = "";
+  let telegramValid = false;
+  let rssValid = false;
   // Prefer Telegram's own logged-out public channel preview. It avoids third-party
   // RSS bridges that frequently rate-limit or return HTTP 503.
   const previewUrls = [
@@ -435,6 +437,7 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
         telegramError = "Telegram preview returned HTML without message nodes";
         continue;
       }
+      telegramValid = true;
       const now = Date.now();
       const out = [];
       for (let i = 0; i < starts.length; i++) {
@@ -492,6 +495,7 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
       if (!/<(?:rss|feed|channel)\b/i.test(xml) || /<title>\s*(?:Error|Not Found|Internal Server Error)/i.test(xml.slice(0, 2000))) {
         throw new Error("RSS bridge did not return a feed");
       }
+      rssValid = true;
       const now = Date.now();
       const items = parseFeed(xml).map(item => {
         const pub = Number.isFinite(item.pub) ? item.pub : Date.parse(item.pub || "");
@@ -517,6 +521,8 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
     if (success) return success.value;
     rssError = batch.map(result => result.status === "rejected" ? msg(result.reason) : "").filter(Boolean).join("; ");
   }
+  // A reachable public feed with no posts in the selected time window is empty, not unavailable.
+  if (telegramValid || rssValid) return [];
   throw new Error("Telegram public feed unavailable (" + telegramError + "; " + rssError + ")");
 }
 
