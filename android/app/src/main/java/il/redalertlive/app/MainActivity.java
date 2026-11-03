@@ -18,6 +18,7 @@ import android.webkit.SslErrorHandler;
 import android.net.http.SslError;
 import android.webkit.JavascriptInterface;
 import android.content.Intent;
+import android.provider.Settings;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -81,6 +82,22 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public boolean hasNotificationPolicyAccess() {
+            NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            return android.os.Build.VERSION.SDK_INT < 23 || (manager != null && manager.isNotificationPolicyAccessGranted());
+        }
+
+        @JavascriptInterface
+        public void requestNotificationPolicyAccess() {
+            runOnUiThread(() -> {
+                if (android.os.Build.VERSION.SDK_INT >= 23 && !hasNotificationPolicyAccess()) {
+                    try { startActivity(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)); }
+                    catch (Exception ignored) {}
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void vibrate(boolean strong) {
             runOnUiThread(() -> vibrateDevice(strong));
         }
@@ -130,7 +147,7 @@ public class MainActivity extends Activity {
             long[] pattern = strong ? new long[]{0, 500, 100, 500, 100, 700, 150, 700} : new long[]{0, 350, 180, 350, 180, 500};
             if (android.os.Build.VERSION.SDK_INT >= 26) {
                 AudioAttributes attributes = new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build();
                 vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1), attributes);
@@ -180,7 +197,7 @@ public class MainActivity extends Activity {
             if (previewRingtone != null) {
                 if (android.os.Build.VERSION.SDK_INT >= 21) {
                     previewRingtone.setAudioAttributes(new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setUsage(AudioAttributes.USAGE_ALARM)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
                 }
                 previewRingtone.play();
