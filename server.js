@@ -595,7 +595,47 @@ async function fetchPublicNewsGroupUncached(group, limit = 15) {
     if (articles.length) return articles.slice(0, limit);
     throw new Error("Google News RSS returned no articles");
   } catch (error) {
-    throw new Error("GDELT/Google News unavailable (" + lastError + "; " + msg(error) + ")");
+    const googleError = msg(error);
+    // Additional public RSS fallback for the two Iran news groups. Bing's RSS
+    // search feed is not a versioned API, so it is used only after GDELT and Google News.
+    if (group.id === "launch" || group.id === "iran") {
+      try {
+        const query = group.id === "launch"
+          ? '"Iran missile launch" OR "missiles launched from Iran" OR "Iran ballistic missile" OR "Iran missile platform"'
+          : 'Iran Israel Tehran IRGC missile rocket drone strike attack';
+        const bingUrl = "https://www.bing.com/news/search?q=" + encodeURIComponent(query) + "&format=RSS&setmkt=en-US";
+        const xml = await get(bingUrl, { "Accept": "application/rss+xml, application/xml, text/xml, */*" }, 9000);
+        const articles = parseFeed(xml).map(item => {
+          let url = String(item.link || "");
+          try {
+            const parsedUrl = new URL(url);
+            if (parsedUrl.hostname.endsWith("bing.com") && parsedUrl.pathname.includes("apiclick.aspx")) {
+              url = new URLSearchParams(parsedUrl.search).get("url") || url;
+            }
+          } catch (_) {}
+          const title = String(item.title || "").trim();
+          const match = title.match(/\\s+-\\s+([^\\-]+)$/);
+          return {
+            title, url, source: match ? match[1].trim() : "Bing News",
+            date: Number.isFinite(item.pub) ? new Date(item.pub).toISOString() : "",
+            mediaUrl: item.mediaUrl || "", mediaType: item.mediaType || ""
+          };
+        }).filter(article => {
+          const age = Date.parse(article.date);
+          const hasIran = /iran|iranian|tehran|irgc/i.test(article.title);
+          const relevant = group.id === "launch"
+            ? /missile|rocket|launch|fired|ballistic|strike|attack|platform/i.test(article.title)
+            : /missile|rocket|drone|strike|attack|military|security/i.test(article.title);
+          return article.title.length >= 12 && /^https?:\\/\\//i.test(article.url) && hasIran && relevant &&
+            Number.isFinite(age) && Date.now() - age <= 6 * 60 * 60 * 1000 && age <= Date.now() + 5 * 60 * 1000;
+        });
+        if (articles.length) return articles.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, limit);
+        throw new Error("Bing News RSS returned no recent relevant articles");
+      } catch (bingError) {
+        throw new Error("GDELT/Google/Bing News unavailable (" + lastError + "; " + googleError + "; " + msg(bingError) + ")");
+      }
+    }
+    throw new Error("GDELT/Google News unavailable (" + lastError + "; " + googleError + ")");
   }
 }
 
