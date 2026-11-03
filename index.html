@@ -320,7 +320,7 @@ async function loadPrelimFromPublicFeed(){
  if(box&&!box.dataset.cacheShown){try{localStorage.removeItem("ral-news-html")}catch{}if(sourceStatus)sourceStatus.textContent="מתחבר למקורות ומחפש דיווחים טריים…";}
  if(!box||prelimRequestInFlight)return;
  prelimRequestInFlight=true;
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
  try{
   const response=await fetch("/api/iran-indicators?ts="+Date.now(),{cache:"no-store",signal:controller.signal});
   const data=await response.json();
