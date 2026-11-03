@@ -420,6 +420,7 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
     "https://rsshub.app",
     "https://rsshub.rssforever.com",
     "https://hub.slarker.me",
+    "https://redalert-rsshub.onrender.com",
     "https://rsshub.pseudoyu.com",
     "https://rsshub.rss.tips",
     "https://rsshub.ktachibana.party",
@@ -831,38 +832,77 @@ async function translationFetch(url, timeoutMs = 7500) {
     return await response.json();
   } finally { clearTimeout(timer); }
 }
+async function translationPost(url, body, timeoutMs = 6500) {
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      method: "POST", signal: controller.signal,
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) throw new Error("translation HTTP " + response.status);
+    return await response.json();
+  } finally { clearTimeout(timer); }
+}
+const translationInFlight = new Map();
+const translationFailureCache = new Map();
+function cacheTranslation(input, translated) {
+  translationCache.set(input, translated);
+  translationFailureCache.delete(input);
+  if (translationCache.size > 500) translationCache.delete(translationCache.keys().next().value);
+  return translated;
+}
 async function translateToHebrew(text) {
   const input = cleanTranslationText(text);
   if (!input) return "";
   if (translationCache.has(input)) return translationCache.get(input);
-  let lastError;
-  try {
-    const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
-    const parsed = await translationFetch(url);
-    const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("").trim() : "";
-    if (translated) {
-      translationCache.set(input, translated);
-      if (translationCache.size > 500) translationCache.delete(translationCache.keys().next().value);
-      return translated;
-    }
-    throw new Error("Google returned an empty translation");
-  } catch (error) { lastError = error; }
-  const source = /[\u067E\u0686\u0698\u06AF\u06A9\u06CC]/u.test(input) ? "fa" :
-    /[\u0600-\u06FF]/u.test(input) ? "ar" : "";
-  if (source) {
+  const failedUntil = translationFailureCache.get(input) || 0;
+  if (Date.now() < failedUntil) throw new Error("translation temporarily unavailable");
+  if (translationInFlight.has(input)) return translationInFlight.get(input);
+  const request = (async () => {
+    let lastError;
     try {
-      const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input) + "&langpair=" + source + "%7Che";
-      const data = await translationFetch(url);
-      const translated = String(data?.responseData?.translatedText || "").trim();
-      if (data?.responseStatus === 200 && translated && !/^PLEASE SELECT|NO QUERY SPECIFIED/i.test(translated)) {
-        translationCache.set(input, translated);
-        if (translationCache.size > 500) translationCache.delete(translationCache.keys().next().value);
-        return translated;
-      }
-      throw new Error("MyMemory returned an empty translation");
+      const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
+      const parsed = await translationFetch(url);
+      const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("").trim() : "";
+      if (translated) return cacheTranslation(input, translated);
+      throw new Error("Google returned an empty translation");
     } catch (error) { lastError = error; }
-  }
-  throw lastError || new Error("translation unavailable");
+
+    const source = /[\u067E\u0686\u0698\u06AF\u06A9\u06CC]/u.test(input) ? "fa" :
+      /[\u0600-\u06FF]/u.test(input) ? "ar" : "";
+    if (source) {
+      try {
+        const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input) + "&langpair=" + source + "%7Che";
+        const data = await translationFetch(url);
+        const translated = String(data?.responseData?.translatedText || "").trim();
+        if (data?.responseStatus === 200 && translated && !/^PLEASE SELECT|NO QUERY SPECIFIED/i.test(translated)) {
+          return cacheTranslation(input, translated);
+        }
+        throw new Error("MyMemory returned an empty translation");
+      } catch (error) { lastError = error; }
+    }
+
+    // Free, open-source LibreTranslate mirrors are a final fallback. They can pivot
+    // Arabic/Persian through English when a direct pair is not installed.
+    const libreSource = source || "auto";
+    for (const base of ["https://translate.argosopentech.com", "https://translate.terraprint.co"]) {
+      try {
+        const data = await translationPost(base + "/translate", {
+          q: input, source: libreSource, target: "he", format: "text"
+        });
+        const translated = String(data?.translatedText || "").trim();
+        if (translated) return cacheTranslation(input, translated);
+        throw new Error("LibreTranslate returned an empty translation");
+      } catch (error) { lastError = error; }
+    }
+    translationFailureCache.set(input, Date.now() + 20000);
+    if (translationFailureCache.size > 500) translationFailureCache.delete(translationFailureCache.keys().next().value);
+    throw lastError || new Error("translation unavailable");
+  })();
+  translationInFlight.set(input, request);
+  try { return await request; }
+  finally { translationInFlight.delete(input); }
 }
 const state = areas => ({ now: Date.now(), oref: orefOut(areas), prelim: grp(G.prelim), military: grp(G.military) });
 
