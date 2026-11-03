@@ -292,14 +292,16 @@ async function loadIranLaunchBriefs(){
     const title=/[\u0590-\u05FF]/.test(a.title)?a.title:"";
     return '<article class="item"><div class="news-flags"><span class="tag">'+(isTelegram?'טלגרם · לא מאומת':'דיווח תקשורתי')+'</span><span class="tag">לא אימות עצמאי</span></div><b id="iran-launch-title-'+i+'">'+esc(title||"טוען כותרת…")+'</b>'+(range?'<p class="muted">טווח שדווח: '+esc(range)+'</p>':'')+'<p class="muted">'+esc(a.groupLabel||"מקור ציבורי")+' · '+esc(a.source||"מקור לא ידוע")+'<br>'+esc(formatIranDate(a.date))+'</p><a class="map-link" href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer">פתח מקור ↗</a></article>';
    }).join("");
-   await Promise.all(fresh.map(async(a,i)=>{
-    const node=$("iran-launch-title-"+i);
+   let launchTranslationIndex=0;
+   const launchTranslationWorkers=Array.from({length:3},async()=>{while(launchTranslationIndex<fresh.length){
+    const i=launchTranslationIndex++,a=fresh[i],node=$("iran-launch-title-"+i);
     if(node&&!/[\u0590-\u05FF]/.test(a.title)){
      const translated=await translateNewsTitle(a.title);
      if(translated&&node.isConnected)node.textContent=translated;
      else if(node.isConnected)node.textContent=a.title;
     }
-   }));
+   }});
+   await Promise.allSettled(launchTranslationWorkers);
   }
   status.textContent="עודכן: "+new Date().toLocaleTimeString("he-IL")+" · דיווחים פומביים בלבד; אין חיזוי או מעקב מבצעי אחר משגרים.";
  }catch(e){
