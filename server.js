@@ -413,14 +413,68 @@ const PUBLIC_ARABIC_CHANNELS = PUBLIC_NEWS_GROUPS.filter(group => group.category
 const PUBLIC_STANDARD_NEWS_GROUPS = PUBLIC_NEWS_GROUPS.filter(group => group.category !== "arabic");
 
 async function fetchTelegramChannelUncached(channel, limit = 15) {
-  // Prefer an RSS bridge: Telegram's HTML preview is currently returning markup
-  // the in-process scraper cannot parse from the hosted Render instance.
-  // Keep to listed public instances; mirrors are tried only after earlier instances fail.
+  let telegramError = "";
+  // Prefer Telegram's own logged-out public channel preview. It avoids third-party
+  // RSS bridges that frequently rate-limit or return HTTP 503.
+  const previewUrls = [
+    "https://t.me/s/" + encodeURIComponent(channel),
+    "https://telegram.me/s/" + encodeURIComponent(channel)
+  ];
+  for (const url of previewUrls) {
+    try {
+      const html = await get(url, {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://t.me/"
+      }, 7000);
+      // Telegram places data-post on the inner .tgme_widget_message element,
+      // not consistently on the outer *_wrap container.
+      const starts = [...html.matchAll(/<div\b(?=[^>]*\bclass=["'][^"']*\btgme_widget_message\b)(?=[^>]*\bdata-post=["']([^"']+)["'])[^>]*>/gi)];
+      if (!starts.length) {
+        telegramError = "Telegram preview returned HTML without message nodes";
+        continue;
+      }
+      const now = Date.now();
+      const out = [];
+      for (let i = 0; i < starts.length; i++) {
+        try {
+          const block = html.slice(starts[i].index, starts[i + 1]?.index ?? html.length);
+          const post = starts[i][1] || (block.match(/\bdata-post=["']([^"']+)["']/i) || [])[1];
+          if (!post) continue;
+          const textMatch = block.match(/<div\b[^>]*class=["'][^"']*\btgme_widget_message_text\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+          let title = textMatch ? dec(textMatch[1].replace(/<br\s*\/?\s*>/gi, " ").replace(/<\/p>/gi, " ")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+          const dateRaw = (block.match(/<time\b[^>]*datetime=["']([^"']+)["']/i) || [])[1] || "";
+          const pub = Date.parse(dateRaw);
+          if (!Number.isFinite(pub) || now - pub > 6 * 60 * 60 * 1000 || pub > now + 5 * 60 * 1000) continue;
+          const photoBg = block.match(/class=["'][^"']*tgme_widget_message_photo_wrap[^"']*["'][^>]*style=["'][^"']*background-image:\s*url\(["']?(https:\/\/[^)'"]+)/i)
+            || block.match(/background-image:\s*url\(["']?(https:\/\/[^)'"]+)/i);
+          const photoTag = [...block.matchAll(/<img\b[^>]*>/gi)].map(m => m[0]).find(tag => /tgme_widget_message_photo/i.test(tag));
+          const imgSrc = photoTag ? (photoTag.match(/(?:src|srcset)=["']([^"' ,]+)["']/i) || [])[1] : "";
+          const videoMatch = /tgme_widget_message_video_player|tgme_widget_message_video|<video\b|tgme_widget_message_roundvideo/i.test(block);
+          const mediaUrl = (photoBg ? photoBg[1] : (imgSrc || "")).replace(/&amp;/g, "&");
+          const hasPhoto = Boolean(mediaUrl);
+          if (!title && !videoMatch && !hasPhoto) continue;
+          if (!title) title = videoMatch ? "תיעוד וידאו מצורף לפוסט" : "תמונה מצורפת לפוסט";
+          out.push({ title: title.slice(0, 1000), url: "https://t.me/" + post, source: "t.me/" + channel,
+            date: new Date(pub).toISOString(), mediaUrl, mediaType: videoMatch ? "video" : (hasPhoto ? "image" : ""),
+            unverified: true, verification: "מקור טלגרם — דיווח לא מאומת עד להצלבה מול מקור נוסף" });
+        } catch (_) { /* Ignore malformed individual posts; keep the rest of the channel. */ }
+      }
+      const seen = new Set();
+      const parsed = out.sort((x, y) => Date.parse(y.date) - Date.parse(x.date))
+        .filter(item => !seen.has(item.url) && seen.add(item.url)).slice(0, limit);
+      if (parsed.length) return parsed;
+      telegramError = "Telegram preview had no posts within the last 6 hours";
+    } catch (error) { telegramError = msg(error); }
+  }
+
+  // Telegram preview fallback failed; try independent RSS mirrors at low concurrency.
   const rssHosts = [
+    "https://redalert-rsshub.onrender.com",
     "https://rsshub.app",
     "https://rsshub.rssforever.com",
     "https://hub.slarker.me",
-    "https://redalert-rsshub.onrender.com",
     "https://rsshub.pseudoyu.com",
     "https://rsshub.rss.tips",
     "https://rsshub.ktachibana.party",
@@ -429,35 +483,32 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
     "https://rss.wudifeixue.com"
   ];
   let rssError = "";
-  // Try three independent public bridges in parallel instead of waiting up to 8s
-  // for each of nine mirrors in sequence. Move to the next batch only if all fail.
-  for (let offset = 0; offset < rssHosts.length; offset += 3) {
-    const batch = await Promise.allSettled(rssHosts.slice(offset, offset + 3).map(async host => {
+  for (let offset = 0; offset < rssHosts.length; offset += 2) {
+    const batch = await Promise.allSettled(rssHosts.slice(offset, offset + 2).map(async host => {
       const xml = await get(host + "/telegram/channel/" + encodeURIComponent(channel), {
         "Accept": "application/rss+xml, application/xml, text/xml, */*",
         "Referer": host + "/"
-      }, 5000);
+      }, 6000);
       if (!/<(?:rss|feed|channel)\b/i.test(xml) || /<title>\s*(?:Error|Not Found|Internal Server Error)/i.test(xml.slice(0, 2000))) {
         throw new Error("RSS bridge did not return a feed");
       }
       const now = Date.now();
       const items = parseFeed(xml).map(item => {
         const pub = Number.isFinite(item.pub) ? item.pub : Date.parse(item.pub || "");
-        const link = String(item.link || "");
         const titleText = cleanTranslationText(item.title || "");
         const description = cleanTranslationText(item.desc || "");
-        const title = (titleText.length >= 8 ? titleText : description || titleText).replace(/\s+/g, " ").trim();
-        return { title: title.slice(0, 1000), description: description.slice(0, 1000), url: link, source: "t.me/" + channel,
-          date: Number.isFinite(pub) ? new Date(pub).toISOString() : "",
-          mediaUrl: item.mediaUrl || "", mediaType: item.mediaType || "",
-          unverified: true, verification: "מקור טלגרם — דיווח לא מאומת עד להצלבה מול מקור נוסף" };
+        return { title: (titleText.length >= 8 ? titleText : description || titleText).replace(/\s+/g, " ").trim().slice(0, 1000),
+          description: description.slice(0, 1000), url: String(item.link || ""), source: "t.me/" + channel,
+          date: Number.isFinite(pub) ? new Date(pub).toISOString() : "", mediaUrl: item.mediaUrl || "",
+          mediaType: item.mediaType || "", unverified: true,
+          verification: "מקור טלגרם — דיווח לא מאומת עד להצלבה מול מקור נוסף" };
       }).filter(item => {
         const pub = Date.parse(item.date);
-        return item.title.length >= 3 && /^https?:\/\//i.test(item.url) &&
-          Number.isFinite(pub) && pub <= now + 5 * 60 * 1000 && now - pub <= 6 * 60 * 60 * 1000;
+        return item.title.length >= 3 && /^https?:\/\//i.test(item.url) && Number.isFinite(pub) &&
+          pub <= now + 5 * 60 * 1000 && now - pub <= 6 * 60 * 60 * 1000;
       });
       const seen = new Set();
-      const parsed = items.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
+      const parsed = items.sort((x, y) => Date.parse(y.date) - Date.parse(x.date))
         .filter(item => !seen.has(item.url) && seen.add(item.url)).slice(0, limit);
       if (!parsed.length) throw new Error("RSS bridge returned no posts from the last 6 hours");
       return parsed;
@@ -466,54 +517,7 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
     if (success) return success.value;
     rssError = batch.map(result => result.status === "rejected" ? msg(result.reason) : "").filter(Boolean).join("; ");
   }
-
-  // Fallback to Telegram's public HTML preview if RSS bridge instances are unavailable.
-  const urls = ["https://t.me/s/" + encodeURIComponent(channel), "https://telegram.me/s/" + encodeURIComponent(channel)];
-  let html = "", lastError = "";
-  for (const url of urls) {
-    try {
-      const candidate = await get(url, {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Referer": "https://t.me/"
-      }, 5000);
-      html = candidate;
-      if (/tgme_widget_message_wrap|tgme_widget_message_text|data-post=["'][^"']+\//i.test(candidate)) break;
-      lastError = "public preview markup not found";
-    } catch (error) { lastError = msg(error); }
-  }
-  if (!html) throw new Error("Telegram/RSS preview unavailable (" + rssError + "; " + lastError + ")");
-  const starts = [...html.matchAll(/<div\b[^>]*class=["'][^"']*\btgme_widget_message_wrap\b[^"']*["'][^>]*>/gi)];
-  const blocks = starts.map((match, index) => html.slice(match.index, starts[index + 1]?.index ?? html.length));
-  if (!starts.length) throw new Error("Telegram/RSS preview markup unavailable (" + rssError + ")");
-  const out = [];
-  for (const block of blocks) {
-    const post = (block.match(/data-post=["']([^"']+)["']/i) || [])[1];
-    if (!post) continue;
-    const textMatch = block.match(/<div\b[^>]*class=["'][^"']*\btgme_widget_message_text\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
-    let title = textMatch ? dec(textMatch[1].replace(/<br\s*\/?\s*>/gi, " ").replace(/<\/p>/gi, " ")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
-    const dateRaw = (block.match(/<time\b[^>]*datetime=["']([^"']+)["']/i) || [])[1] || "";
-    const pub = Date.parse(dateRaw);
-    if (!Number.isFinite(pub) || Date.now() - pub > 6 * 60 * 60 * 1000 || pub > Date.now() + 5 * 60 * 1000) continue;
-    const photoBg = block.match(/class=["'][^"']*tgme_widget_message_photo_wrap[^"']*["'][^>]*style=["'][^"']*background-image:\s*url\(["']?(https:\/\/[^)'"]+)/i)
-      || block.match(/background-image:\s*url\(["']?(https:\/\/[^)'"]+)/i);
-    const photoTag = [...block.matchAll(/<img\b[^>]*>/gi)].map(m => m[0]).find(tag => /tgme_widget_message_photo/i.test(tag));
-    const imgSrc = photoTag ? (photoTag.match(/(?:src|srcset)=["']([^"' ,]+)["']/i) || [])[1] : "";
-    const videoMatch = /tgme_widget_message_video_player|tgme_widget_message_video|<video\b|tgme_widget_message_roundvideo/i.test(block);
-    const mediaUrl = (photoBg ? photoBg[1] : (imgSrc || "")).replace(/&amp;/g, "&");
-    const hasPhoto = Boolean(mediaUrl);
-    if (!title && !videoMatch && !hasPhoto) continue;
-    if (!title) title = videoMatch ? "תיעוד וידאו מצורף לפוסט" : "תמונה מצורפת לפוסט";
-    if (title.length < 6 && !videoMatch && !hasPhoto) continue;
-    out.push({ title: title.slice(0, 600), url: "https://t.me/" + post, source: "t.me/" + channel,
-      date: new Date(pub).toISOString(), mediaUrl, mediaType: videoMatch ? "video-preview" : (hasPhoto ? "image" : ""),
-      unverified: true, verification: "מקור טלגרם — דיווח לא מאומת עד להצלבה מול מקור נוסף" });
-  }
-  const seen = new Set();
-  const parsed = out.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).filter(a => !seen.has(a.url) && seen.add(a.url)).slice(0, limit);
-  if (!parsed.length) throw new Error("No recent Telegram posts could be parsed (RSS bridge: " + rssError + ")");
-  return parsed;
+  throw new Error("Telegram public feed unavailable (" + telegramError + "; " + rssError + ")");
 }
 
 // Avoid hammering shared public RSS bridges every 20 seconds when they are rate-limiting
