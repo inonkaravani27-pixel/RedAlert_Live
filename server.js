@@ -951,6 +951,19 @@ async function translateToHebrew(text) {
       } catch (error) { lastError = error; }
     }
 
+    // Google's lightweight HTML translation page is a separate fallback path
+    // when the unofficial JSON endpoint is returning gateway errors.
+    try {
+      const mobileHtml = await get("https://translate.google.com/m?sl=auto&tl=he&q=" + encodeURIComponent(input), {
+        "Accept": "text/html,application/xhtml+xml,*/*",
+        "Referer": "https://translate.google.com/"
+      }, 7000);
+      const result = mobileHtml.match(/<div\b[^>]*class=["'][^"']*\bresult-container\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+      const translated = result ? dec(result[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim() : "";
+      if (translated) return cacheTranslation(input, translated);
+      throw new Error("Google mobile page returned no translation");
+    } catch (error) { lastError = error; }
+
     // MyMemory direct translation, then a two-step route through English if needed.
     if (source) {
       try {
