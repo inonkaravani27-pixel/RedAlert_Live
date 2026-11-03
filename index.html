@@ -250,15 +250,25 @@ async function poll(){try{
 }
 let iranLaunchRequestInFlight=false;
 function iranLaunchMatch(article, groupId) {
- const headline=[article.title,article.description,article.summary].filter(Boolean).join(" ");
- const iran=/(iran|iranian|tehran|איראן|איראני|טהרן)/i.test(headline);
- const israel=/(israel|israeli|toward israel|at israel|ישראל|לישראל|לעבר ישראל)/i.test(headline);
- const launch=/(launch(?:ed|es|ing)?|missile volley|ballistic missile|fired|firing|rocket attack|drone attack|שיגור|שוגרו|שיגרה|שיגר|טיל בליסטי|טילים לעבר|מטחים|ירי לעבר)/i.test(headline);
-  const launcherMovement=/(launcher movement|missile launcher movement|launcher repositioning|reposition(?:ed|ing)? (?:missile )?launchers|mobile missile launchers?|moving (?:missile )?launchers|launchers? (?:were )?moved|missile launchers? (?:on the move|relocated)|launcher activity|missile launcher activity|deployment of (?:mobile )?launchers|משגרי טילים|תזוזת משגרים|הזזת משגרים|העברת משגרים|העבירו משגרים|פריסת משגרים|ניידות משגרים)/i.test(headline);
-  const operationalTracking=/(operational tracking|tracked (?:the )?(?:movement|movements|activity) of (?:iranian )?(?:missile )?launchers|tracking (?:iranian )?(?:missile )?launchers|monitoring (?:iranian )?(?:missile )?launchers|satellite imagery.{0,50}(?:launcher|missile)|launchers?.{0,40}(?:observed|spotted|detected|sighted)|מעקב מבצעי אחר משגרים|מעקב אחר תנועת משגרים|מעקב אחר משגרי טילים|נעקב.*משגר|ניטור.*משגר|תצלומי לוויין.*משגר)/i.test(headline);
- const publishedRange=iran && /(?:range|טווח(?:\s+ירי)?)[^\n.]{0,60}?\b\d{2,5}\s*(?:km|kilomet(?:er|re)s?|קילומטר(?:ים)?|ק״מ)/i.test(headline);
- // Match only public headlines about the requested topic; no live coordinates, routes, or tactical predictions are generated.
-  return (iran && launch) || (iran && launcherMovement) || (iran && operationalTracking) || publishedRange;
+ // Use the headline only. Descriptions often contain unrelated background terms
+ // (e.g. readiness, threats or past attacks) that caused false positives.
+ const headline=String(article.title||"").replace(/\s+/g," ").trim();
+ const iranOrigin=/(?:\biran(?:ian)?\b|\birgc\b|איראן|איראני|טהרן|سپاه|ایران)/i.test(headline);
+ if(!iranOrigin)return false;
+ // Require an explicit launch/firing event linked to Iran as the origin.
+ // Deliberately exclude political statements, threats, readiness and launcher tracking.
+ const englishLaunch=
+   /\biran(?:ian)?\b.{0,90}\b(?:launch(?:ed|es|ing)?|fire(?:d|s|ing)?|shoot(?:s|ing)?)\b/i.test(headline) ||
+   /\b(?:launch(?:ed|es|ing)?|fire(?:d|s|ing)?|shoot(?:s|ing)?)\b.{0,90}\bfrom iran\b/i.test(headline) ||
+   /\b(?:missile|rocket|ballistic missile)\b.{0,70}\b(?:launched|fired|shot)\b.{0,50}\biran\b/i.test(headline) ||
+   /\b(?:iran|iranian|irgc)\b.{0,100}\b(?:missile|rocket)\b.{0,70}\b(?:launch|fire|fired|shot)\b/i.test(headline);
+ const hebrewLaunch=
+   /(?:איראן|איראני|משמרות\s+המהפכה|משמרות\s+המהפכה\s+האסלאמית).{0,90}(?:שיגר|שיגרה|שיגרו|ירה|ירתה|ירו|שיגור)/i.test(headline) ||
+   /(?:שיגור|שיגרו|שיגרה|שיגר|ירי).{0,80}(?:טילים?|רקטות?).{0,70}(?:מאיראן|איראני)/i.test(headline) ||
+   /(?:טילים?|רקטות?).{0,60}(?:שוגרו|נורו).{0,70}(?:מאיראן|איראן)/i.test(headline);
+ const persianLaunch=/(?:ایران|سپاه).{0,90}(?:شلیک|پرتاب|موشک).{0,60}(?:کرد|شد|کردند)|(?:شلیک|پرتاب).{0,80}(?:موشک).{0,60}(?:ایران|سپاه)/i.test(headline);
+ const arabicLaunch=/(?:إيران|الحرس الثوري).{0,90}(?:أطلق|إطلاق|قصف صاروخي|صواريخ).{0,60}|(?:إطلاق|أطلقت).{0,80}صواريخ.{0,60}(?:إيران)/i.test(headline);
+ return englishLaunch||hebrewLaunch||persianLaunch||arabicLaunch;
 }
 function iranLaunchRange(article) {
  const text=[article.title,article.description,article.summary].filter(Boolean).join(" ");
