@@ -2,6 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080e19">
+<link rel="manifest" href="/admin.webmanifest?v=1">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <title>ניהול RedAlert Live</title>
 <style>
 *{box-sizing:border-box}body{margin:0;padding:20px;background:#080e19;color:#eef3fa;font-family:Arial,sans-serif}main{max-width:900px;margin:28px auto}.panel{background:#121c2c;border:1px solid #2d3d54;border-radius:16px;padding:20px;margin:14px 0}h1{font-size:25px;margin:0 0 8px}h2{font-size:19px;margin:0}p{color:#b7c4d5;line-height:1.6}input{width:100%;padding:12px;border:1px solid #465873;background:#0b1422;color:white;border-radius:9px;font-size:16px;margin:8px 0 12px}button{border:0;border-radius:9px;padding:10px 13px;font-weight:700;cursor:pointer;margin:3px}button:disabled{opacity:.5;cursor:wait}.primary{background:#2563eb;color:white}.approve{background:#16794a;color:white}.danger{background:#a83232;color:white}.neutral{background:#33445d;color:white}.muted{color:#aab8cb;font-size:13px}.error{color:#ff9a9a}.device{border-top:1px solid #2b3b50;padding:15px 0;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}.device-main{flex:1;min-width:190px}.device-actions{display:flex;gap:4px;flex-wrap:wrap}.tag{display:inline-block;border-radius:20px;padding:4px 9px;font-size:12px;background:#203149;color:#c9d8eb}.tag.good{background:#12432f;color:#a6f0c8}.tag.bad{background:#542626;color:#ffc0c0}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.request{border-top:1px solid #2b3b50;padding:14px 0}
@@ -78,4 +81,5 @@ async function keepAdminSessionAlive(){
  document.addEventListener(eventName,keepAdminSessionAlive,{passive:true});
 });
 restoreAdminSession();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
 </script></body></html>
