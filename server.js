@@ -941,18 +941,37 @@ async function translateToHebrew(text) {
       throw new Error("Google returned an empty translation");
     } catch (error) { lastError = error; }
 
+    // Alternate Google Translate host: same free web endpoint, useful when one
+    // hostname is rate-limited or intermittently unreachable from the host.
+    try {
+      const url = "https://translate.google.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
+      const parsed = await translationFetch(url);
+      const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("").trim() : "";
+      if (translated) return cacheTranslation(input, translated);
+      throw new Error("Google alternate endpoint returned an empty translation");
+    } catch (error) { lastError = error; }
+
     const source = /[\u067E\u0686\u0698\u06AF\u06A9\u06CC]/u.test(input) ? "fa" :
       /[\u0600-\u06FF]/u.test(input) ? "ar" : "";
     if (source) {
-      try {
-        const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input) + "&langpair=" + source + "%7Che";
-        const data = await translationFetch(url);
-        const translated = String(data?.responseData?.translatedText || "").trim();
-        if (data?.responseStatus === 200 && translated && !/^PLEASE SELECT|NO QUERY SPECIFIED/i.test(translated)) {
-          return cacheTranslation(input, translated);
-        }
-        throw new Error("MyMemory returned an empty translation");
-      } catch (error) { lastError = error; }
+      // Try the direct language pair first, then pivot Persian/Arabic through English
+      // for free translation services that do not offer fa/ar -> Hebrew directly.
+      const pairs = [source + "|he", source + "|en"];
+      for (const pair of pairs) {
+        try {
+          const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input) + "&langpair=" + pair.replace("|", "%7C");
+          const data = await translationFetch(url);
+          const translated = String(data?.responseData?.translatedText || "").trim();
+          if (data?.responseStatus === 200 && translated && !/^PLEASE SELECT|NO QUERY SPECIFIED/i.test(translated)) {
+            if (pair === source + "|he") return cacheTranslation(input, translated);
+            const pivotUrl = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(translated) + "&langpair=en%7Che";
+            const pivotData = await translationFetch(pivotUrl);
+            const pivot = String(pivotData?.responseData?.translatedText || "").trim();
+            if (pivotData?.responseStatus === 200 && pivot && !/^PLEASE SELECT|NO QUERY SPECIFIED/i.test(pivot)) return cacheTranslation(input, pivot);
+          }
+          throw new Error("MyMemory returned an empty translation for " + pair);
+        } catch (error) { lastError = error; }
+      }
     }
 
     // Free, open-source LibreTranslate mirrors are a final fallback. They can pivot
