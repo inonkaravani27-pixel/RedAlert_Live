@@ -476,7 +476,7 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
         "Referer": "https://t.me/"
-      });
+      }, 5000);
       html = candidate;
       if (/tgme_widget_message_wrap|tgme_widget_message_text|data-post=["'][^"']+\//i.test(candidate)) break;
       lastError = "public preview markup not found";
@@ -552,7 +552,7 @@ async function fetchPublicNewsGroupUncached(group, limit = 15) {
   const gdeltUrl = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(group.query) +
     "&mode=ArtList&format=json&sort=datedesc&maxrecords=" + Math.max(limit, 20) + "&timespan=6h";
   try {
-    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 7000);
     try {
       const response = await fetch(gdeltUrl, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; RedAlertLive/1.0)", "Accept": "application/json" } });
       const body = await response.text();
@@ -577,7 +577,7 @@ async function fetchPublicNewsGroupUncached(group, limit = 15) {
   const rssUrl = "https://news.google.com/rss/search?q=" + encodeURIComponent(group.rssQuery) +
     "&hl=he&gl=IL&ceid=IL:he";
   try {
-    const xml = await get(rssUrl, { "Accept": "application/rss+xml, application/xml, text/xml, */*" }, 12000);
+    const xml = await get(rssUrl, { "Accept": "application/rss+xml, application/xml, text/xml, */*" }, 7000);
     const seen = new Set();
     const articles = parseFeed(xml).map(item => {
       const title = item.title || "";
