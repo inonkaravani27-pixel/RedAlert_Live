@@ -128,7 +128,10 @@ function isArabicSource(x) {
 }
 async function translateNewsTitle(title) {
  if(translatedNews.has(title)) return translatedNews.get(title);
- try { const r=await fetch("/api/translate?text="+encodeURIComponent(title),{cache:"no-store"}); if(!r.ok)throw Error(); const d=await r.json(); if(!d.translated)throw Error(); translatedNews.set(title,d.translated); return d.translated; } catch { return null; }
+ const translated=await translateIranTitle(title);
+ if(!translated||translated===title)return null;
+ translatedNews.set(title,translated);
+ return translated;
 }
 async function renderGroup(el,g){
  if(!g){el.innerHTML='<div class="empty">אין מקור מחובר.</div>';return}
@@ -366,8 +369,8 @@ async function loadPrelimFromPublicFeed(){
   if(status)status.textContent="מתרגם את הכותרות אוטומטית לעברית…";
   let next=0;
   const renderToken=(window.__ralNewsRenderToken=(window.__ralNewsRenderToken||0)+1);
-  const workers=Array.from({length:8},async()=>{while(next<articles.length){const i=next++,article=articles[i];const node=$("iran-news-title-"+i);if(iranTranslationCache.has(article.title)){if(node)node.textContent=iranTranslationCache.get(article.title);continue;}const translated=await translateIranTitle(article.title);if(node&&window.__ralNewsRenderToken===renderToken)node.textContent=translated;}});
-  void Promise.allSettled(workers).then(()=>{if(status&&window.__ralNewsRenderToken===renderToken)status.textContent="הכותרות מוצגות בעברית. אפשר לפתוח את המקור המקורי בכל פריט.";});
+  const workers=Array.from({length:3},async()=>{while(next<articles.length){const i=next++,article=articles[i];const node=$("iran-news-title-"+i);if(iranTranslationCache.has(article.title)){if(node)node.textContent=iranTranslationCache.get(article.title);continue;}const translated=await translateIranTitle(article.title);if(node&&window.__ralNewsRenderToken===renderToken)node.textContent=translated;}});
+  void Promise.allSettled(workers).then(()=>{if(status&&window.__ralNewsRenderToken===renderToken)status.textContent="הכותרות תורגמו ככל ששירותי התרגום זמינים; פריטים שלא תורגמו נשארים בשפת המקור. אפשר לפתוח את המקור המקורי.";});
  }catch(error){box.innerHTML='<p class="muted">מקורות החדשות לא החזירו כרגע דיווחים עדכניים. ננסה שוב אוטומטית.</p>';delete box.dataset.cacheShown;if(sourceStatus)sourceStatus.textContent="מקורות החדשות אינם זמינים כרגע.";if(status)status.textContent="לא ניתן לעדכן כותרות כרגע."}
  finally{clearTimeout(timer);prelimRequestInFlight=false}
 }
@@ -389,7 +392,9 @@ async function loadArabicChannels(){
    box.innerHTML="<div class=\"empty\">אין כרגע דיווחים חריגים שתואמים לסינון. זה לא מעיד שאין אירוע; חלק מהערוצים או גשרי ה-RSS עשויים להיות לא זמינים.</div>";
   }else{
    box.innerHTML=exceptional.map((a,i)=>"<article class=\"item\"><div class=\"news-flags\"><span class=\"tag\">חריג · סינון אוטומטי</span><span class=\"tag\">לא מאומת</span></div><b id=\"arabic-channel-title-"+i+"\">"+esc(/[\u0590-\u05FF]/.test(a.title)?a.title:"מתרגם לעברית…")+"</b><p class=\"muted\">"+esc(a.groupLabel||"ערוץ ציבורי")+" · "+esc(a.source||"טלגרם")+"<br>"+esc(formatIranDate(a.date))+"</p><a class=\"map-link\" href=\""+esc(a.url)+"\" target=\"_blank\" rel=\"noopener noreferrer\">פתח את המקור ↗</a></article>").join("");
-   void Promise.all(exceptional.map(async(a,i)=>{const node=$("arabic-channel-title-"+i);if(node&&!/[\u0590-\u05FF]/.test(a.title)){const translated=await translateIranTitle(a.title);if(node.isConnected)node.textContent=translated||a.title;}}));
+   let translationIndex=0;
+   const translationWorkers=Array.from({length:3},async()=>{while(translationIndex<exceptional.length){const i=translationIndex++,a=exceptional[i],node=$("arabic-channel-title-"+i);if(node&&!/[\u0590-\u05FF]/.test(a.title)){const translated=await translateIranTitle(a.title);if(node.isConnected)node.textContent=translated||a.title;}}});
+   void Promise.allSettled(translationWorkers);
   }
   const working=(data.groups||[]).filter(g=>(g.articles||[]).length&&!g.unavailable).length;
   const failed=(data.groups||[]).filter(g=>g.unavailable).length;
@@ -415,18 +420,31 @@ if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(
 
 
 const iranTranslationCache = new Map();
+const iranTranslationInFlight = new Map();
+const iranTranslationFailureUntil = new Map();
 async function translateIranTitle(title){
  if(iranTranslationCache.has(title))return iranTranslationCache.get(title);
  if(/[\u0590-\u05FF]/.test(title))return title;
- try{
-  const r=await fetch("/api/translate?text="+encodeURIComponent(title),{cache:"no-store"});
-  if(!r.ok)throw new Error("translation unavailable");
-  const d=await r.json();
-  const translated=String(d.translated||"").trim();
-  if(!translated)throw new Error("empty translation");
-  iranTranslationCache.set(title,translated);
-  return translated;
- }catch{return "לא ניתן לתרגם כרגע"}
+ if((iranTranslationFailureUntil.get(title)||0)>Date.now())return title;
+ if(iranTranslationInFlight.has(title))return iranTranslationInFlight.get(title);
+ const request=(async()=>{
+  try{
+   const r=await fetch("/api/translate?text="+encodeURIComponent(title),{cache:"no-store"});
+   if(!r.ok)throw new Error("translation unavailable");
+   const d=await r.json();
+   const translated=String(d.translated||"").trim();
+   if(!translated)throw new Error("empty translation");
+   iranTranslationCache.set(title,translated);
+   iranTranslationFailureUntil.delete(title);
+   return translated;
+  }catch{
+   iranTranslationFailureUntil.set(title,Date.now()+60000);
+   if(iranTranslationFailureUntil.size>500)iranTranslationFailureUntil.delete(iranTranslationFailureUntil.keys().next().value);
+   return title;
+  }finally{iranTranslationInFlight.delete(title);}
+ })();
+ iranTranslationInFlight.set(title,request);
+ return request;
 }
 function formatIranDate(value){
  if(!value)return "זמן פרסום לא זמין";
