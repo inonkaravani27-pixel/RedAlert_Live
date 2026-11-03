@@ -367,7 +367,7 @@ async function loadPrelimFromPublicFeed(){
   let next=0;
   const renderToken=(window.__ralNewsRenderToken=(window.__ralNewsRenderToken||0)+1);
   const workers=Array.from({length:8},async()=>{while(next<articles.length){const i=next++,article=articles[i];const node=$("iran-news-title-"+i);if(iranTranslationCache.has(article.title)){if(node)node.textContent=iranTranslationCache.get(article.title);continue;}const translated=await translateIranTitle(article.title);if(node&&window.__ralNewsRenderToken===renderToken)node.textContent=translated;}});
-  Promise.allSettled(workers).then(()=>{if(status&&window.__ralNewsRenderToken===renderToken)status.textContent="הכותרות מוצגות בעברית. אפשר לפתוח את המקור המקורי בכל פריט.";});
+  void Promise.allSettled(workers).then(()=>{if(status&&window.__ralNewsRenderToken===renderToken)status.textContent="הכותרות מוצגות בעברית. אפשר לפתוח את המקור המקורי בכל פריט.";});
  }catch(error){box.innerHTML='<p class="muted">מקורות החדשות לא החזירו כרגע דיווחים עדכניים. ננסה שוב אוטומטית.</p>';delete box.dataset.cacheShown;if(sourceStatus)sourceStatus.textContent="מקורות החדשות אינם זמינים כרגע.";if(status)status.textContent="לא ניתן לעדכן כותרות כרגע."}
  finally{clearTimeout(timer);prelimRequestInFlight=false}
 }
@@ -389,7 +389,7 @@ async function loadArabicChannels(){
    box.innerHTML="<div class=\"empty\">אין כרגע דיווחים חריגים שתואמים לסינון. זה לא מעיד שאין אירוע; חלק מהערוצים או גשרי ה-RSS עשויים להיות לא זמינים.</div>";
   }else{
    box.innerHTML=exceptional.map((a,i)=>"<article class=\"item\"><div class=\"news-flags\"><span class=\"tag\">חריג · סינון אוטומטי</span><span class=\"tag\">לא מאומת</span></div><b id=\"arabic-channel-title-"+i+"\">"+esc(/[\u0590-\u05FF]/.test(a.title)?a.title:"מתרגם לעברית…")+"</b><p class=\"muted\">"+esc(a.groupLabel||"ערוץ ציבורי")+" · "+esc(a.source||"טלגרם")+"<br>"+esc(formatIranDate(a.date))+"</p><a class=\"map-link\" href=\""+esc(a.url)+"\" target=\"_blank\" rel=\"noopener noreferrer\">פתח את המקור ↗</a></article>").join("");
-   await Promise.all(exceptional.map(async(a,i)=>{const node=$("arabic-channel-title-"+i);if(node&&!/[\u0590-\u05FF]/.test(a.title)){const translated=await translateIranTitle(a.title);if(node.isConnected)node.textContent=translated||a.title;}}));
+   void Promise.all(exceptional.map(async(a,i)=>{const node=$("arabic-channel-title-"+i);if(node&&!/[\u0590-\u05FF]/.test(a.title)){const translated=await translateIranTitle(a.title);if(node.isConnected)node.textContent=translated||a.title;}}));
   }
   const working=(data.groups||[]).filter(g=>(g.articles||[]).length&&!g.unavailable).length;
   const failed=(data.groups||[]).filter(g=>g.unavailable).length;
