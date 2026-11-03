@@ -441,8 +441,11 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
       const items = parseFeed(xml).map(item => {
         const pub = Number.isFinite(item.pub) ? item.pub : Date.parse(item.pub || "");
         const link = String(item.link || "");
-        const title = String(item.title || "").replace(/\s+/g, " ").trim();
-        return { title, url: link, source: "t.me/" + channel,
+        const titleText = cleanTranslationText(item.title || "");
+        const description = cleanTranslationText(item.desc || "");
+        // Telegram RSS bridges often put the actual post in description and use a generic title.
+        const title = (titleText.length >= 8 ? titleText : description || titleText).replace(/\s+/g, " ").trim();
+        return { title: title.slice(0, 1000), description: description.slice(0, 1000), url: link, source: "t.me/" + channel,
           date: Number.isFinite(pub) ? new Date(pub).toISOString() : "",
           mediaUrl: item.mediaUrl || "", mediaType: item.mediaType || "",
           unverified: true, verification: "מקור טלגרם — דיווח לא מאומת עד להצלבה מול מקור נוסף" };
@@ -1027,7 +1030,7 @@ function constantTimeEqual(a, b) {
   return aa.length === bb.length && crypto.timingSafeEqual(aa, bb);
 }
 
-const FILES = { "/manifest.webmanifest": ["manifest.webmanifest", "application/manifest+json"], "/sw.js": ["sw.js", "text/javascript"], "/icon.svg": ["icon.svg", "image/svg+xml"], "/icon-maskable.svg": ["icon-maskable.svg", "image/svg+xml"], "/icon-192.png": ["icon-192.png", "image/png"], "/icon-512.png": ["icon-512.png", "image/png"] };
+const FILES = { "/manifest.webmanifest": ["manifest.webmanifest", "application/manifest+json"], "/admin.webmanifest": ["admin.webmanifest", "application/manifest+json"], "/sw.js": ["sw.js", "text/javascript"], "/icon.svg": ["icon.svg", "image/svg+xml"], "/icon-maskable.svg": ["icon-maskable.svg", "image/svg+xml"], "/icon-192.png": ["icon-192.png", "image/png"], "/icon-512.png": ["icon-512.png", "image/png"] };
 
 const PUB = fs.existsSync(path.join(__dirname, "public", "index.html")) ? path.join(__dirname, "public") : __dirname;
 const INDEX = path.join(PUB, "index.html");
@@ -1038,7 +1041,10 @@ const server = http.createServer(async (req, res) => {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
     "X-Frame-Options": "DENY",
-    "X-Permitted-Cross-Domain-Policies": "none"
+    "X-Permitted-Cross-Domain-Policies": "none",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
   };
   if (req.headers["x-forwarded-proto"] === "https" || req.socket.encrypted) {
     h["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
