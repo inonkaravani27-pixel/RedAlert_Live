@@ -433,9 +433,10 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
         "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
         "Referer": "https://t.me/"
       }, 7000);
-      // Telegram places data-post on the inner .tgme_widget_message element,
-      // not consistently on the outer *_wrap container.
-      const starts = [...html.matchAll(/<div\b(?=[^>]*\bclass=["'][^"']*\btgme_widget_message\b)(?=[^>]*\bdata-post=["']([^"']+)["'])[^>]*>/gi)];
+      // Telegram currently puts data-post on the OUTER
+      // .tgme_widget_message_wrap node. Older markup may put it on the
+      // inner .tgme_widget_message element, so accept both structures.
+      const starts = [...html.matchAll(/<div\\b(?=[^>]*\\bclass=["'][^"']*\\btgme_widget_message(?:_wrap)?\\b[^"']*["'])(?=[^>]*\\bdata-post=["']([^"']+)["'])[^>]*>/gi)];
       if (!starts.length) {
         telegramError = "Telegram preview returned HTML without message nodes";
         continue;
