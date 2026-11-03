@@ -428,12 +428,14 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
     "https://rss.wudifeixue.com"
   ];
   let rssError = "";
-  for (const host of rssHosts) {
-    try {
+  // Try three independent public bridges in parallel instead of waiting up to 8s
+  // for each of nine mirrors in sequence. Move to the next batch only if all fail.
+  for (let offset = 0; offset < rssHosts.length; offset += 3) {
+    const batch = await Promise.allSettled(rssHosts.slice(offset, offset + 3).map(async host => {
       const xml = await get(host + "/telegram/channel/" + encodeURIComponent(channel), {
         "Accept": "application/rss+xml, application/xml, text/xml, */*",
         "Referer": host + "/"
-      });
+      }, 5000);
       if (!/<(?:rss|feed|channel)\b/i.test(xml) || /<title>\s*(?:Error|Not Found|Internal Server Error)/i.test(xml.slice(0, 2000))) {
         throw new Error("RSS bridge did not return a feed");
       }
@@ -443,7 +445,6 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
         const link = String(item.link || "");
         const titleText = cleanTranslationText(item.title || "");
         const description = cleanTranslationText(item.desc || "");
-        // Telegram RSS bridges often put the actual post in description and use a generic title.
         const title = (titleText.length >= 8 ? titleText : description || titleText).replace(/\s+/g, " ").trim();
         return { title: title.slice(0, 1000), description: description.slice(0, 1000), url: link, source: "t.me/" + channel,
           date: Number.isFinite(pub) ? new Date(pub).toISOString() : "",
@@ -457,9 +458,12 @@ async function fetchTelegramChannelUncached(channel, limit = 15) {
       const seen = new Set();
       const parsed = items.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
         .filter(item => !seen.has(item.url) && seen.add(item.url)).slice(0, limit);
-      if (parsed.length) return parsed;
-      rssError = "RSS bridge returned no posts from the last 6 hours";
-    } catch (error) { rssError = msg(error); }
+      if (!parsed.length) throw new Error("RSS bridge returned no posts from the last 6 hours");
+      return parsed;
+    }));
+    const success = batch.find(result => result.status === "fulfilled");
+    if (success) return success.value;
+    rssError = batch.map(result => result.status === "rejected" ? msg(result.reason) : "").filter(Boolean).join("; ");
   }
 
   // Fallback to Telegram's public HTML preview if RSS bridge instances are unavailable.
@@ -681,7 +685,7 @@ async function refreshPublicNewsCache() {
       }
     };
     // Limit concurrency to reduce Telegram throttling and publish useful results progressively.
-    await Promise.all(Array.from({ length: 4 }, () => worker()));
+    await Promise.all(Array.from({ length: 8 }, () => worker()));
     publicNewsCache = {
       source: "GDELT / Google News RSS / public Telegram channel previews",
       fetchedAt: new Date().toISOString(),
@@ -714,10 +718,15 @@ function isExceptionalArabicReport(article) {
 async function refreshArabicNewsCache() {
   if (arabicNewsRefreshPromise) return arabicNewsRefreshPromise;
   arabicNewsRefreshPromise = (async () => {
-    const results = PUBLIC_ARABIC_CHANNELS.map(group => ({
-      id: group.id, label: group.label, verification: group.verification,
-      articles: [], unavailable: false, refreshing: true
-    }));
+    const previousGroups = new Map((arabicNewsCache && arabicNewsCache.groups || []).map(group => [group.id, group]));
+    const results = PUBLIC_ARABIC_CHANNELS.map(group => {
+      const previous = previousGroups.get(group.id);
+      return {
+        id: group.id, label: group.label, verification: group.verification,
+        articles: filterFreshPublicArticles(previous && previous.articles || []),
+        unavailable: false, refreshing: true
+      };
+    });
     let nextIndex = 0;
     const worker = async () => {
       while (nextIndex < PUBLIC_ARABIC_CHANNELS.length) {
@@ -729,15 +738,17 @@ async function refreshArabicNewsCache() {
           results[i] = { id: group.id, label: group.label, verification: group.verification,
             articles, unavailable: false, refreshing: false };
         } catch (error) {
+          const previous = previousGroups.get(group.id);
           results[i] = { id: group.id, label: group.label, verification: group.verification,
-            articles: [], unavailable: true, error: msg(error), refreshing: false };
+            articles: filterFreshPublicArticles(previous && previous.articles || []),
+            unavailable: true, error: msg(error), refreshing: false };
         }
         arabicNewsCache = { source: "Public Telegram channels", fetchedAt: new Date().toISOString(),
           refreshing: true, note: "רק כותרות חריגות ממקורות ציבוריים; הדיווחים אינם מאומתים עצמאית.",
           groups: [...results] };
       }
     };
-    await Promise.all(Array.from({ length: 4 }, () => worker()));
+    await Promise.all(Array.from({ length: 8 }, () => worker()));
     arabicNewsCache = { source: "Public Telegram channels", fetchedAt: new Date().toISOString(),
       refreshing: false, note: "רק כותרות חריגות ממקורות ציבוריים; הדיווחים אינם מאומתים עצמאית.",
       groups: [...results] };
