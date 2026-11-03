@@ -983,6 +983,16 @@ async function translateToHebrew(text) {
       throw new Error("Google proxy returned an empty translation");
     } catch (error) { lastError = error; }
 
+    // Independent free proxy fallback: AllOrigins is a separate route from cors.tools.
+    // It returns the upstream Google Translate JSON body unchanged.
+    try {
+      const googleUrl = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
+      const parsed = await translationFetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(googleUrl), 9000);
+      const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("").trim() : "";
+      if (translated) return cacheTranslation(input, translated);
+      throw new Error("AllOrigins Google proxy returned an empty translation");
+    } catch (error) { lastError = error; }
+
     // MyMemory direct translation, then a two-step route through English if needed.
     if (source) {
       try {
