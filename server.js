@@ -933,62 +933,72 @@ async function translateToHebrew(text) {
   if (translationInFlight.has(input)) return translationInFlight.get(input);
   const request = (async () => {
     let lastError;
-    try {
-      const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
-      const parsed = await translationFetch(url);
-      const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("").trim() : "";
-      if (translated) return cacheTranslation(input, translated);
-      throw new Error("Google returned an empty translation");
-    } catch (error) { lastError = error; }
+    const hasPersian = /[\u067E\u0686\u0698\u06AF\u06A9\u06CC]/u.test(input);
+    const source = hasPersian ? "fa" : /[\u0600-\u06FF]/u.test(input) ? "ar" : "";
 
-    // Alternate Google Translate host: same free web endpoint, useful when one
-    // hostname is rate-limited or intermittently unreachable from the host.
-    try {
-      const url = "https://translate.google.com/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
-      const parsed = await translationFetch(url);
-      const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("").trim() : "";
-      if (translated) return cacheTranslation(input, translated);
-      throw new Error("Google alternate endpoint returned an empty translation");
-    } catch (error) { lastError = error; }
-
-    const source = /[\u067E\u0686\u0698\u06AF\u06A9\u06CC]/u.test(input) ? "fa" :
-      /[\u0600-\u06FF]/u.test(input) ? "ar" : "";
-    if (source) {
-      // Try the direct language pair first, then pivot Persian/Arabic through English
-      // for free translation services that do not offer fa/ar -> Hebrew directly.
-      const pairs = [source + "|he", source + "|en"];
-      for (const pair of pairs) {
-        try {
-          const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input) + "&langpair=" + pair.replace("|", "%7C");
-          const data = await translationFetch(url);
-          const translated = String(data?.responseData?.translatedText || "").trim();
-          if (data?.responseStatus === 200 && translated && !/^PLEASE SELECT|NO QUERY SPECIFIED/i.test(translated)) {
-            if (pair === source + "|he") return cacheTranslation(input, translated);
-            const pivotUrl = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(translated) + "&langpair=en%7Che";
-            const pivotData = await translationFetch(pivotUrl);
-            const pivot = String(pivotData?.responseData?.translatedText || "").trim();
-            if (pivotData?.responseStatus === 200 && pivot && !/^PLEASE SELECT|NO QUERY SPECIFIED/i.test(pivot)) return cacheTranslation(input, pivot);
-          }
-          throw new Error("MyMemory returned an empty translation for " + pair);
-        } catch (error) { lastError = error; }
-      }
+    // Google Translate is the primary free route. Try its API host and web host.
+    for (const host of ["https://translate.googleapis.com", "https://translate.google.com"]) {
+      try {
+        const url = host + "/translate_a/single?client=gtx&sl=auto&tl=he&dt=t&q=" + encodeURIComponent(input);
+        const parsed = await translationFetch(url, 6500);
+        const translated = Array.isArray(parsed?.[0]) ? parsed[0].map(part => part?.[0] || "").join("").trim() : "";
+        if (translated) return cacheTranslation(input, translated);
+        throw new Error("Google returned an empty translation");
+      } catch (error) { lastError = error; }
     }
 
-    // Free, open-source LibreTranslate mirrors are a final fallback. They can pivot
-    // Arabic/Persian through English when a direct pair is not installed.
+    // MyMemory direct translation, then a two-step route through English if needed.
+    if (source) {
+      try {
+        const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input) + "&langpair=" + source + "%7Che";
+        const data = await translationFetch(url, 6500);
+        const translated = String(data?.responseData?.translatedText || "").trim();
+        if (data?.responseStatus === 200 && translated && !/^PLEASE SELECT|NO QUERY SPECIFIED/i.test(translated)) {
+          return cacheTranslation(input, translated);
+        }
+        throw new Error("MyMemory returned an empty translation");
+      } catch (error) { lastError = error; }
+      try {
+        const first = await translationFetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input) + "&langpair=" + source + "%7Cen", 6500);
+        const english = String(first?.responseData?.translatedText || "").trim();
+        if (first?.responseStatus === 200 && english) {
+          const second = await translationFetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(english) + "&langpair=en%7Che", 6500);
+          const translated = String(second?.responseData?.translatedText || "").trim();
+          if (second?.responseStatus === 200 && translated) return cacheTranslation(input, translated);
+        }
+        throw new Error("MyMemory English pivot returned an empty translation");
+      } catch (error) { lastError = error; }
+    }
+
+    // LibreTranslate mirrors: try direct translation, then explicitly pivot via English.
     const libreSource = source || "auto";
     for (const base of ["https://translate.argosopentech.com", "https://translate.terraprint.co"]) {
       try {
-        const data = await translationPost(base + "/translate", {
+        const direct = await translationPost(base + "/translate", {
           q: input, source: libreSource, target: "he", format: "text"
-        });
-        const translated = String(data?.translatedText || "").trim();
+        }, 5000);
+        const translated = String(direct?.translatedText || "").trim();
         if (translated) return cacheTranslation(input, translated);
-        throw new Error("LibreTranslate returned an empty translation");
+        throw new Error("LibreTranslate returned an empty direct translation");
+      } catch (error) { lastError = error; }
+      try {
+        const first = await translationPost(base + "/translate", {
+          q: input, source: libreSource, target: "en", format: "text"
+        }, 5000);
+        const english = String(first?.translatedText || "").trim();
+        if (!english) throw new Error("LibreTranslate English pivot returned empty text");
+        const second = await translationPost(base + "/translate", {
+          q: english, source: "en", target: "he", format: "text"
+        }, 5000);
+        const translated = String(second?.translatedText || "").trim();
+        if (translated) return cacheTranslation(input, translated);
+        throw new Error("LibreTranslate Hebrew pivot returned empty text");
       } catch (error) { lastError = error; }
     }
+
     translationFailureCache.set(input, Date.now() + 20000);
     if (translationFailureCache.size > 500) translationFailureCache.delete(translationFailureCache.keys().next().value);
+    console.warn("[translation] all free providers failed:", msg(lastError || "unknown error"));
     throw lastError || new Error("translation unavailable");
   })();
   translationInFlight.set(input, request);
